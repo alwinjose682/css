@@ -1,0 +1,8 @@
+package io.alw.css.refdtgtr.model;
+
+public enum TestDataType {
+    COUNTRY, CURRENCY, ENTITY, PRODUCT, DATA_SET__COUNTRY_STATE_CURRENCY, STATE_OR_CITY_OR_STREET_GENERIC_NAMES,
+    CSS_NETTING_TYPE,
+    //
+    COUNTERPARTY_TYPE
+}

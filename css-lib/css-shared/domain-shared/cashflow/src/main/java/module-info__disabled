@@ -1,0 +1,8 @@
+module domain.cashflow {
+    requires com.fasterxml.jackson.annotation;
+    requires io.soabase.recordbuilder.core;
+    requires jakarta.validation;
+    requires java.compiler;
+    requires domain.common;
+    exports io.alw.css.domain.cashflow;
+}

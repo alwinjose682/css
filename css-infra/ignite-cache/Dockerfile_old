@@ -1,0 +1,58 @@
+FROM docker.io/apacheignite/ignite:2.16.0 as ignite_base
+#RUN mv /opt/ignite/apache-ignite/libs/optional/ignite-rest-http /opt/ignite/apache-ignite/libs/
+RUN ["/bin/bash", "-c", "mv ${IGNITE_HOME}/libs/optional/ignite-rest-http ${IGNITE_HOME}/libs/"]
+
+#--------------------------------------#
+FROM docker.io/ubuntu:22.04 AS jdk_and_ignite
+
+# install unzip
+RUN apt-get -y update && apt-get -y install unzip
+
+# openjdk GA releases are available at: https://jdk.java.net/archive/
+ARG JDK_SRC=https://download.java.net/java/GA/jdk17.0.2/dfd4a8d0985749f896bed50d7138ee7f/8/GPL/openjdk-17.0.2_linux-x64_bin.tar.gz
+ARG IGNITE_SRC=https://dlcdn.apache.org/ignite/2.16.0/apache-ignite-2.16.0-bin.zip
+
+WORKDIR /opt/staging
+# Download and extract jdk binary
+ADD ${JDK_SRC} openjdk_bin
+RUN tar -xzf openjdk_bin
+
+# Download and extract ignite binary
+ADD ${IGNITE_SRC} ignite_bin
+RUN unzip -q ignite_bin
+
+#jdkExctractedDirName=$(find . -depth -maxdepth 1 -type d -name "jdk*" | cut -c 3-)
+#mv ${jdkExctractedDirName} jdk
+
+#--------------------------------------#
+FROM scratch
+ARG STAGING_DIR=/opt/staging
+
+# Set the environment, must not end with /
+ENV JAVA_HOME /opt/jdk
+ENV IGNITE_HOME /opt/ignite/apache-ignite
+ENV PATH=${JAVA_HOME}:$PATH
+
+COPY --from=jdk_and_ignite ${STAGING_DIR}/jdk* ${JAVA_HOME}
+COPY --from=jdk_and_ignite ${STAGING_DIR}/apache-ignite* ${IGNITE_HOME}
+
+# enable optional ignite modules
+#RUN ["/bin/bash", "-c", "mv ${IGNITE_HOME}/libs/optional/ignite-rest-http ${IGNITE_HOME}/libs/"]
+
+
+# set the work directory
+WORKDIR ${IGNITE_HOME}
+
+# copy the ignite start script
+COPY build_items/custom_ignite_run.sh run.sh
+
+# change permissions
+RUN chmod 777 libs/
+RUN chmod 777 ./
+RUN chmod 555 run.sh
+
+# entrypoint
+ENTRYPOINT [ "run.sh" ]
+
+# Expose ports
+EXPOSE 11211 47100 47500 49112 10800 8080

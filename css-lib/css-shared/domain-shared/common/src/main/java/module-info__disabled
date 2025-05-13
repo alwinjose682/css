@@ -1,0 +1,3 @@
+module domain.common {
+    exports io.alw.css.domain.common;
+}

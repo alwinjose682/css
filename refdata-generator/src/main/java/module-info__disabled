@@ -1,0 +1,5 @@
+module refdata.generator {
+    requires jakarta.validation;
+    requires jakarta.annotation;
+    requires io.alw.css.domain.referencedata;
+}
