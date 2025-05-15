@@ -9,6 +9,13 @@ Financial institutions have backoffice systems that perform various tasks after 
     - Cashflow netting or aggregation(realtime)
     - Payment release
 
+
+NOTE: Following components are work in progress and cannot be run as of now:
+* cashflow-consumer
+* confirmation-consumer
+* netting-service
+
+
 ## Maven Modules
 
 ### Core modules
@@ -64,8 +71,3 @@ Following are the steps to run:
     1) /start.sh css-infra/h2-server
     2) /start.sh db-cache-data-loader
     3) /start.sh fo-simulator
-
-NOTE: Following components are work in progress and cannot be run as of now:
-* cashflow-consumer
-* confirmation-consumer
-* netting-service
