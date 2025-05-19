@@ -1,0 +1,35 @@
+--Apache Ignite Cache
+build via dockerfile
+podman run -d \
+ --rm \
+ -p 127.0.0.1:8095:8080 \
+ alw.io/ignite
+
+===================================================================================================
+--Kafka
+NOTE: This version of kafka uses KRaft, not Zookeeper.
+      This is apache kafka, not confluent inc's kafka
+
+podman pull docker.io/apache/kafka:4.0.0
+podman run -d \
+ --rm \
+ -p 127.0.0.1:9092:9092 \
+ docker.io/apache/kafka:4.0.0
+
+===================================================================================================
+--Schema Registry
+Note: Following are must to discover and connect to kafka:
+    - the network must be set as host. Alternative is to configure a network and use the network for both kafka and SchemaRegistry. But I think I saw somewhere in the documentation that network bridge support is available only for local setup as it has some overhead.
+    - This env variable must be set: 'SCHEMA_REGISTRY_HOST_NAME=localhost'
+
+      SchemaRegistry debug can be enabled by setting this env variable: 'SCHEMA_REGISTRY_DEBUG=true'
+
+podman pull docker.io/confluentinc/cp-schema-registry:7.9.1
+podman run -d \
+ --rm \
+ --net=host \
+ -e SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=PLAINTEXT://localhost:9092 \
+ -e SCHEMA_REGISTRY_HOST_NAME=localhost \
+ -e SCHEMA_REGISTRY_LISTENERS=http://localhost:8995 \
+ confluentinc/cp-schema-registry:7.9.1
+
