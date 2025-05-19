@@ -24,6 +24,8 @@
         <java.version.tail>23</java.version.tail>
 
         <!--        Non-Test     -->
+        <avro.version>1.12.0</avro.version>
+        <confluent.avro.serializer.version>7.9.1</confluent.avro.serializer.version>
         <ignite.version>2.16.0</ignite.version>
         <oracleDriver.version>23.6.0.24.10</oracleDriver.version>
         <h2Driver.version>2.3.232</h2Driver.version>
@@ -181,6 +183,10 @@
             </plugins>
         </pluginManagement>
     </build>
-
-
+    <repositories>
+        <repository>
+            <id>confluent</id>
+            <url>https://packages.confluent.io/maven/</url>
+        </repository>
+    </repositories>
 </project>

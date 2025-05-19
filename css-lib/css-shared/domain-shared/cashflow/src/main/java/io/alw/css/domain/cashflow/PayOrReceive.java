@@ -1,12 +1,12 @@
 package io.alw.css.domain.cashflow;
 
-public enum PayOrRecieve {
+public enum PayOrReceive {
     PAY("Pay"),
     RECEIVE("Recieve");
 
     private final String value;
 
-    PayOrRecieve(String value) {
+    PayOrReceive(String value) {
         this.value = value;
     }
 

@@ -19,6 +19,7 @@
         <module>domain-shared</module>
         <module>model-shared</module>
         <module>tx-template</module>
+        <module>serialization-schema</module>
     </modules>
 
 </project>

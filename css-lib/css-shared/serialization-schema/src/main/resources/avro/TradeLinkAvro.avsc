@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "TradeLinkAvro",
+  "namespace": "io.alw.css.serialization.cashflow",
+  "fields": [
+    {
+      "name": "linkType",
+      "type": "string"
+    },
+    {
+      "name": "relatedReference",
+      "type": "string"
+    }
+  ]
+}

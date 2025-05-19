@@ -1,0 +1,136 @@
+{
+  "type": "record",
+  "name": "FoCashMessageAvro",
+  "namespace": "io.alw.css.serialization.cashflow",
+  "doc": "Schema for FoCashMessage",
+  "fields": [
+    {
+      "name": "amount",
+      "type": {
+        "type": "string",
+        "java-class": "java.math.BigDecimal"
+      }
+    },
+    {
+      "name": "bookCode",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
+    },
+    {
+      "name": "cashflowID",
+      "type": "long"
+    },
+    {
+      "name": "cashflowVersion",
+      "type": "int"
+    },
+    {
+      "name": "counterBookCode",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
+    },
+    {
+      "name": "counterpartyCode",
+      "type": "string"
+    },
+    {
+      "name": "currCode",
+      "type": "string"
+    },
+    {
+      "name": "entityCode",
+      "type": "string"
+    },
+    {
+      "name": "payOrReceive",
+      "type": {
+        "type": "enum",
+        "name": "PayOrReceive",
+        "symbols": [
+          "PAY",
+          "RECEIVE"
+        ]
+      }
+    },
+    {
+      "name": "rate",
+      "type": {
+        "type": "string",
+        "java-class": "java.math.BigDecimal"
+      }
+    },
+    {
+      "name": "secondaryLedgerAccount",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
+    },
+    {
+      "name": "tradeEventAction",
+      "type": {
+        "type": "enum",
+        "name": "TradeEventAction",
+        "symbols": [
+          "ADD",
+          "MODIFY",
+          "REMOVE"
+        ]
+      }
+    },
+    {
+      "name": "tradeEventType",
+      "type": {
+        "name": "TradeEventType",
+        "type": "string"
+      }
+    },
+    {
+      "name": "tradeID",
+      "type": "long"
+    },
+    {
+      "name": "tradeLinks",
+      "type": [
+        "null",
+        {
+          "type": "array",
+          "items": "io.alw.css.serialization.cashflow.TradeLinkAvro"
+        }
+      ],
+      "default": null
+    },
+    {
+      "name": "tradeType",
+      "type": {
+        "name": "TradeType",
+        "type": "string"
+      }
+    },
+    {
+      "name": "tradeVersion",
+      "type": "int"
+    },
+    {
+      "name": "transactionType",
+      "type": {
+        "name": "TransactionType",
+        "type": "string"
+      }
+    },
+    {
+      "name": "valueDate",
+      "type": [
+        "null",
+        "string"
+      ]
+    }
+  ]
+}

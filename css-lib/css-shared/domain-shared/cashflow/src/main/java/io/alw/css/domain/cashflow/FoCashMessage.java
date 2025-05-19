@@ -32,7 +32,7 @@ public record FoCashMessage(
         // ObligationData
         @NotNull String entityCode,
         @NotNull String counterpartyCode,
-        @NotNull PayOrRecieve payOrRecieve,
+        @NotNull PayOrReceive payOrReceive,
         @NotNull BigDecimal amount,
         @NotBlank @Size(min = 3, max = 3) String currCode
 ) implements TestDataGeneratable {
