@@ -1,0 +1,46 @@
+--Oracle DB config Notes
+
+--Oracle Registry
+	https://container-registry.oracle.com
+    --Official source of container configurations, images, and examples for Oracle products and projects
+	https://github.com/oracle/docker-images
+
+--Using the Lite image
+---Starting an Oracle Database 23ai Free Lite Container
+podman run -d -p 127.0.0.1:1521:1521 container-registry.oracle.com/database/free:23.7.0.0-lite-amd64
+podman exec 807368dadbb6 ./setPassword.sh sysdbapass
+podman exec -it 807368dadbb6 sqlplus sys/sysdbapass@FREEPDB1 as sysdba
+
+--Connecting to Oracle Database Free
+	https://docs.oracle.com/en/database/oracle/oracle-database/23/xeinl/connecting-oracle-database-free.html#GUID-190C65CE-E2B0-4C8E-9BF4-4A3BE53AFCD8
+
+--Oracle Net Services
+	https://docs.oracle.com/en/database/oracle/oracle-database/23/netag/part-I-understanding-oracle-net-services.html#NETAG-GUID-A436DD5C-DF46-45E0-8F9B-54C7EFE40BA6
+	Official doc -> Database Net Services Administrator's Guide
+
+--IDE plugin
+	https://plugins.jetbrains.com/plugin/1800-database-navigator
+
+------------------------------------------------------
+NOTE: This is in the documentation for Autonomous Database
+How can I start podman VM on x86_64 Mac with minimum memory/cpu requirements ?
+
+podman machine init
+podman machine set --cpus 4 --memory 8192
+podman machine start
+-------------------------------------------------------
+References:
+    https://github.com/oracle/docker-images
+    https://github.com/red-gate/Flyway-AutoPilot-Oracle/tree/main
+
+SQL> CREATE bigfile TABLESPACE TEST_DATA
+  2  DATAFILE 'TEST_tabspace.dbf'
+  3  SIZE 10M AUTOEXTEND ON
+  4  /
+------------------------------------------------------
+
+
+https://stackoverflow.com/questions/60335079/execute-sql-statement-as-sys-as-sysdba
+https://connor-mcdonald.com/2023/07/17/using-express-or-free-edition-a-potential-trap/
+https://connor-mcdonald.com/2023/12/18/the-ultimate-database-free-edition/
+https://blogs.oracle.com/sql/post/how-to-create-users-grant-them-privileges-and-remove-them-in-oracle-database
