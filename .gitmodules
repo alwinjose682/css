@@ -1,0 +1,18 @@
+[submodule "css-config"]
+	path = css-config
+	url = https://github.com/alwinjose682/css-config.git
+[submodule "css-infra"]
+	path = css-infra
+	url = https://github.com/alwinjose682/css-infra.git
+[submodule "css-lib"]
+	path = css-lib
+	url = https://github.com/alwinjose682/css-lib.git
+[submodule "db-cache-data-loader"]
+	path = db-cache-data-loader
+	url = https://github.com/alwinjose682/css-db-cache-data-loader.git
+[submodule "fo-simulator"]
+	path = fo-simulator
+	url = https://github.com/alwinjose682/css-fo-simulator.git
+[submodule "refdata-generator"]
+	path = refdata-generator
+	url = https://github.com/alwinjose682/css-refdata-generator.git
