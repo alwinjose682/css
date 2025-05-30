@@ -113,8 +113,8 @@ public final class CacheTableDefinition {
             secondaryLedgerAccount VARCHAR,                                       	-- { secondaryLedgerAccount }
             active BOOLEAN,                                                         -- { active | length = 1, nullable = false | STRING }
             entryTime TIMESTAMP,
-            PRIMARY KEY (mappingId, counterpartyCode)
-            ) WITH "template=replicated, backups=0, affinityKey=counterpartyCode, cache_name=%s, key_type=%s, value_type=%s"
+            PRIMARY KEY (mappingId, entityCode)
+            ) WITH "template=replicated, backups=0, affinityKey=entityCode, cache_name=%s, key_type=%s, value_type=%s"
             """.formatted(IgniteCacheName.CP_SLA_MAPPING, CounterpartySlaMappingCache.Key.class.getName(), CounterpartySlaMappingCache.class.getName());
 
     public final String SSI = """
