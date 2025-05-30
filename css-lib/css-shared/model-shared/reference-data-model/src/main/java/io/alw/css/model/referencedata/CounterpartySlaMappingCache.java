@@ -15,11 +15,11 @@ public class CounterpartySlaMappingCache implements Serializable {
     public static class Key implements Serializable {
         private long MAPPINGID;
         @AffinityKeyMapped
-        private String COUNTERPARTYCODE;
+        private String ENTITYCODE;
 
         public Key(long mappingID, String counterpartyCode) {
             this.MAPPINGID = mappingID;
-            this.COUNTERPARTYCODE = counterpartyCode;
+            this.ENTITYCODE = counterpartyCode;
         }
 
         public long getMappingID() {
@@ -30,12 +30,12 @@ public class CounterpartySlaMappingCache implements Serializable {
             this.MAPPINGID = mappingID;
         }
 
-        public String getCounterpartyCode() {
-            return COUNTERPARTYCODE;
+        public String getEntityCode() {
+            return ENTITYCODE;
         }
 
-        public void setCounterpartyCode(String counterpartyCode) {
-            this.COUNTERPARTYCODE = counterpartyCode;
+        public void setEntityCode(String entityCode) {
+            this.ENTITYCODE = entityCode;
         }
     }
 
