@@ -25,7 +25,7 @@ import java.util.concurrent.Executors;
 public final class SimpleCacheDataLoader extends CacheDataLoader {
     private static final Logger log = LoggerFactory.getLogger(SimpleCacheDataLoader.class);
 
-    private final ExecutorService vt;
+//    private final ExecutorService vt;
     private final ClientConfiguration thinClientConfiguration;
     private IgniteClient igniteClient;
 
@@ -39,7 +39,7 @@ public final class SimpleCacheDataLoader extends CacheDataLoader {
     private ClientCache<CurrencyCache.Key, CurrencyCache> currencyCache;
 
     public SimpleCacheDataLoader(ClientConfiguration thinClientConfiguration) {
-        this.vt = Executors.newVirtualThreadPerTaskExecutor();
+//        this.vt = Executors.newVirtualThreadPerTaskExecutor();
         this.thinClientConfiguration = thinClientConfiguration;
     }
 
