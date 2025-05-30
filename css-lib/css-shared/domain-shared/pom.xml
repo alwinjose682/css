@@ -21,6 +21,7 @@
         <module>exception</module>
         <module>common</module>
         <module>reference-data</module>
+        <module>result-api</module>
     </modules>
 
     <dependencyManagement>
