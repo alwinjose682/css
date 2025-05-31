@@ -3,7 +3,7 @@ package io.alw.css.refdataloader.service;
 import io.alw.css.domain.referencedata.Country;
 import io.alw.css.domain.referencedata.Currency;
 import io.alw.css.model.referencedata.*;
-import io.alw.css.refdataloader.domain.CacheTableDefinition;
+import io.alw.css.infra.ignitecache.CacheTableDefinition;
 import io.alw.css.refdataloader.mapper.cache.*;
 import io.alw.css.refdataloader.mapper.jpa.*;
 import io.alw.css.refdataloader.model.jpa.*;

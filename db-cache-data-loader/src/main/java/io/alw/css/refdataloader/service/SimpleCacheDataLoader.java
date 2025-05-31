@@ -173,7 +173,7 @@ public final class SimpleCacheDataLoader extends CacheDataLoader {
 
     @Override
     void loadCPSlaMapping(List<CounterpartySlaMappingCache> cpsms) {
-        cpsms.forEach(rd -> cpSlaMappingCache.put(new CounterpartySlaMappingCache.Key(rd.mappingID(), rd.getCounterpartyCode()), rd));
+        cpsms.forEach(rd -> cpSlaMappingCache.put(new CounterpartySlaMappingCache.Key(rd.mappingID(), rd.getEntityCode()), rd));
         log.info("Loaded cpSlaMappings[{}] to cache", cpsms.size());
     }
 
