@@ -11,8 +11,14 @@
     <version>1.0.0</version>
     <packaging>pom</packaging>
 
+    <properties>
+        <java.version>23</java.version>
+        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
     <modules>
-        <module>ignite-cache</module>
+<!--        <module>ignite-cache</module>-->
         <module>oracle-db</module>
         <module>h2-server</module>
     </modules>
