@@ -21,7 +21,7 @@ public record Success<T>(T t) implements Result<T> {
     }
 
     @Override
-    public Result<?> andThen(Supplier<Result<?>> f) {
+    public Result<T> andThen(Supplier<Result<T>> f) {
         return f.get();
     }
 }

@@ -2,6 +2,7 @@ package io.alw.css.domain.common;
 
 /// PaymentSuppressionCategory can be used by both Cashflow and Payment records. This may be set for different versions of the CF by different CSS services
 public enum PaymentSuppressionCategory {
+    NONE("None"),
     // Below are applicable for both Cashflow and Payment
     AMOUNT_TOO_SMALL("AmountTooSmall"),
     MISSED_CURRENCY_CUTOFF("MissedCurrencyCutOff"),

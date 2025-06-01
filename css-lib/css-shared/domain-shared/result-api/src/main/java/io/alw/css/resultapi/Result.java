@@ -2,14 +2,11 @@ package io.alw.css.resultapi;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 
-/// [Result]'s [Failure] cannot be evaluated further.
-///
-/// Hence the [Failure#andThen(Supplier)] and [Failure#andThen(UnaryOperator)] chaining methods will NOT execute the next step of the sequence, instead it just returns the [Failure] instance itself.
-///
-/// NOTE: This API is not suitable if it is required to evaluate the [Failure] result in the next step.
-public sealed interface Result<T> permits Success, Failure {
+// NOTE: The 'Failure' type of 'Result<T>' has been removed. It makes sense only to have Success or Success kind of implementations of Result<T>.
+// As usual, Failure must be handled by throwing exceptions.
+
+public sealed interface Result<T> permits Success {
     Success<String> SUCCESS = new Success<>("Success");
 
     <U> Result<U> andThen(Function<T, Result<U>> f);
@@ -28,7 +25,7 @@ public sealed interface Result<T> permits Success, Failure {
     /// ie; The next step will use the old value from the previous step
     Result<T> andDo(ZeroFunction f);
 
-    Result<?> andThen(Supplier<Result<?>> f);
+    Result<T> andThen(Supplier<Result<T>> f);
 
     static <T> Result<T> of(Supplier<Result<T>> f) {
         return f.get();

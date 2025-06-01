@@ -56,8 +56,7 @@ public record Cashflow(
         /*--set--*/boolean internal, // interBook, interBranch and interCompany are categorized as internal. Payment should not be generated for interBook CF
         String nostroID,
         String ssiID, // The counterparty's SSI. If an interBook trade and hence no real ssiID, then the dummy ssiID for interBook will be used
-        /*--set--*/@NotNull boolean paymentSuppressed,
-        /*--set--*/@Nullable PaymentSuppressionCategory paymentSuppressionCategory,
+        /*--set--*/@NotNull PaymentSuppressionCategory paymentSuppressionCategory,
 
         // Cashflow Entry Audit
         /*set*/InputBy inputBy, // indicates inputted by system(SYSTEM) or by user(MAN)
