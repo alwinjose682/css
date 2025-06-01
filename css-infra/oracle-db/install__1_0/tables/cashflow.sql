@@ -22,11 +22,10 @@ curr_code VARCHAR2(3),                                                 				-- { 
 internal VARCHAR2(1) NOT NULL CONSTRAINT cf_internal_chk CHECK(internal IN ('Y','N')), -- { internal | STRING }
 nostro_id VARCHAR2(5),                                                   			-- { nostroID }
 ssi_id VARCHAR2(8),                                                      			-- { ssiID }
-payment_suppressed VARCHAR2(1) NOT NULL CONSTRAINT cf_payment_suppressed_chk CHECK(payment_suppressed IN ('Y','N')),
-payment_suppression_category VARCHAR2(30),    					        			-- { paymentSuppressionCategory }
+payment_suppression_category VARCHAR2(30) NOT NULL,				        			-- { paymentSuppressionCategory }
 input_by VARCHAR2(10),                                                     			-- { inputBy | ORDINAL }
 input_by_user_id VARCHAR2(10),                                          			-- { inputByUserID }
-received_date_time TIMESTAMP(3)                                         			-- { inputDateTime }
+input_date_time TIMESTAMP(3)                                         			    -- { inputDateTime }
 )
 tablespace &DATA_TS
 ;
