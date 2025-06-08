@@ -21,7 +21,7 @@ java \
 $JAVA_OPTS \
 -Dapp.log.filePath=${appLogDir} \
 -Dspring.config.location=${APP_CFG_DIR_ROOT}/,${appCfgDir}/ \
--Dlogging.config=${APP_CFG_DIR_ROOT}/logback-spring.xml \
+-Dlogging.config=${appCfgDir}/logback-spring.xml \
 -Dspring.profiles.active=${PROJ_PROFILES} \
 -Dcss.cert.path=${CERT_DIR} \
 ${appSpecificVmArgs} \
