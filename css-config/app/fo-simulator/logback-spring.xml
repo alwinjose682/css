@@ -1,0 +1,93 @@
+<!--<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE configuration> --> <!-- This is to be used for canonical format-->
+<configuration debug="true">
+    <!--    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>-->
+    <springProperty name="fileName" source="app.log.fileName"/>
+    <springProperty name="filePath" source="app.log.filePath"/>
+
+    <!--                Default Root Logger Level                          -->
+    <root level="INFO"/>
+
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>
+                %red(%d{yyyy-MM-dd HH:mm:ss.SSS}) %-5p [%blue(%t)] %yellow(%-50logger{36}) : %m [%yellow(%C{0})]%n%throwable{full}
+                <!--                %red(%d{yyyy-MM-dd HH:mm:ss.SSS}) %-5p %yellow(%-50logger{36}) : %m [%yellow(%C{0})]%n%throwable{full} &lt;!&ndash; Does not print thread name&ndash;&gt;-->
+            </Pattern>
+        </encoder>
+    </appender>
+
+    <!--                Spring Profile Specific Appenders                  -->
+    <springProfile name="local">
+        <appender name="File-Appender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${filePath}/${fileName}.log</file>
+            <immediateFlush>true</immediateFlush>
+            <append>true</append>
+            <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                <Pattern>
+                    %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t] %-50logger{36} : %m %n%throwable{full}
+                    <!--                    %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-50logger{36} : %m [%C{0}]%n%throwable{full} &lt;!&ndash; Does not print thread name&ndash;&gt;-->
+                </Pattern>
+            </encoder>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${filePath}/${fileName}-%d{yyyyMMdd}.%i.log.zip</fileNamePattern>
+                <maxFileSize>100MB</maxFileSize>
+                <maxHistory>100</maxHistory>
+                <totalSizeCap>1000MB</totalSizeCap>
+            </rollingPolicy>
+        </appender>
+
+
+        <!--                Loggers                 -->
+        <!--        Logger config with additivity = true         -->
+        <root level="INFO">
+            <appender-ref ref="File-Appender"/>
+        </root>
+
+        <logger name="io.alw.css" level="DEBUG"/>
+        <logger name="org.hibernate.SQL" level="INFO"/> <!-- DEBUG -->
+        <logger name="org.hibernate.type" level="INFO"/> <!-- TRACE -->
+        <logger name="org.springframework.jdbc.core" level="DEBUG"/>
+        <logger name="org.springframework" level="INFO"/>
+        <logger name="org.apache.kafka" level="WARN"/>
+
+    </springProfile>
+</configuration>
+
+        <!--References-->
+        <!--        https://www.baeldung.com/logback-->
+        <!--        https://logback.qos.ch/manual/layouts.html-->
+        <!--        https://logback.qos.ch/manual/layouts.html#ClassicPatternLayout-->  <!-- Explains about conversion patterns in addition to many things. Explains format control expressions, pre-defined conversion words and the value they take(like %m, %d etc) etc-->
+        <!--        https://logback.qos.ch/manual/configuration.html#cumulative--> <!-- Appenders are cumulative. Says why "additivity=false" is required in many cases-->
+        <!--        https://logback.qos.ch/manual/configuration.html#propertiesConfigurator--> <!-- From ver 1.5.8 logback supports setting variable value and logger levels in a separate '.properties' file-->
+        <!--        https://logback.qos.ch/manual/appenders.html--> <!-- immediateFlush is enabled by default-->
+        <!--
+
+
+        -->
+        <!--            Logger config with additivity = false
+
+            <root level="INFO">
+                <appender-ref ref="Console"/>
+                <appender-ref ref="File-Appender"/>
+            </root>
+
+            <logger name="io.alw.css" level="DEBUG" additivity="false">
+                <appender-ref ref="Console"/>
+                <appender-ref ref="File-Appender"/>
+            </logger>
+            <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+                <appender-ref ref="File-Appender"/>
+            </logger>
+            <logger name="org.hibernate.type" level="TRACE" additivity="false">
+                <appender-ref ref="File-Appender"/>
+            </logger>
+            <logger name="org.springframework.jdbc.core" level="DEBUG" additivity="false">
+                <appender-ref ref="File-Appender"/>
+            </logger>
+            <logger name="org.springframework" level="INFO" additivity="false">
+                <appender-ref ref="File-Appender"/>
+            </logger>
+            <logger name="org.apache.kafka" level="WARN" additivity="false">
+                <appender-ref ref="File-Appender"/>
+            </logger>
+        -->
