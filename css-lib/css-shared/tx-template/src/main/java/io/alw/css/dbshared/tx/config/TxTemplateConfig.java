@@ -10,12 +10,12 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 /// CSS-Services use both programmatic(TXRO and TXRW) and declarative transaction. The default spring configuration use the same txManager for both programmatic and declarative apis
 @Configuration
 public class TxTemplateConfig {
-    @Bean
+    @Bean("txro")
     public TXRO txro(PlatformTransactionManager platformTransactionManager) {
         return new TXRO(platformTransactionManager);
     }
 
-    @Bean
+    @Bean("txrw")
     public TXRW txrw(PlatformTransactionManager platformTransactionManager) {
         return new TXRW(platformTransactionManager);
     }
