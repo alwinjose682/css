@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.4</version>
+        <version>3.4.6</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
@@ -20,8 +20,7 @@
     <description>Common definition for Cashflow Settlement Services</description>
 
     <properties>
-        <java.version.tip>23</java.version.tip>
-        <java.version.tail>23</java.version.tail>
+        <java.version>24</java.version>
 
         <!--        Non-Test     -->
         <avro.version>1.12.0</avro.version>
@@ -140,9 +139,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <!--                <version>${maven-compiler-plugin.version}</version>-->
                 <configuration>
-                    <source>${java.version.tip}</source>
-                    <target>${java.version.tip}</target>
-                    <release>${java.version.tail}</release>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <release>${java.version}</release>
                     <!--                    <compilerArgs>-->
                     <!--                        &lt;!&ndash;                        <compilerArg>&#45;&#45;release 23</compilerArg>&ndash;&gt;-->
                     <!--                        &lt;!&ndash;                        <compilerArg>&#45;&#45;enable-preview</compilerArg> &lt;!&ndash; both enable-preview and source release version cannot be set at the same time&ndash;&gt;&ndash;&gt;-->

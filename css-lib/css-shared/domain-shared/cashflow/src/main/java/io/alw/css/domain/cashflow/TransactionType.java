@@ -14,7 +14,7 @@ public enum TransactionType {
         this.value = value;
     }
 
-    public String value() {
+    private String value() {
         return value;
     }
 }

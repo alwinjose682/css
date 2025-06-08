@@ -11,6 +11,10 @@
 
     <artifactId>serialization-schema</artifactId>
 
+    <properties>
+        <avro.version>1.12.0</avro.version>
+    </properties>
+
     <dependencies>
         <!--        Avro dependency is also required. Just having the avro plugin alone does not work       -->
         <dependency>

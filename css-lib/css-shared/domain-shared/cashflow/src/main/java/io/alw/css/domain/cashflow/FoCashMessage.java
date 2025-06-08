@@ -21,6 +21,7 @@ public record FoCashMessage(
         @NotNull TradeType tradeType,
         @NotNull String bookCode,
         String counterBookCode, // Can be null if not an internal trade
+        //TODO: remove 'secondaryLedgerAccount' from FoCashMessage and avro and Cashflow. sla is now retrieved from cache based on counterparty profile
         String secondaryLedgerAccount, // If null, the primary nostro will be selected for the given entity and curr code combination
         @NotNull TransactionType transactionType,
         @NotNull TradeEventType tradeEventType,

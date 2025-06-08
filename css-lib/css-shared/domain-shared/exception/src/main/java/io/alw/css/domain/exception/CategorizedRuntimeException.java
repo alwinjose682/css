@@ -36,6 +36,10 @@ public class CategorizedRuntimeException extends RuntimeException {
         this(from.msg, from.type, from.category, from.subCategory, replayable, numOfRetries);
     }
 
+    public static CategorizedRuntimeException UNKNOWN(String msg, Object context){
+        return new CategorizedRuntimeException(msg, ExceptionType.UNKNOWN, ExceptionCategory.UNKNOWN, new ExceptionSubCategory("UNKNOWN", context));
+    }
+
     public static CategorizedRuntimeException TECHNICAL_UNRECOVERABLE(String msg, ExceptionSubCategory exceptionSubCategory) {
         return new CategorizedRuntimeException(msg, ExceptionType.TECHNICAL, ExceptionCategory.UNRECOVERABLE, exceptionSubCategory);
     }
@@ -84,5 +88,17 @@ public class CategorizedRuntimeException extends RuntimeException {
 
     public String msg() {
         return msg;
+    }
+
+    public ExceptionType type() {
+        return type;
+    }
+
+    public ExceptionCategory category() {
+        return category;
+    }
+
+    public ExceptionSubCategory subCategory() {
+        return subCategory;
     }
 }
