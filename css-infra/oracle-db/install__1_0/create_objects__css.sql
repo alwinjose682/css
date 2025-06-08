@@ -6,15 +6,15 @@ prompt *** CREATING SEQUENCES ***
 prompt cashflow_seq
 @@sequences/cashflow_seq
 
-prompt cf_consumer_audit_seq
-@@sequences/cf_consumer_audit_seq
+prompt cashflow_rejection_seq
+@@sequences/cashflow_rejection_seq
 
 prompt *** CREATING TABLES ***
 prompt cashflow
 @@tables/cashflow
 
-prompt cashflow_consumer_audit
-@@tables/cashflow_consumer_audit
+prompt cashflow_rejection
+@@tables/cashflow_rejection
 
 prompt trade_link
 @@tables/trade_link
