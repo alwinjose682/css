@@ -3,11 +3,11 @@ package io.alw.css.resultapi;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public record Success<T>(T t) implements Result<T> {
+public record Outcome<T>(T elem) implements Result<T> {
 
     @Override
     public <U> Result<U> andThen(Function<T, Result<U>> f) {
-        return f.apply(t);
+        return f.apply(elem);
     }
 
 //    @Override
@@ -16,7 +16,7 @@ public record Success<T>(T t) implements Result<T> {
 //    }
 
     @Override
-    public Success<T> andDo(ZeroFunction f) {
+    public Outcome<T> andDo(ZeroFunction f) {
         return this;
     }
 

@@ -6,8 +6,8 @@ import java.util.function.Supplier;
 // NOTE: The 'Failure' type of 'Result<T>' has been removed. It makes sense only to have Success or Success kind of implementations of Result<T>.
 // As usual, Failure must be handled by throwing exceptions.
 
-public sealed interface Result<T> permits Success {
-    Success<String> SUCCESS = new Success<>("Success");
+public sealed interface Result<T> permits Outcome {
+    Outcome<String> SUCCESS = new Outcome<>("Success");
 
     <U> Result<U> andThen(Function<T, Result<U>> f);
 
