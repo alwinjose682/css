@@ -40,6 +40,7 @@
         <!--                Loggers                 -->
         <!--        Logger config with additivity = true         -->
         <root level="INFO">
+            <appender-ref ref="Console"/>
             <appender-ref ref="File-Appender"/>
         </root>
 
