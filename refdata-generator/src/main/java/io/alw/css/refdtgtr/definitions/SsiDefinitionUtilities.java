@@ -14,7 +14,6 @@ final class SsiDefinitionUtilities implements CountAware {
 
     private long counter;
     final AlphaNumericTokenGenerator idGenerator;
-    final RefDataProvider refDataProvider;
     final StringRefDataProvider stringRefDataProvider;
     public final LongTokenGenerator bankAccountNumberGenerator;
     public final TokenFormattingTemplate<String, String> bicCodeTemplate;
@@ -23,7 +22,6 @@ final class SsiDefinitionUtilities implements CountAware {
     private SsiDefinitionUtilities() {
         this.counter = 0L;
         this.idGenerator = new AlphaNumericTokenGenerator(5, new char[]{'s', '0', '0', '0'});
-        this.refDataProvider = new RefDataProvider();
         this.stringRefDataProvider = new StringRefDataProvider();
         this.bankAccountNumberGenerator = new LongTokenGenerator(325485652L);
         this.bicCodeTemplate = new WidthAwareConcatenatingTemplate(ConfigParams.BIC_CODE_LENGTH);

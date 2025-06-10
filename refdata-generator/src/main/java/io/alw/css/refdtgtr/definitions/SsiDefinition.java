@@ -24,22 +24,25 @@ public final class SsiDefinition extends BaseDefinition<Ssi> {
     private final SsiDefinitionUtilities utilities;
     private final SsiBuilder ssiBuilder;
     private final Counterparty counterparty;
+    private final Currency currency;
+    private final TradeType product;
 
-    public SsiDefinition(Counterparty counterparty) {
-        this(null, counterparty);
+    public SsiDefinition(Counterparty counterparty, Currency currency, TradeType product) {
+        this(null, counterparty, currency, product);
     }
 
-    private SsiDefinition(Ssi parent, Counterparty counterparty) {
+    private SsiDefinition(Ssi parent, Counterparty counterparty, Currency currency, TradeType product) {
         super(parent);
         this.utilities = SsiDefinitionUtilities.singleton();
         this.ssiBuilder = SsiBuilder.builder();
         this.counterparty = counterparty;
+        this.currency = currency;
+        this.product = product;
     }
 
     @Override
     public SsiDefinition withDefaults() {
         AlphaNumericTokenGenerator idGenerator = utilities.idGenerator;
-        RefDataProvider refDataProvider = utilities.refDataProvider;
         StringRefDataProvider stringRefDataProvider = utilities.stringRefDataProvider;
         LongTokenGenerator bnkAccNumGntr = utilities.bankAccountNumberGenerator;
         TokenFormattingTemplate<String, String> bicCodeTemplate = utilities.bicCodeTemplate;
@@ -50,8 +53,8 @@ public final class SsiDefinition extends BaseDefinition<Ssi> {
                 .ssiVersion(ConfigParams.FIRST_TEST_DATA_VERSION)
                 .counterpartyCode(counterparty.counterpartyCode())
                 .counterpartyVersion(counterparty.counterpartyVersion())
-                .currCode(isParentDefinition() ? ((Currency) refDataProvider.next(TestDataType.CURRENCY)).currCode() : parent.currCode())
-                .product(isParentDefinition() ? TradeType.valueOf(stringRefDataProvider.next(TestDataType.PRODUCT)) : parent.product())
+                .currCode(currency.currCode())
+                .product(product)
                 .primary(isParentDefinition())
                 .beneType(isParentDefinition() ? stringRefDataProvider.next(TestDataType.COUNTERPARTY_TYPE) : parent.beneType())
                 .bankBic(bicCodeTemplate.apply("", getBicCodeTokenValues("SB"), "X", AffixPosition.SUFFIX, 1).toUpperCase())
@@ -85,6 +88,6 @@ public final class SsiDefinition extends BaseDefinition<Ssi> {
 
     @Override
     protected SsiDefinition childDefinition(Ssi parent) {
-        return new SsiDefinition(parent, this.counterparty).withDefaults();
+        return new SsiDefinition(parent, this.counterparty, this.currency, this.product).withDefaults();
     }
 }

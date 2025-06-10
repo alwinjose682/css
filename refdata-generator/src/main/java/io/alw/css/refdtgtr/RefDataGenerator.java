@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.random.RandomGenerator;
 
 // TODO: Use a dependency injection framework
+
 public class RefDataGenerator {
     private final RandomGenerator rndm;
     private final PreDefinedTestData preDefinedTestData;
@@ -70,7 +71,8 @@ public class RefDataGenerator {
         return entityAndDependentData;
     }
 
-    /// Generate primary and secondary nostros for each currency for the given entity
+    /// Generates primary and secondary nostro for each currency for the given entity
+    /// There is only one dependent data for an entity which is nostro(primary and secondary)
     private List<Nostro> createNostroData(Entity entity) {
         int totalNostros = 0;
         List<Nostro> allNostros = new ArrayList<>();
@@ -103,6 +105,8 @@ public class RefDataGenerator {
                 + RefDataCollection.singleton().entities.size();
 
         for (int idx = 0; idx < minimumRequiredCounterpartyCnt * multiplierNumForMinimumRequiredCounterpartyCnt; idx++) {
+
+            // Build Counterparty
             List<Counterparty> counterparties = new CounterpartyDefinition()
                     .withDefaults()
                     .internal(rndm.nextBoolean())
@@ -136,6 +140,12 @@ public class RefDataGenerator {
         return counterpartyAndDependentData;
     }
 
+    /// Creates dependent data for the given list of counterparty for **EACH** TradeType and Currency.
+    /// What are the dependent data of a counterparty?:
+    /// They are:
+    ///  1) SSI (primary and secondary)
+    /// 2) CounterpartyNettingProfile and
+    /// 3) CounterpartySlaMapping
     private List<CounterpartyAndDependentData> createCounterpartyDependentData(List<Counterparty> counterparties, List<Nostro> secondaryNostros, final boolean shouldGenerateCpSlaMapping) {
         List<CounterpartyAndDependentData> counterpartyAndDependentDataList = new ArrayList<>();
         int numOfCps = 0;
@@ -144,28 +154,39 @@ public class RefDataGenerator {
         int totalCpsms = 0;
 
         for (Counterparty cp : counterparties) {
-
-            // Build Ssi
-            List<Ssi> ssis = new SsiDefinition(cp)
-                    .withDefaults()
-                    .childDefinitions(rndm.nextInt(2, 7))
-                    .buildWithChildDefinitions();
-
-            // Build CounterpartyNettingProfile
+            List<Ssi> ssis = new ArrayList<>();
             List<CounterpartyNettingProfile> cpnps = new ArrayList<>();
-            for (TradeType product : TradeType.values()) {
+
+            // ForEach TradeType/Product, Build Ssi and CounterpartyNettingProfile
+            for (var tradeType : TradeType.values()) {
+
+                // Build Ssi
+                for (var currency : PreDefinedTestData.singleton().currencies) {
+                    List<Ssi> ssisForEachCurrency = new SsiDefinition(cp, currency, tradeType)
+                            .withDefaults()
+                            .childDefinitions(rndm.nextInt(2, 7))
+                            .buildWithChildDefinitions();
+                    ssis.addAll(ssisForEachCurrency);
+
+                    ++numOfCps;
+                    int numOfSsis = ssisForEachCurrency.size();
+                    totalSsis += numOfSsis;
+                }
+
+                // Build CounterpartyNettingProfile
                 List<CounterpartyNettingProfile> cpnpsForEachProduct = new CounterpartyNettingProfileDefinition(cp)
                         .withDefaults()
-                        .product(product)
+                        .product(tradeType)
                         .netForAnyEntity(rndm.nextBoolean())
                         .netByParentCounterpartyCode(rndm.nextBoolean())
                         .buildWithChildDefinitions();
                 cpnps.addAll(cpnpsForEachProduct);
+
             }
 
-            final List<CounterpartySlaMapping> cpsms;
             // Build CounterpartySlaMapping
             // Any nostro, irrespective of entity, can be used
+            final List<CounterpartySlaMapping> cpsms;
             if (shouldGenerateCpSlaMapping) {
                 cpsms = new CounterpartySlaMappingDefinition(cp, secondaryNostros.get(rndm.nextInt(0, secondaryNostros.size())))
                         .withDefaults()
@@ -177,14 +198,13 @@ public class RefDataGenerator {
             CounterpartyAndDependentData cpAndDd = new CounterpartyAndDependentData(cp, ssis, cpnps, cpsms);
             counterpartyAndDependentDataList.add(cpAndDd);
 
-            ++numOfCps;
-            int numOfSsis = ssis.size();
-            totalSsis += numOfSsis;
             int numOfCpnps = cpnps.size();
             totalCpnps += numOfCpnps;
             int numOfCpsms = cpsms.size();
             totalCpsms += numOfCpsms;
             //System.out.println("Number of counterparty dependent data: Ssi: " + numOfSsis + ", CPNetProf: " + numOfCpnps + ", CPSlaMap: " + numOfCpsms);
+
+
         }
 
         //System.out.println("Number of Counterparties: " + numOfCps + ". Number of dependent data: Ssi: " + totalSsis + ", CPNetProf: " + totalCpnps + ", CPSlaMap: " + totalCpsms);
