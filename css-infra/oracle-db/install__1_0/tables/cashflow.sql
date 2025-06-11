@@ -11,7 +11,7 @@ trade_type VARCHAR2(15),                                                 			-- {
 book_code VARCHAR2(5),                                                  			-- { bookCode }
 counter_book_code VARCHAR2(5),                                          			-- { counterBookCode }
 secondary_ledger_account VARCHAR2(5),                                   			-- { secondaryLedgerAccount }
-transaction_type VARCHAR2(10),                                     					-- { transactionType | STRING }
+transaction_type VARCHAR2(16),                                     					-- { transactionType | STRING }
 rate NUMBER(30,10),                                                        			-- { rate | scale = PaymentConstants.RATE_SCALE }
 value_date DATE,                                                 					-- { valueDate }
 --list<tradelinkentity> tradeLinks,                                     			-- { @OneToMany | chk src file for full info }
