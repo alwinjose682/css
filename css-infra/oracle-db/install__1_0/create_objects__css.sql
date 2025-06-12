@@ -6,8 +6,8 @@ prompt *** CREATING SEQUENCES ***
 prompt cashflow_seq
 @@sequences/cashflow_seq
 
-prompt cashflow_rejection_seq
-@@sequences/cashflow_rejection_seq
+prompt css_common_seq
+@@sequences/css_common_seq
 
 prompt *** CREATING TABLES ***
 prompt cashflow
