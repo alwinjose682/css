@@ -13,6 +13,7 @@ public class CategorizedRuntimeException extends RuntimeException {
     private final int numOfRetries;
 
     private CategorizedRuntimeException(String msg, ExceptionType type, ExceptionCategory category, ExceptionSubCategory subCategory) {
+        super(msg);
         this.createdTime = LocalDateTime.now();
         this.msg = msg;
         this.type = type;
@@ -23,6 +24,7 @@ public class CategorizedRuntimeException extends RuntimeException {
     }
 
     private CategorizedRuntimeException(String msg, ExceptionType type, ExceptionCategory category, ExceptionSubCategory subCategory, boolean replayable, int numOfRetries) {
+        super(msg);
         this.createdTime = LocalDateTime.now();
         this.msg = msg;
         this.type = type;
@@ -36,7 +38,7 @@ public class CategorizedRuntimeException extends RuntimeException {
         this(from.msg, from.type, from.category, from.subCategory, replayable, numOfRetries);
     }
 
-    public static CategorizedRuntimeException UNKNOWN(String msg, Object context){
+    public static CategorizedRuntimeException UNKNOWN(String msg, Object context) {
         return new CategorizedRuntimeException(msg, ExceptionType.UNKNOWN, ExceptionCategory.UNKNOWN, new ExceptionSubCategory("UNKNOWN", context));
     }
 
@@ -84,10 +86,6 @@ public class CategorizedRuntimeException extends RuntimeException {
 
     public int numOfRetries() {
         return numOfRetries;
-    }
-
-    public String msg() {
-        return msg;
     }
 
     public ExceptionType type() {
