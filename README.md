@@ -52,22 +52,36 @@ Following are the steps to build:
 Containerized components:
 
 1. cd css-infra/ignite-cache
-    1) podman build -t alw.io/ignite:latest .
+   1) podman build -t alw.io/ignite:latest .
 
 Non-Containerized components:
 
 2. cd css-lib/css-scripts/build
-    1) /install.sh css-lib/css-shared/
-    2) /install.sh css-lib/data-generator-shared/
-    3) /install.sh refdata-generator
-    4) /install.sh db-cache-data-loader
-    5) /install.sh fo-simulator
-    6) /install.sh css-infra/h2-server
+   1) ./install.sh css-lib/css-shared/
+   2) ./install.sh css-lib/data-generator-shared/
+   3) ./install.sh refdata-generator
+   4) ./install.sh css-infra/ignite-cache/
+   5) ./install.sh db-cache-data-loader
+   6) ./install.sh fo-simulator
+   7) ./install.sh cashflow-consumer
+   8) ./install.sh css-infra/h2-server
 
-Following are the steps to run:
+Following are the steps to run the CSS components:
 
 1) podman run --rm -d -p 127.0.0.1:8095:8080 alw.io/ignite
-2) cd css-lib/css-scripts/app
-    1) /start.sh css-infra/h2-server
-    2) /start.sh db-cache-data-loader
-    3) /start.sh fo-simulator
+2) podman run -d \
+   --rm \
+   -p 127.0.0.1:9092:9092 \
+   docker.io/apache/kafka:4.0.0
+3) podman run -d \
+   --rm \
+   --net=host \
+   -e SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=PLAINTEXT://localhost:9092 \
+   -e SCHEMA_REGISTRY_HOST_NAME=localhost \
+   -e SCHEMA_REGISTRY_LISTENERS=http://localhost:8995 \
+   confluentinc/cp-schema-registry:7.9.1
+4) cd css-lib/css-scripts/app
+   1) ./start.sh css-infra/h2-server &
+   2) ./start.sh db-cache-data-loader
+   3) ./start.sh fo-simulator
+   4) ./start.sh cashflow-consumer
