@@ -5,3 +5,4 @@ target/
 /css-scripts/app/checkAll.sh
 /css-scripts/app/restartAll.sh
 /css-scripts/app/stopAll.sh
+/css-shared/serialization-schema/src/main/java/
