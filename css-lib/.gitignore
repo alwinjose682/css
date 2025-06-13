@@ -2,3 +2,6 @@
 target/
 .idea/
 *.iml
+/css-scripts/app/checkAll.sh
+/css-scripts/app/restartAll.sh
+/css-scripts/app/stopAll.sh
