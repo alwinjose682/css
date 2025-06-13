@@ -4,6 +4,11 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!--
+            NOTE: The sole purpose of this pom is to add git submodules in github. This pom is not involved in the CSS project's build
+    -->
+
+    <groupId>css-wrapper</groupId>
     <artifactId>css-wrapper-pom</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>

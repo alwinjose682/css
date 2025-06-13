@@ -16,3 +16,6 @@
 [submodule "refdata-generator"]
 	path = refdata-generator
 	url = https://github.com/alwinjose682/css-refdata-generator.git
+[submodule "cashflow-consumer"]
+	path = cashflow-consumer
+	url = https://github.com/alwinjose682/css-cashflow-consumer.git
