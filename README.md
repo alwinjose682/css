@@ -6,16 +6,15 @@ Financial institutions have backoffice systems that perform various tasks after 
 
     - Cashflow enrichment
     - Cashflow confirmation
-    - Cashflow netting or aggregation(realtime)
+    - Cashflow netting or aggregation into Payment(realtime on cashflow confirmation)
     - Payment release
 
 **NOTE:**
 
 - The CSS project is divided into multiple modules each having a separate git repository.
 - This repository groups together all the CSS repositories and does not contain any code.
-- Detailed documentation for each component along with its code is within the component's specific repository. Example, for documentation and code of cashflow-consumer, click on the cashflow-consumer
+- Detailed documentation for each component along with its code is within the component's specific repository. Example, for documentation and code of cashflow-consumer, check [cashflow-consumer]
   repository
-- The steps to build and run CSS are given at the bottom
 
 **What is completed?**
 
