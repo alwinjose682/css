@@ -41,6 +41,8 @@ Financial institutions have backoffice systems that perform various tasks after 
 
 [Check the build and run steps](#Building-and-Running-CSS-Components)
 
+[Also, check "starting and stopping Cashflow Generators"](#REST-endpoints-to-start-or-stop-Cashflow-Generators)
+
 ## Maven Modules
 
 ### Core modules
@@ -117,9 +119,17 @@ Financial institutions have backoffice systems that perform various tasks after 
 - Logs will be written in a directory named 'logs' in the css project directory. *Example: cashflow-consumer logs will be written in '<css-root-dir>/logs/<profile>/cashflow-consumer'*
 - Use the start scripts to run the CSS Components inorder to have the appropriate jvm args and commandline parameters
 
-| Component       | Command                                                                                                                                                                                                                                  |
-|-----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Ignite Cache    | podman run -d --rm -p 127.0.0.1:8095:8080 alw.io/ignite                                                                                                                                                                                  | 
-| Kafka           | podman run -d --rm -p 127.0.0.1:9092:9092 docker.io/apache/kafka:4.0.0                                                                                                                                                                   |
-| Schema Registry | podman run -d --rm --net=host -e SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=PLAINTEXT://localhost:9092 -e SCHEMA_REGISTRY_HOST_NAME=localhost -e SCHEMA_REGISTRY_LISTENERS=http://localhost:8995 confluentinc/cp-schema-registry:7.9.1 |
-| CSS Components  | cd css-lib/css-scripts/app<br/> 1) ./start.sh css-infra/h2-server <br/> 2) ./start.sh db-cache-data-loader <br/> 3) ./start.sh fo-simulator <br/> 4) ./start.sh cashflow-consumer                                                        |
+| Component       | Command                                                                                                                                                                                                                                            |
+|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Ignite Cache    | podman run -d --rm -p 127.0.0.1:8095:8080,127.0.0.1:10800:10800 alw.io/ignite                                                                                                                                                                      | 
+| Kafka           | podman run -d --rm -p 127.0.0.1:9092:9092 docker.io/apache/kafka:4.0.0                                                                                                                                                                             |
+| Schema Registry | podman run -d --rm --net=host -e SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=PLAINTEXT://localhost:9092 -e SCHEMA_REGISTRY_HOST_NAME=localhost -e SCHEMA_REGISTRY_LISTENERS=http://localhost:8995 docker.io/confluentinc/cp-schema-registry:7.9.1 |
+| CSS Components  | cd css-lib/css-scripts/app<br/> 1) ./start.sh css-infra/h2-server <br/> 2) ./start.sh db-cache-data-loader <br/> 3) ./start.sh fo-simulator <br/> 4) ./start.sh cashflow-consumer                                                                  |
+
+#### REST endpoints to start or stop Cashflow Generators
+
+      Fo-Simulator component has Cashflow Generators that creates and publishes FoCashMessages continously to a Kafka topic.
+      Starting and stopping Cashflow Generators are facilitated via below REST endpoints:
+         Start : http://localhost:8081/cashflow/generators/start/all
+         Stop  : http://localhost:8081/cashflow/generators/stop/all
+      But, they are NOT started when fo-simulator starts. Instead, once Cashflow-Consumer is started, it invokes the REST endpoint to start the generators
