@@ -23,7 +23,7 @@ Financial institutions have backoffice systems that perform various tasks after 
 - [**Upstream Simulator**][fo-simulator]           : Simulates an fo-system for CSS. Creates cashflows for various trade types according to a limited domain specific rules
 - [**Reference Data Generator**][refdata-generator]      : Generates reference data relevant to CSS like Counterparty, Nostro, SSI etc
 - [**Database and Cache Data Loader**][db-cache-data-loader]   : Loads the generated reference data in database and in memory cache
-- [**Infrastructure used by CSS**][css-infra]              : **Database**, **Ignite Cache** and **Kafka**
+- [**Infrastructure used by CSS**][css-infra]              : Configurations, SQL files etc for **Database**, **Ignite Cache** and **Kafka**
 
 [cashflow-consumer]: https://github.com/alwinjose682/css-cashflow-consumer/
 [fo-simulator]: https://github.com/alwinjose682/css-fo-simulator/
