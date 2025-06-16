@@ -27,9 +27,13 @@ Financial institutions have backoffice systems that perform various tasks after 
 - [**Infrastructure used by CSS**][css-infra]              : Configurations, SQL files etc for **Database**, **Ignite Cache** and **Kafka**
 
 [cashflow-consumer]: https://github.com/alwinjose682/css-cashflow-consumer/
+
 [fo-simulator]: https://github.com/alwinjose682/css-fo-simulator/
+
 [refdata-generator]: https://github.com/alwinjose682/css-refdata-generator/
+
 [db-cache-data-loader]: https://github.com/alwinjose682/css-db-cache-data-loader/
+
 [css-infra]: https://github.com/alwinjose682/css-infra/
 
 **What is pending?**
@@ -118,6 +122,7 @@ Financial institutions have backoffice systems that perform various tasks after 
 
 **NOTE:**
 
+- The CSS components use commonly used port numbers like 8080...8095, 10800 etc
 - Logs will be written in a directory named 'logs' in the css project's root directory. *Example: cashflow-consumer logs will be written in '<css-root-dir>/logs/<profile>/cashflow-consumer'*
 - Use the start scripts to run the CSS Components inorder to have the appropriate jvm args and commandline parameters
 
