@@ -1,7 +1,7 @@
 FROM docker.io/ubuntu:22.04 AS builder
 
 # Set the environment, should NOT have a trailing '/' due to several reasons! (like: using it in COPY command etc. Check the docker reference)
-ENV ONLY_REQ_FILES_DIR=/opt/req_files \
+ARG ONLY_REQ_FILES_DIR=/opt/req_files \
     BUILD_TMP_DIR=/opt/tmp \
     JDK_FULL_HOME=/opt/tmp/jdk_full \
     IGNITE_HOME=/opt/req_files/ignite/apache-ignite
