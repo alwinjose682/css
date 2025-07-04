@@ -99,6 +99,9 @@ Financial institutions have backoffice systems that perform various tasks after 
 
 **Containerized components:**
 
+   Container registries used: 
+   cat ~/.config/containers/registries.conf -> unqualified-search-registries = ['docker.io','ghrc.io','quay.io','container-registry.oracle.com']
+
 1. cd css-infra/ignite-cache
     1) podman build -t alw.io/ignite:latest .
 
