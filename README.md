@@ -92,15 +92,15 @@ Financial institutions have backoffice systems that perform various tasks after 
 
 - All CSS components like DB, Cache, Kafka etc can be run together in a single machine. The build is run as per the configs in the local profile
 - The build and start scripts are linux bash scripts. To build and run in windows, it is required to write equivalent windows scripts
-- By default the database used is H2 DB in server mode. Few config changes are required to use oracle DB, like adding oracle jdbc dependency in pom
+- By default the database used is Oracle DB. Few config changes and a code change are required to use H2 DB
 - As of now, the H2 DB files are configured to be written to the home directory of the user: /home/<user>
 
 ### Steps to build
 
 **Containerized components:**
 
-   Container registries used: 
-   cat ~/.config/containers/registries.conf -> unqualified-search-registries = ['docker.io','ghrc.io','quay.io','container-registry.oracle.com']
+Container registries used:
+cat ~/.config/containers/registries.conf -> unqualified-search-registries = ['docker.io','ghrc.io','quay.io','container-registry.oracle.com']
 
 1. cd css-infra/ignite-cache
     1) podman build -t alw.io/ignite:latest .
@@ -119,7 +119,15 @@ Financial institutions have backoffice systems that perform various tasks after 
     5. ./install.sh db-cache-data-loader
     6. ./install.sh fo-simulator
     7. ./install.sh cashflow-consumer
-    8. ./install.sh css-infra/h2-server
+    8. ./install.sh css-infra/h2-server (If H2 database is used)
+
+### Steps to setup Oracle Database
+
+1) podman run -d -p 127.0.0.1:1521:1521 -e ORACLE_PWD=sysdbapass container-registry.oracle.com/database/express:21.3.0-xe
+2) Note the container id from above command. The same container needs to be used when running the application
+2) Copy this entire directory: 'css-infra/oracle-db/install__1_0' to the container(anywhere, even in /tmp). <br/> ex: podman cp css-infra/oracle-db/install__1_0 <container-id>:/tmp
+3) Run the script: css-infra/oracle-db/install__1_0/install.sh
+4) The script outputs the information of users, tables, indexes, sequences etc that are created. You may check it to verify that the DB objects are created
 
 ### Steps to run
 
@@ -131,11 +139,12 @@ Financial institutions have backoffice systems that perform various tasks after 
 
 | Component       | Command                                                                                                                                                                                                                                            |
 |-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Oracle Database | (If Oracle database is used) <br/> podman start <container-id> (container-id is the oracle DB container-id that was setup in the previous step)                                                                                                    | 
 | Ignite Cache    | podman run -d --rm -p 127.0.0.1:8095:8080,127.0.0.1:10800:10800 alw.io/ignite                                                                                                                                                                      | 
 | Kafka           | podman run -d --rm -p 127.0.0.1:9092:9092 docker.io/apache/kafka:4.0.0                                                                                                                                                                             |
 | Schema Registry | podman run -d --rm --net=host -e SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=PLAINTEXT://localhost:9092 -e SCHEMA_REGISTRY_HOST_NAME=localhost -e SCHEMA_REGISTRY_LISTENERS=http://localhost:8995 docker.io/confluentinc/cp-schema-registry:7.9.1 |
 |                 | ***---   Wait for 1 or 2 minutes for above components to start and become active   ---***                                                                                                                                                          |
-| CSS Components  | cd css-lib/css-scripts/app<br/> 1) ./start.sh css-infra/h2-server <br/> 2) ./start.sh db-cache-data-loader <br/> 3) ./start.sh fo-simulator <br/> 4) ./start.sh cashflow-consumer                                                                  |
+| CSS Components  | cd css-lib/css-scripts/app<br/> 1) ./start.sh css-infra/h2-server (If H2 DB is used) <br/> 2) ./start.sh db-cache-data-loader (NOTE: Data load may take more than 5 mins) <br/> 3) ./start.sh fo-simulator <br/> 4) ./start.sh cashflow-consumer   |
 
 #### REST endpoints to start or stop Cashflow Generators
 
