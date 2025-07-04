@@ -4,7 +4,7 @@ echo "***************************"
 echo "* STARTING CSS DB INSTALL *"
 echo "***************************"
 
-DB_SERVICE_NAME='FREEPDB1'
+DB_SERVICE_NAME='XEPDB1'
 DATA_TS='CSS_DATA'
 INDEX_TS='CSS_INDEX'
 

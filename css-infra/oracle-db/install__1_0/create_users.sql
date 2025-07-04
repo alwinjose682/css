@@ -27,5 +27,8 @@ alter user css_refdata quota unlimited on &INDEX_TS;
 
 grant css_role to css_refdata;
 grant css_role to sys with admin option;
-alter user css_refdata default role all; --to re-grant the roles at login
+prompt *** S-1 ***
+--Seems like Oracle express:21.3.0-xe gets stuck at this step
+--alter user css_refdata default role all; --to re-grant the roles at login
+prompt *** S-2 ***
 exit
