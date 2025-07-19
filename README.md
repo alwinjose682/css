@@ -85,7 +85,7 @@ Financial institutions have backoffice systems that perform various tasks after 
 - Build tool: maven
 - Preferred OS: Linux or Mac OS
 - Container provider: podman or docker
-- 6 GB RAM (14GB if Oracle DB is used)
+- 6 GB RAM (8GB if Oracle DB is used)
 - Use the build and start scripts as explained below and place all the modules in this CSS repo in the same directory
 
 **NOTE:**
