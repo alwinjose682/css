@@ -10,7 +10,6 @@ trade_version NUMBER(10),                                                       
 trade_type VARCHAR2(15),                                                 			-- { tradeType | STRING }
 book_code VARCHAR2(5),                                                  			-- { bookCode }
 counter_book_code VARCHAR2(5),                                          			-- { counterBookCode }
-secondary_ledger_account VARCHAR2(5),                                   			-- { secondaryLedgerAccount }
 transaction_type VARCHAR2(16),                                     					-- { transactionType | STRING }
 rate NUMBER(30,10),                                                        			-- { rate | scale = PaymentConstants.RATE_SCALE }
 value_date DATE,                                                 					-- { valueDate }
