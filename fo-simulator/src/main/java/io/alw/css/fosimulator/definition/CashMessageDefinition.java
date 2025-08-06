@@ -101,7 +101,6 @@ public sealed abstract class CashMessageDefinition
         String newCounterpartyCode = getCounterpartyCorrespondingToTransactionTypeOtherThan(msg.counterpartyCode());
         return getBuilderWithDefaultAmdntBaseFrom(msg)
                 .counterpartyCode(newCounterpartyCode)
-                .secondaryLedgerAccount(refDataService.counterpartyMappedSecondarySla(msg.entityCode(), msg.currCode(), newCounterpartyCode))
                 .build();
     }
 
@@ -236,8 +235,6 @@ public sealed abstract class CashMessageDefinition
                 // Entity dependent fields. Book codes are dummy for now
                 .bookCode(refDataService.dummyBookCode())
                 .counterBookCode(isInterbookTransaction() ? refDataService.dummyCounterBookCode() : null) // Also a TransactionType dependent
-                // Counterparty driven fields
-                .secondaryLedgerAccount(refDataService.counterpartyMappedSecondarySla(this.entityCode, this.currCode, counterpartyCode)) // This field accepts null if there is no sla
                 // TransactionType dependent fields
                 .counterpartyCode(counterpartyCode)
                 // Others

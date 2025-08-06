@@ -55,7 +55,6 @@ public final class FxDefinition extends CashMessageDefinition {
                 .counterpartyCode(counterpartyCode)
                 .entityCode(entityCode)
                 .currCode(currCode)
-                .secondaryLedgerAccount(refDataService.counterpartyMappedSecondarySla(entityCode, currCode, counterpartyCode))
                 .tradeLinks(List.of(new TradeLink(tradeLink_counterSide, String.valueOf(fx1.cashflowID()))))
                 .payOrReceive(fx1.payOrReceive() == PayOrReceive.RECEIVE ? PayOrReceive.PAY : PayOrReceive.RECEIVE)
                 .amount(BigDecimal.valueOf(rndm.nextDouble(2, 95036))); // TODO and NOTE: The amount of the other side of FX trade is not calculated based on rate. It is just a random number which is incorrect.
