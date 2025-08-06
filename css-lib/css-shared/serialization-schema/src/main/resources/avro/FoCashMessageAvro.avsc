@@ -66,14 +66,6 @@
       }
     },
     {
-      "name": "secondaryLedgerAccount",
-      "type": [
-        "null",
-        "string"
-      ],
-      "default": null
-    },
-    {
       "name": "tradeEventAction",
       "type": {
         "type": "enum",
