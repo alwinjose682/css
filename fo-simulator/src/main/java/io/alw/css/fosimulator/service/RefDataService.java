@@ -20,7 +20,6 @@ public class RefDataService {
     private List<String> externalCounterparties;
     private List<String> internalCounterparties;
     private List<Entity> entities;
-    private Map<String, SlaMapping> slaMappings;
 
     public RefDataService(ClientConfiguration clientConfiguration) {
         this.clientConfiguration = clientConfiguration;
@@ -30,7 +29,6 @@ public class RefDataService {
     private void createLocalCache() {
         try (var client = Ignition.startClient(clientConfiguration)) {
             entities = getEntity(client);
-            slaMappings = getSlaMapping(client);
             externalCounterparties = getCounterparty(client, false);
             internalCounterparties = getCounterparty(client, true);
         }
@@ -94,13 +92,6 @@ public class RefDataService {
 
     public String dummyCounterBookCode() {
         return "YMUD";
-    }
-
-    /// Returns the secondary nostro if there is one mapped to the counterparty in the reference data repository
-    /// If there is no secondary nostro mapped, returns null
-    public String counterpartyMappedSecondarySla(String entityCode, String currCode, String counterpartyCode) {
-        SlaMapping sms = slaMappings.get(getSlaMapKey(entityCode, currCode, counterpartyCode));
-        return sms == null ? null : sms.secondaryLedgerAccount();
     }
 
     private String getSlaMapKey(SlaMapping sm) {
