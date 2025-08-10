@@ -22,13 +22,8 @@ public class AppConfig {
     }
 
     @Bean
-    public CashflowGeneratorHandler cashflowGeneratorHandler(CashflowGeneratorProperties cashflowGeneratorProperties, CashMessageDefinitionProperties cashMessageDefinitionProperties, CashMessagePublisher cashMessagePublisher, DayTicker dayTicker, CssTaskExecutor cssTaskExecutor, RefDataService refDataService) {
-        return new CashflowGeneratorHandler(cashflowGeneratorProperties, cashMessageDefinitionProperties, cashMessagePublisher, refDataService, dayTicker, cssTaskExecutor);
-    }
-
-    @Bean
-    public DayTicker dayTicker(CssTaskExecutor cssTaskExecutor) {
-        return new DayTicker(10, 30, 2, cssTaskExecutor);
+    public CashflowGeneratorHandler cashflowGeneratorHandler(CashflowGeneratorProperties cashflowGeneratorProperties, CashMessageDefinitionProperties cashMessageDefinitionProperties, CashMessagePublisher cashMessagePublisher, CssTaskExecutor cssTaskExecutor, RefDataService refDataService) {
+        return new CashflowGeneratorHandler(cashflowGeneratorProperties, cashMessageDefinitionProperties, cashMessagePublisher, refDataService, cssTaskExecutor);
     }
 
     @Bean

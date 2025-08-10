@@ -35,12 +35,12 @@ public final class CashflowGeneratorHandler {
     private final DayTicker dayTicker;
     private final CssTaskExecutor cssTaskExecutor;
 
-    public CashflowGeneratorHandler(CashflowGeneratorProperties cashflowGeneratorProperties, CashMessageDefinitionProperties cashMessageDefinitionProperties, CashMessagePublisher cashMessagePublisher, RefDataService refDataService, DayTicker dayTicker, CssTaskExecutor cssTaskExecutor) {
+    public CashflowGeneratorHandler(CashflowGeneratorProperties cashflowGeneratorProperties, CashMessageDefinitionProperties cashMessageDefinitionProperties, CashMessagePublisher cashMessagePublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
         this.cashflowGeneratorProperties = cashflowGeneratorProperties;
         this.cashMessageDefinitionProperties = cashMessageDefinitionProperties;
         this.cashMessagePublisher = cashMessagePublisher;
         this.refDataService = refDataService;
-        this.dayTicker = dayTicker;
+        this.dayTicker = DayTicker.init(10, 30, 2, cssTaskExecutor);
         this.activeHandlerOperation = new AtomicBoolean(false);
         this.generatorMap = new ConcurrentHashMap<>();
         this.cssTaskExecutor = cssTaskExecutor;

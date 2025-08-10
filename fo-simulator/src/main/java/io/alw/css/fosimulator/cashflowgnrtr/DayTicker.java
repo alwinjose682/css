@@ -12,22 +12,35 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class DayTicker extends Stoppable {
     private final static Logger log = LoggerFactory.getLogger(DayTicker.class);
 
+    private static DayTicker instance;
+
     private final long tickerInterval;
     private final static long firstDay = 1;
     private AtomicLong day;
     private final long intervalSecondsBeforeFirstTick;
-    private final long graceSecondsForGeneratorsToStart;
+    private final long graceSecondsToWaitForGeneratorsToStart;
     private final CssTaskExecutor cssTaskExecutor;
     private boolean startedDayTicker;
 
-    public DayTicker(long tickerIntervalSeconds, long intervalSecondsBeforeFirstTick, long graceSecondsForGeneratorsToStart, CssTaskExecutor cssTaskExecutor) {
+    public static DayTicker init(long tickerIntervalSeconds, long intervalSecondsBeforeFirstTick, long graceSecondsToWaitForGeneratorsToStart, CssTaskExecutor cssTaskExecutor) {
+        if (instance == null) {
+            synchronized (DayTicker.class) {
+                if (instance == null) {
+                    instance = new DayTicker(tickerIntervalSeconds, intervalSecondsBeforeFirstTick, graceSecondsToWaitForGeneratorsToStart, cssTaskExecutor);
+                }
+            }
+        }
+        return instance;
+    }
+
+    private DayTicker(long tickerIntervalSeconds, long intervalSecondsBeforeFirstTick, long graceSecondsToWaitForGeneratorsToStart, CssTaskExecutor cssTaskExecutor) {
         if (tickerIntervalSeconds < 10) {
             throw new RuntimeException("The day 'tickerIntervalSeconds' must be atleast 10 seconds");
         }
         this.tickerInterval = tickerIntervalSeconds * 1_000;
         this.day = new AtomicLong(firstDay);
         this.intervalSecondsBeforeFirstTick = intervalSecondsBeforeFirstTick * 1_000;
-        this.graceSecondsForGeneratorsToStart = graceSecondsForGeneratorsToStart * 1_000;
+        this.graceSecondsToWaitForGeneratorsToStart = graceSecondsToWaitForGeneratorsToStart * 1_000;
         this.cssTaskExecutor = cssTaskExecutor;
         this.startedDayTicker = false;
     }
@@ -39,7 +52,7 @@ public final class DayTicker extends Stoppable {
             if (!startedDayTicker) {
                 cssTaskExecutor.submit(this::startTicker);
                 startedDayTicker = true;
-                log.info("Started day ticker. currentDay: {}, tickerInterval: {} sec, intervalSecondsBeforeFirstTick: {} sec, graceTimeForGeneratorsToStart: {} sec", day(), tickerInterval / 1000L, intervalSecondsBeforeFirstTick / 1000L, graceSecondsForGeneratorsToStart / 1000L);
+                log.info("Started day ticker. currentDay: {}, tickerInterval: {} sec, intervalSecondsBeforeFirstTick: {} sec, graceTimeForGeneratorsToStart: {} sec", day(), tickerInterval / 1000L, intervalSecondsBeforeFirstTick / 1000L, graceSecondsToWaitForGeneratorsToStart / 1000L);
             }
         }
     }
@@ -50,7 +63,7 @@ public final class DayTicker extends Stoppable {
     private void startTicker() {
         // Sleep for 'intervalSecondsBeforeFirstTick' + 'graceTimeForGeneratorsToStart'. The day remains 1 during this sleep period
         try {
-            Thread.sleep(intervalSecondsBeforeFirstTick + graceSecondsForGeneratorsToStart);
+            Thread.sleep(intervalSecondsBeforeFirstTick + graceSecondsToWaitForGeneratorsToStart);
         } catch (InterruptedException e) {
 //            Thread.currentThread().interrupt(); // TODO and remove below throw of runtimeException
             throw new RuntimeException(e);
@@ -72,7 +85,7 @@ public final class DayTicker extends Stoppable {
                 startedDayTicker = false;
             }
             markTaskExecutionIsCompleted();
-            log.info("Stopped day ticker. currentDay: {}, tickerInterval: {} sec, intervalSecondsBeforeFirstTick: {} sec, graceTimeForGeneratorsToStart: {} sec", day(), tickerInterval / 1000L, intervalSecondsBeforeFirstTick / 1000L, graceSecondsForGeneratorsToStart / 1000L);
+            log.info("Stopped day ticker. currentDay: {}, tickerInterval: {} sec, intervalSecondsBeforeFirstTick: {} sec, graceTimeForGeneratorsToStart: {} sec", day(), tickerInterval / 1000L, intervalSecondsBeforeFirstTick / 1000L, graceSecondsToWaitForGeneratorsToStart / 1000L);
         }
     }
 
