@@ -249,9 +249,9 @@ public sealed abstract class CashMessageDefinition
 
     /// Check the documentation for [CashMessageDefinition#getRndmValueDate()]
     ///
-    /// `numOfDefinitionCreationsAfterWhichARandomNumberIsToBeAdded` - determines the first N number of definitions for which a random number should not be added to the current [CashMessageDefinition#dayForBuild]
-    protected LocalDate getRndmValueDate(long numOfDefinitionCreationsAfterWhichARandomNumberIsToBeAdded) {
-        if (counter() < numOfDefinitionCreationsAfterWhichARandomNumberIsToBeAdded) {
+    /// `numOfDefinitionCreationsForValueDateToRemainSameAsCurrentDayCounter` - determines the first N number of definitions for which a random number should not be added to the current [CashMessageDefinition#dayForBuild]
+    protected LocalDate getRndmValueDate(long numOfDefinitionCreationsForValueDateToRemainSameAsCurrentDayCounter) {
+        if (counter() <= numOfDefinitionCreationsForValueDateToRemainSameAsCurrentDayCounter) {
             long daysToAdd = dayForBuild;
             return LocalDate.now().plusDays(daysToAdd);
         } else {

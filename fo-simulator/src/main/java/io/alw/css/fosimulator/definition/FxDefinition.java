@@ -72,7 +72,7 @@ public final class FxDefinition extends CashMessageDefinition {
         counterSideCashflowId = idProvider.nextCashflowId();
         // Set the values specific to FX trade
         bdr
-                .valueDate(getRndmValueDate(1000))
+                .valueDate(getRndmValueDate(50))
                 .tradeLinks(List.of(new TradeLink(tradeLink_counterSide, String.valueOf(counterSideCashflowId))))
                 .payOrReceive(rndm.nextBoolean() ? PayOrReceive.PAY : PayOrReceive.RECEIVE)
                 .amount(BigDecimal.valueOf(rndm.nextDouble(2, 95036)))

@@ -49,7 +49,7 @@ public final class TemporaryGenericDefinition extends CashMessageDefinition {
         // Create the builder with base values
         FoCashMessageBuilder bdr = getBuilderWithDefaultValues();
         bdr
-                .valueDate(getRndmValueDate(1000))
+                .valueDate(getRndmValueDate(20))
                 .tradeLinks(null)
                 .payOrReceive(rndm.nextBoolean() ? PayOrReceive.PAY : PayOrReceive.RECEIVE)
                 .amount(BigDecimal.valueOf(rndm.nextDouble(2, 52458)))
