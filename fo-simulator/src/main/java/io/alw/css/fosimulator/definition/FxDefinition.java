@@ -9,6 +9,7 @@ import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.datagen.definition.BaseDefinition;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -20,8 +21,8 @@ public final class FxDefinition extends CashMessageDefinition {
     private long counterSideCashflowId;
     private final static Predicate<FoCashMessage> inclusionCriteria = msg -> msg.tradeEventType() != TradeEventType.CANCEL;
 
-    public FxDefinition(Entity entity, TransactionType transactionType, RefDataService refDataService, DayTicker dayTicker, CashMessageDefinitionProperties cashMessageDefinitionProperties) {
-        super(entity, TradeType.FX, transactionType, refDataService, dayTicker, cashMessageDefinitionProperties);
+    public FxDefinition(Entity entity, TransactionType transactionType, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageDefinitionProperties cashMessageDefinitionProperties) {
+        super(entity, TradeType.FX, transactionType, initialValueDate, refDataService, dayTicker, cashMessageDefinitionProperties);
     }
 
     @Override

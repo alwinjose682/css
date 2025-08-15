@@ -22,7 +22,7 @@ public final class DayTicker extends Stoppable {
     private final CssTaskExecutor cssTaskExecutor;
     private boolean startedDayTicker;
 
-    public static DayTicker init(long tickerIntervalSeconds, long intervalSecondsBeforeFirstTick, long graceSecondsToWaitForGeneratorsToStart, CssTaskExecutor cssTaskExecutor) {
+    public static DayTicker initSingleton(long tickerIntervalSeconds, long intervalSecondsBeforeFirstTick, long graceSecondsToWaitForGeneratorsToStart, CssTaskExecutor cssTaskExecutor) {
         if (instance == null) {
             synchronized (DayTicker.class) {
                 if (instance == null) {

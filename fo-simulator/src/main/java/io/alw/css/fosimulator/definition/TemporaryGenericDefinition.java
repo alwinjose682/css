@@ -9,6 +9,7 @@ import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.datagen.definition.BaseDefinition;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -23,8 +24,8 @@ import static io.alw.css.domain.cashflow.TradeEventType.REBOOK;
 public final class TemporaryGenericDefinition extends CashMessageDefinition {
     private final static Predicate<FoCashMessage> inclusionCriteria = msg -> msg.tradeEventType() != TradeEventType.CANCEL;
 
-    public TemporaryGenericDefinition(Entity entity, TradeType tradeType, TransactionType transactionType, RefDataService refDataService, DayTicker dayTicker, CashMessageDefinitionProperties cashMessageDefinitionProperties) {
-        super(entity, tradeType, transactionType, refDataService, dayTicker, cashMessageDefinitionProperties);
+    public TemporaryGenericDefinition(Entity entity, TradeType tradeType, TransactionType transactionType, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageDefinitionProperties cashMessageDefinitionProperties) {
+        super(entity, tradeType, transactionType, initialValueDate, refDataService, dayTicker, cashMessageDefinitionProperties);
     }
 
     @Override

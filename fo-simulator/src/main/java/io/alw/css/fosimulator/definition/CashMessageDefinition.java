@@ -49,6 +49,7 @@ public sealed abstract class CashMessageDefinition
     private final String currCode;
     private final TradeType tradeType;
     private final TransactionType transactionType;
+    private final LocalDate initialValueDate;
 
     // Spring Beans
     protected final CashMessageDefinitionProperties cashMessageDefinitionProperties;
@@ -60,16 +61,17 @@ public sealed abstract class CashMessageDefinition
     // Others
     private final CyclicStringDataProvider cyclicAmendableFieldsProvider;
 
-    public CashMessageDefinition(Entity entity, TradeType tradeType, TransactionType transactionType, RefDataService refDataService, DayTicker dayTicker, CashMessageDefinitionProperties cashMessageDefinitionProperties) {
-        this(null, entity, tradeType, transactionType, refDataService, dayTicker, cashMessageDefinitionProperties);
+    public CashMessageDefinition(Entity entity, TradeType tradeType, TransactionType transactionType, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageDefinitionProperties cashMessageDefinitionProperties) {
+        this(null, entity, tradeType, transactionType, initialValueDate, refDataService, dayTicker, cashMessageDefinitionProperties);
     }
 
-    private CashMessageDefinition(FoCashMessage parent, Entity entity, TradeType tradeType, TransactionType transactionType, RefDataService refDataService, DayTicker dayTicker, CashMessageDefinitionProperties cashMessageDefinitionProperties) {
+    private CashMessageDefinition(FoCashMessage parent, Entity entity, TradeType tradeType, TransactionType transactionType, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageDefinitionProperties cashMessageDefinitionProperties) {
         super(parent);
         this.entityCode = entity.entityCode();
         this.currCode = entity.currCode();
         this.tradeType = tradeType;
         this.transactionType = transactionType;
+        this.initialValueDate = initialValueDate;
         this.cashMessageDefinitionProperties = cashMessageDefinitionProperties;
         this.refDataService = refDataService;
         this.dayTicker = dayTicker;
@@ -253,7 +255,7 @@ public sealed abstract class CashMessageDefinition
     protected LocalDate getRndmValueDate(long numOfDefinitionCreationsForValueDateToRemainSameAsCurrentDayCounter) {
         if (counter() <= numOfDefinitionCreationsForValueDateToRemainSameAsCurrentDayCounter) {
             long daysToAdd = dayForBuild;
-            return LocalDate.now().plusDays(daysToAdd);
+            return initialValueDate.plusDays(daysToAdd);
         } else {
             return getRndmValueDate();
         }
@@ -268,7 +270,7 @@ public sealed abstract class CashMessageDefinition
         } else {
             daysToAdd = dayForBuild + rndm.nextInt(0, cashMessageDefinitionProperties.vdForwardDays());
         }
-        return LocalDate.now().plusDays(daysToAdd);
+        return initialValueDate.plusDays(daysToAdd);
     }
 
     protected String getCounterpartyCorrespondingToTransactionType() {

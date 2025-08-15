@@ -9,6 +9,7 @@ import io.alw.css.fosimulator.definition.FxDefinition;
 import io.alw.css.fosimulator.definition.TemporaryGenericDefinition;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.GeneratorDetail;
+import io.alw.css.fosimulator.model.CashflowGeneratorInitialValues;
 import io.alw.css.fosimulator.model.properties.CashflowGeneratorProperties;
 import io.alw.css.fosimulator.model.properties.CashMessageDefinitionProperties;
 import io.alw.css.fosimulator.service.RefDataService;
@@ -16,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,12 +37,15 @@ public final class CashflowGeneratorHandler {
     private final DayTicker dayTicker;
     private final CssTaskExecutor cssTaskExecutor;
 
+    // Initial Generator Values - initialized only once
+    private CashflowGeneratorInitialValues initialGeneratorValues;
+
     public CashflowGeneratorHandler(CashflowGeneratorProperties cashflowGeneratorProperties, CashMessageDefinitionProperties cashMessageDefinitionProperties, CashMessagePublisher cashMessagePublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
         this.cashflowGeneratorProperties = cashflowGeneratorProperties;
         this.cashMessageDefinitionProperties = cashMessageDefinitionProperties;
         this.cashMessagePublisher = cashMessagePublisher;
         this.refDataService = refDataService;
-        this.dayTicker = DayTicker.init(10, 30, 2, cssTaskExecutor);
+        this.dayTicker = DayTicker.initSingleton(10, 30, 2, cssTaskExecutor);
         this.activeHandlerOperation = new AtomicBoolean(false);
         this.generatorMap = new ConcurrentHashMap<>();
         this.cssTaskExecutor = cssTaskExecutor;
@@ -54,11 +59,30 @@ public final class CashflowGeneratorHandler {
         return activeHandlerOperation.compareAndSet(true, false);
     }
 
+    public CashflowGeneratorHandlerOutcome startAllGenerators(CashflowGeneratorInitialValues cashflowGeneratorInitialValues) {
+        setInitialGeneratorValues(cashflowGeneratorInitialValues);
+        return startAllGenerators();
+    }
+
+    private void setInitialGeneratorValues(CashflowGeneratorInitialValues initCfGnrtrValues) {
+        if (this.initialGeneratorValues == null) {
+            synchronized (this) {
+                if (this.initialGeneratorValues == null && initCfGnrtrValues == null) {
+                    this.initialGeneratorValues = CashflowGeneratorInitialValues.defaultValues();
+                } else {
+                    this.initialGeneratorValues = initCfGnrtrValues;
+                }
+            }
+        }
+    }
+
     /// First, starts the day ticker. Day ticker is started only once even if this method is invoked multiple times
     /// Second, starts one generator of each kind.
     /// Additional generators need to be started explicitly
     /// Atomic boolean is used instead of just making this method synchronized because, concurrent invocations of this method that are blocked should not attempt to start the generators again
     public CashflowGeneratorHandlerOutcome startAllGenerators() {
+        setInitialGeneratorValues(initialGeneratorValues);
+
         boolean ok = beginHandlerOperation();
         if (!ok) {
             return new CashflowGeneratorHandlerOutcome.ConcurrentOperation("Another CashflowGeneratorHandler operation is in progress");
@@ -82,7 +106,7 @@ public final class CashflowGeneratorHandler {
                         Supplier<List<FoCashMessage>> cashMessageSupplier = createCashMessageSupplier(transactionType, tradeType, entity);
                         // Create the cashflowGenerator
                         GeneratorDetail generatorDetail = new GeneratorDetail(key, generatorSleepDurationSeconds);
-                        CashflowGenerator cashflowGenerator = create(generatorDetail, cashMessageSupplier, cashMessagePublisher);
+                        CashflowGenerator cashflowGenerator = createGenerator(generatorDetail, cashMessageSupplier, cashMessagePublisher);
                         // Start the cashflowGenerator
                         cssTaskExecutor.submit(cashflowGenerator);
                         startedGenerators.add(generatorDetail);
@@ -124,7 +148,7 @@ public final class CashflowGeneratorHandler {
     /// Creates a new generator and adds to the list of the same type of generators.
     /// Concurrent Safe. Performs this computation atomically. generatorMap is ConcurrentHashMap
     /// This method does NOT change the 'begin' or 'end' handler operation state
-    private CashflowGenerator create(GeneratorDetail generatorDetail, Supplier<List<FoCashMessage>> cashMessageSupplier, CashMessagePublisher cashMessagePublisher) {
+    private CashflowGenerator createGenerator(GeneratorDetail generatorDetail, Supplier<List<FoCashMessage>> cashMessageSupplier, CashMessagePublisher cashMessagePublisher) {
         CashflowGenerator newGenerator = new CashflowGenerator(generatorDetail, cashMessageSupplier, cashMessagePublisher);
         generatorMap.compute(generatorDetail.generatorKey(), (k, v) -> {
             if (v == null) {
@@ -140,13 +164,14 @@ public final class CashflowGeneratorHandler {
     }
 
     private Supplier<List<FoCashMessage>> createCashMessageSupplier(TransactionType transactionType, TradeType tradeType, Entity entity) {
+        LocalDate initialValueDate = initialGeneratorValues.valueDate();
         return switch (tradeType) {
-            case FX -> new FxDefinition(entity, transactionType, refDataService, dayTicker, cashMessageDefinitionProperties);
-            case PAYMENT -> new TemporaryGenericDefinition(entity, TradeType.PAYMENT, transactionType, refDataService, dayTicker, cashMessageDefinitionProperties);
-            case FX_NDF -> new TemporaryGenericDefinition(entity, TradeType.FX_NDF, transactionType, refDataService, dayTicker, cashMessageDefinitionProperties);
-            case BOND -> new TemporaryGenericDefinition(entity, TradeType.BOND, transactionType, refDataService, dayTicker, cashMessageDefinitionProperties);
-            case REPO -> new TemporaryGenericDefinition(entity, TradeType.REPO, transactionType, refDataService, dayTicker, cashMessageDefinitionProperties);
-            case OPTION -> new TemporaryGenericDefinition(entity, TradeType.OPTION, transactionType, refDataService, dayTicker, cashMessageDefinitionProperties);
+            case FX -> new FxDefinition(entity, transactionType, initialValueDate, refDataService, dayTicker, cashMessageDefinitionProperties);
+            case PAYMENT -> new TemporaryGenericDefinition(entity, TradeType.PAYMENT, transactionType, initialValueDate, refDataService, dayTicker, cashMessageDefinitionProperties);
+            case FX_NDF -> new TemporaryGenericDefinition(entity, TradeType.FX_NDF, transactionType, initialValueDate, refDataService, dayTicker, cashMessageDefinitionProperties);
+            case BOND -> new TemporaryGenericDefinition(entity, TradeType.BOND, transactionType, initialValueDate, refDataService, dayTicker, cashMessageDefinitionProperties);
+            case REPO -> new TemporaryGenericDefinition(entity, TradeType.REPO, transactionType, initialValueDate, refDataService, dayTicker, cashMessageDefinitionProperties);
+            case OPTION -> new TemporaryGenericDefinition(entity, TradeType.OPTION, transactionType, initialValueDate, refDataService, dayTicker, cashMessageDefinitionProperties);
         };
     }
 
