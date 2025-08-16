@@ -79,7 +79,9 @@ public final class CashflowGeneratorHandler {
     /// First, starts the day ticker. Day ticker is started only once even if this method is invoked multiple times
     /// Second, starts one generator of each kind.
     /// Additional generators need to be started explicitly
-    /// Atomic boolean is used instead of just making this method synchronized because, concurrent invocations of this method that are blocked should not attempt to start the generators again
+    /// Atomic boolean is used instead of just making this method synchronized because:
+    /// concurrent invocations of this method that are blocked should not attempt to start the generators again.
+    /// But sequential invocations of this method will start another instance of all the generators, which is considered ok
     public CashflowGeneratorHandlerOutcome startAllGenerators() {
         setInitialGeneratorValues(initialGeneratorValues);
 
