@@ -27,7 +27,7 @@ RUN rm -f run.sh && \
 # Download JDK and Create a custom JDK runtime for above ignite distribution
 # https://download.oracle.com/java/21/archive/jdk-21.0.4_linux-x64_bin.tar.gz
 WORKDIR ${BUILD_TMP_DIR}
-ADD https://download.java.net/java/GA/jdk17.0.2/dfd4a8d0985749f896bed50d7138ee7f/8/GPL/openjdk-17.0.2_linux-x64_bin.tar.gz \
+ADD https://download.java.net/java/GA/jdk19.0.1/afdd2e245b014143b62ccb916125e3ce/10/GPL/openjdk-19.0.1_linux-x64_bin.tar.gz \
 	openjdk_bin
 RUN tar -xzf openjdk_bin && \
 	jdkExtractedDir=$(find . -maxdepth 1 -type d -name "jdk*" | cut -c 3-) && \
