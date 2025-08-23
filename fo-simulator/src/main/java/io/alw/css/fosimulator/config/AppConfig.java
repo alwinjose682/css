@@ -19,7 +19,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 public class AppConfig {
 
     @Bean
-    private ObjectMapper objectMapper() {
+    public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         return mapper;
