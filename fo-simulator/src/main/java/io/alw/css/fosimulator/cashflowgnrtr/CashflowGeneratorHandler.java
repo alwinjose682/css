@@ -6,10 +6,11 @@ import io.alw.css.domain.cashflow.TransactionType;
 import io.alw.css.fosimulator.CashMessagePublisher;
 import io.alw.css.fosimulator.CssTaskExecutor;
 import io.alw.css.fosimulator.definition.FxDefinition;
+import io.alw.css.fosimulator.definition.IdProvider;
 import io.alw.css.fosimulator.definition.TemporaryGenericDefinition;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.GeneratorDetail;
-import io.alw.css.fosimulator.model.CashflowGeneratorInitialValues;
+import io.alw.css.fosimulator.model.CashflowGenerationInitialValues;
 import io.alw.css.fosimulator.model.properties.CashflowGeneratorProperties;
 import io.alw.css.fosimulator.model.properties.CashMessageDefinitionProperties;
 import io.alw.css.fosimulator.service.RefDataService;
@@ -38,7 +39,7 @@ public final class CashflowGeneratorHandler {
     private final CssTaskExecutor cssTaskExecutor;
 
     // Initial Generator Values - initialized only once
-    private CashflowGeneratorInitialValues initialGeneratorValues;
+    private CashflowGenerationInitialValues cfGenerationInitialValues;
 
     public CashflowGeneratorHandler(CashflowGeneratorProperties cashflowGeneratorProperties, CashMessageDefinitionProperties cashMessageDefinitionProperties, CashMessagePublisher cashMessagePublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
         this.cashflowGeneratorProperties = cashflowGeneratorProperties;
@@ -59,19 +60,28 @@ public final class CashflowGeneratorHandler {
         return activeHandlerOperation.compareAndSet(true, false);
     }
 
-    public CashflowGeneratorHandlerOutcome startAllGenerators(CashflowGeneratorInitialValues cashflowGeneratorInitialValues) {
-        setInitialGeneratorValues(cashflowGeneratorInitialValues);
+    public CashflowGeneratorHandlerOutcome startAllGenerators(CashflowGenerationInitialValues cashflowGenerationInitialValues) {
+        setCashflowGenerationInitialValues(cashflowGenerationInitialValues);
         return startAllGenerators();
     }
 
-    private void setInitialGeneratorValues(CashflowGeneratorInitialValues initCfGnrtrValues) {
-        if (this.initialGeneratorValues == null) {
+    /// Sets cashflow generation initial values IF they are not set already.
+    /// Cashflow generation initial values can be provided explicitly via the REST API. If not provided explicitly, then default values are used
+    private void setCashflowGenerationInitialValues(CashflowGenerationInitialValues initValues) {
+        if (this.cfGenerationInitialValues == null) {
             synchronized (this) {
-                if (this.initialGeneratorValues == null && initCfGnrtrValues == null) {
-                    this.initialGeneratorValues = CashflowGeneratorInitialValues.defaultValues();
+                if (this.cfGenerationInitialValues == null && initValues == null) {
+                    this.cfGenerationInitialValues = CashflowGenerationInitialValues.defaultValues();
+                    log.info("Initial values for cashflow generation are not provided explicitly. Starting cashflow generation with default initial values: {}", this.cfGenerationInitialValues);
                 } else {
-                    this.initialGeneratorValues = initCfGnrtrValues;
+                    var valueDate = initValues.valueDate();
+                    var foCashflowId = initValues.foCashflowId();
+                    var tradeId = initValues.tradeId();
+                    this.cfGenerationInitialValues = new CashflowGenerationInitialValues(valueDate, foCashflowId, tradeId);
+                    log.info("Initial values for cashflow generation are provided explicitly via REST API. Starting cashflow generation with the explicit initial values: {}", this.cfGenerationInitialValues);
                 }
+                //Initialize the singleton instance of IdProvider
+                IdProvider.init(this.cfGenerationInitialValues.tradeId(), this.cfGenerationInitialValues.foCashflowId());
             }
         }
     }
@@ -83,7 +93,7 @@ public final class CashflowGeneratorHandler {
     /// concurrent invocations of this method that are blocked should not attempt to start the generators again.
     /// But sequential invocations of this method will start another instance of all the generators, which is considered ok
     public CashflowGeneratorHandlerOutcome startAllGenerators() {
-        setInitialGeneratorValues(initialGeneratorValues);
+        setCashflowGenerationInitialValues(cfGenerationInitialValues);
 
         boolean ok = beginHandlerOperation();
         if (!ok) {
@@ -166,7 +176,7 @@ public final class CashflowGeneratorHandler {
     }
 
     private Supplier<List<FoCashMessage>> createCashMessageSupplier(TransactionType transactionType, TradeType tradeType, Entity entity) {
-        LocalDate initialValueDate = initialGeneratorValues.valueDate();
+        LocalDate initialValueDate = cfGenerationInitialValues.valueDate();
         return switch (tradeType) {
             case FX -> new FxDefinition(entity, transactionType, initialValueDate, refDataService, dayTicker, cashMessageDefinitionProperties);
             case PAYMENT -> new TemporaryGenericDefinition(entity, TradeType.PAYMENT, transactionType, initialValueDate, refDataService, dayTicker, cashMessageDefinitionProperties);

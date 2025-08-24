@@ -1,7 +1,7 @@
 package io.alw.css.fosimulator.controller;
 
 import io.alw.css.fosimulator.cashflowgnrtr.CashflowGeneratorHandlerOutcomeDtoBuilder;
-import io.alw.css.fosimulator.model.CashflowGeneratorInitialValues;
+import io.alw.css.fosimulator.model.CashflowGenerationInitialValues;
 import io.alw.css.fosimulator.service.CashflowGeneratorService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CashflowGeneratorControllerTest {
 
     @Captor
-    ArgumentCaptor<CashflowGeneratorInitialValues> cfGeneratorValCaptor;
+    ArgumentCaptor<CashflowGenerationInitialValues> cfGeneratorValCaptor;
 
     @Autowired
     MockMvc mockMvc;
@@ -42,7 +42,7 @@ class CashflowGeneratorControllerTest {
         var successOutcome = CashflowGeneratorHandlerOutcomeDtoBuilder.builder().msgs(List.of(SUCCESS)).build();
 
         //given
-        when(cashflowGeneratorService.start(any(CashflowGeneratorInitialValues.class)))
+        when(cashflowGeneratorService.start(any(CashflowGenerationInitialValues.class)))
                 .thenReturn(successOutcome);
         //when-then
         mockMvc.perform(MockMvcRequestBuilders.put(CashflowGeneratorController.CF_GEN_URL + "/start/" + CashflowGeneratorController.ALL_GENERATORS_KEY)
@@ -57,7 +57,7 @@ class CashflowGeneratorControllerTest {
                 .andReturn();
 
         verify(cashflowGeneratorService).start(cfGeneratorValCaptor.capture());
-        CashflowGeneratorInitialValues cfGeneratorInitialValues = cfGeneratorValCaptor.getValue();
+        CashflowGenerationInitialValues cfGeneratorInitialValues = cfGeneratorValCaptor.getValue();
         assertThat(cfGeneratorInitialValues.valueDate()).isEqualTo("2025-08-14");
         assertThat(cfGeneratorInitialValues.tradeId()).isEqualTo(1054321);
         assertThat(cfGeneratorInitialValues.foCashflowId()).isEqualTo(15432);

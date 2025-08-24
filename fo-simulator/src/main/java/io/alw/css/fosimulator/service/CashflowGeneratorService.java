@@ -5,14 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.alw.css.fosimulator.cashflowgnrtr.CashflowGeneratorHandler;
 import io.alw.css.fosimulator.cashflowgnrtr.CashflowGeneratorHandlerOutcome;
 import io.alw.css.fosimulator.cashflowgnrtr.CashflowGeneratorHandlerOutcomeDto;
-import io.alw.css.fosimulator.model.CashflowGeneratorInitialValues;
+import io.alw.css.fosimulator.model.CashflowGenerationInitialValues;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class CashflowGeneratorService {
@@ -25,10 +24,10 @@ public class CashflowGeneratorService {
         this.objectMapper = objectMapper;
     }
 
-    public CashflowGeneratorHandlerOutcomeDto start(@Valid CashflowGeneratorInitialValues initialGeneratorValues) throws JsonProcessingException {
+    public CashflowGeneratorHandlerOutcomeDto start(@Valid CashflowGenerationInitialValues cfGenerationInitialValues) throws JsonProcessingException {
         final CashflowGeneratorHandlerOutcome outcome;
-        if (initialGeneratorValues != null) {
-            outcome = cashflowGeneratorHandler.startAllGenerators(initialGeneratorValues);
+        if (cfGenerationInitialValues != null) {
+            outcome = cashflowGeneratorHandler.startAllGenerators(cfGenerationInitialValues);
         } else {
             outcome = cashflowGeneratorHandler.startAllGenerators();
         }
@@ -45,7 +44,7 @@ public class CashflowGeneratorService {
         return outcome;
     }
 
-    public CashflowGeneratorHandlerOutcomeDto start(String generatorKey, CashflowGeneratorInitialValues initialGeneratorValues) {
+    public CashflowGeneratorHandlerOutcomeDto start(String generatorKey, CashflowGenerationInitialValues initialGeneratorValues) {
         CashflowGeneratorHandlerOutcome.Failure outcome = new CashflowGeneratorHandlerOutcome.Failure("Adhoc generator starting is not fully implemented yet", null, null);
         return CashflowGeneratorHandlerOutcome.toDto(outcome);
     }

@@ -6,12 +6,12 @@ import jakarta.validation.constraints.Positive;
 
 import java.time.LocalDate;
 
-public record CashflowGeneratorInitialValues(
+public record CashflowGenerationInitialValues(
         @NotNull LocalDate valueDate,
         @Positive long tradeId,
         @Positive long foCashflowId
 ) {
-    public static CashflowGeneratorInitialValues defaultValues() {
-        return new CashflowGeneratorInitialValues(LocalDate.now(), IdProvider.defaultInitialTradeId, IdProvider.defaultInitialFoCfId);
+    public static CashflowGenerationInitialValues defaultValues() {
+        return new CashflowGenerationInitialValues(LocalDate.now(), IdProvider.defaultInitialTradeId, IdProvider.defaultInitialFoCfId);
     }
 }
