@@ -1,1 +1,9 @@
+# Common args
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=./logs
+
+# App specific log directory
+-Dapp.log.filePath=./logs
+
+# Required for apache ignite
 --add-opens java.base/java.nio=ALL-UNNAMED
