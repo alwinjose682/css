@@ -3,35 +3,31 @@
 function startApp(){
   echo ""
 
-  ### JAVA_OPTS
-  JAVA_OPTS="-XX:+HeapDumpOnOutOfMemoryError"
-  JAVA_OPTS="$JAVA_OPTS -XX:HeapDumpPath=${appLogDir}"
+  ### Default VM args
+  DEF_VM_ARGS="-XX:+HeapDumpOnOutOfMemoryError"
+  DEF_VM_ARGS="$DEF_VM_ARGS -XX:HeapDumpPath=${appLogDir}"
 
-  ### App Specific JVM Args
+  ### App specific VM args (JVM Args specified in a file)
+  #### https://docs.oracle.com/en/java/javase/24/docs/specs/man/java.html#java-command-line-argument-files
   vmArgsFile="${appCfgDir}/vmArgs"
-  if [ -f "${vmArgsFile}" ];then
-    appSpecificVmArgs=$(cat "${vmArgsFile}")
-  else
-    appSpecificVmArgs=""
-  fi
 
   ### Java cmd
-  javacmd="\
+  javaCmd="\
 java \
-$JAVA_OPTS \
+@${vmArgsFile} \
+$DEF_VM_ARGS \
 -Dapp.log.filePath=${appLogDir} \
 -Dspring.config.location=${APP_CFG_DIR_ROOT}/,${appCfgDir}/ \
 -Dlogging.config=${appCfgDir}/logback-spring.xml \
 -Dspring.profiles.active=${PROJ_PROFILES} \
 -Dcss.cert.path=${CERT_DIR} \
-${appSpecificVmArgs} \
 -jar ${appJar} \
 "
 
 echo "\
-APP_VM_ARGS   :      ${appSpecificVmArgs}
 JAR_FILE      :      ${appJar}
-JAVA_CMD      :      ${javacmd}\
+VM_ARGS_FILE  :      ${vmArgsFile}
+JAVA_CMD      :      ${javaCmd}\
 "
 
   ### Start the app
@@ -39,7 +35,7 @@ JAVA_CMD      :      ${javacmd}\
   java -version
   /bin/bash -c " \
 cd ${appJarDir} ; \
-${javacmd} \
+${javaCmd} \
 "
 
 }
