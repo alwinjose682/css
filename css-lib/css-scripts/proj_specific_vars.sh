@@ -17,7 +17,6 @@ echo $DIR
 #PROJ_DIR=$(dirname "$(readlink -f "$0")") # Note: $0 and ${BASH_SOURCE[0]} are different
 this_script_dir="$(get_script_dir)"
 PROJ_DIR="$(dirname "$(dirname "${this_script_dir}")")"
-echo "${PROJ_DIR}"
 projCfgDir="${PROJ_DIR}/css-config"
 APP_CFG_DIR_ROOT="${projCfgDir}/app"
 certDirRoot="${projCfgDir}/cert"
@@ -33,7 +32,7 @@ fi
 CONFIG_STAGE=$(sed -n 2p "${projScriptCfgFile}")
 PROJ_PROFILES=$(sed -n 3p "${projScriptCfgFile}")
 #MVN_BUILD_SCRIPTS_DIR="${this_script_dir}/"
-PROJ_LOG_DIR="${PROJ_DIR}/logs/${CONFIG_STAGE}"
+PROJ_APP_DIR="${PROJ_DIR}/app"
 CERT_DIR="${certDirRoot}/${CONFIG_STAGE}"
 
 export CONFIG_STAGE # 'projScriptCfgFile -> CONFIG_STAGE' is common for all modules
@@ -42,4 +41,4 @@ export PROJ_DIR
 export APP_CFG_DIR_ROOT
 export CERT_DIR
 #export MVN_BUILD_SCRIPTS_DIR
-export PROJ_LOG_DIR
+export PROJ_APP_DIR
