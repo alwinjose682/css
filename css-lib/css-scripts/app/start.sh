@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function startApp(){
+function start(){
   echo ""
 
   ### App specific VM args (JVM Args specified in a file)
@@ -8,8 +8,7 @@ function startApp(){
   vmArgsFile="${appCfgDir}/vmArgs"
 
   ### Java cmd
-  javaCmd="\
-java \
+  javaCmd="java \
 @${vmArgsFile} \
 -Dspring.config.location=${APP_CFG_DIR_ROOT}/,${appCfgDir}/ \
 -Dlogging.config=${appCfgDir}/logback-spring.xml \
@@ -57,16 +56,16 @@ function findJarIn(){
 function deploy(){
   mvnAppBuildDir="${PROJ_DIR}/${appDir}/target"
   if [ -d "${mvnAppBuildDir}" ];then
-    findJarIn ${mvnAppBuildDir}
+    findJarIn "${mvnAppBuildDir}"
 #    buildArtifact=echo $?
 
-    ### Does the following
+    ### Does the following:
     #### - If exists, move the jar file from maven build directory to the app's bin directory
     #### - If no jar file exists in maven build directory, use existing jar file in the app's bin directory from previous build
     #### - assign the 'appJar' variable
     if [ -d "${appBinDir}" ];then
         if [ "${jarNotFound}" == "T" ];then
-          findJarIn ${appBinDir}
+          findJarIn "${appBinDir}"
           if [ "${jarNotFound}" == "T" ];then
             exit 1;
           fi
@@ -109,7 +108,7 @@ done;
 ## Strip off one succeeding '/'
 appDir=$(echo "${appDir%/}");
 
-appDirName="$(basename ${appDir})"
+appDirName="$(basename "${appDir}")"
 appCfgDir="${APP_CFG_DIR_ROOT}/${appDir}"
 
 echo "\
@@ -128,4 +127,4 @@ fi
 
 appBinDir="${PROJ_APP_DIR}/${appDir}"
 deploy
-startApp
+start
