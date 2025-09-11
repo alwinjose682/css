@@ -15,10 +15,8 @@ corr_account VARCHAR2(20),                                                      
 corr_line1 VARCHAR2(30),                                                        -- { corrLine1 }
 active VARCHAR2(1) NOT NULL CONSTRAINT ssi_active_chk CHECK(active IN('Y','N')),    -- { active | nullable = false, length = 1 | STRING }
 entry_time TIMESTAMP(3)                                                         -- { entryTime }
-)
-tablespace &DATA_TS
-;
+);
 
-ALTER TABLE ssi ADD CONSTRAINT ssi_pk PRIMARY KEY(ssi_id, ssi_version) USING INDEX tablespace &INDEX_TS;
+ALTER TABLE ssi ADD CONSTRAINT ssi_pk PRIMARY KEY(ssi_id, ssi_version);
 ALTER TABLE ssi ADD CONSTRAINT ssi_cp_fk FOREIGN KEY(counterparty_code, counterparty_version) REFERENCES counterparty(counterparty_code, counterparty_version);
---CREATE INDEX ssi_cp_cr on ssi(counterparty_code, counterparty_version, curr_code) tablespace &INDEX_TS;
+--CREATE INDEX ssi_cp_cr on ssi(counterparty_code, counterparty_version, curr_code);

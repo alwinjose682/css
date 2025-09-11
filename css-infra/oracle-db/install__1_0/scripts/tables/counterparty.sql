@@ -16,9 +16,7 @@ country VARCHAR2(20),                                                   			-- { 
 region VARCHAR2(5),                                                    				-- { region }
 active VARCHAR2(1) NOT NULL CONSTRAINT cpty_active_chk CHECK(active IN('Y','N')),        -- { active | nullable = false, length = 1 | STRING }
 entry_time TIMESTAMP(3)                                                 			-- { entryTime }
-)
-tablespace &DATA_TS
-;
+);
 
-ALTER TABLE counterparty ADD CONSTRAINT cpty_pk PRIMARY KEY(counterparty_code, counterparty_version) USING INDEX tablespace &INDEX_TS;
---CREATE INDEX cpty_pcp_idx on counterparty(parent_counterparty_code) tablespace &INDEX_TS;
+ALTER TABLE counterparty ADD CONSTRAINT cpty_pk PRIMARY KEY(counterparty_code, counterparty_version);
+--CREATE INDEX cpty_pcp_idx on counterparty(parent_counterparty_code);

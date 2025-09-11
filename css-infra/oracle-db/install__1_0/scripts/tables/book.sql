@@ -12,10 +12,8 @@ sub_cluster VARCHAR2(30),                 										-- { subCluster }
 trade_group VARCHAR2(30),                 										-- { tradeGroup }
 active VARCHAR2(1) NOT NULL CONSTRAINT bk_active_chk CHECK(active IN('Y','N')),    -- { active | nullable = false, length = 1 | STRING }
 entry_time TIMESTAMP(3)                   										-- { entryTime }
-)
-tablespace &DATA_TS
-;
+);
 
-ALTER TABLE book ADD CONSTRAINT bk_pk PRIMARY key(book_code, book_version) USING INDEX tablespace &INDEX_TS;
+ALTER TABLE book ADD CONSTRAINT bk_pk PRIMARY key(book_code, book_version);
 ALTER TABLE book ADD CONSTRAINT bk_ent_fk FOREIGN KEY(entity_code, entity_version) REFERENCES entity(entity_code, entity_version);
---CREATE INDEX bk_cp_et_pl_dn_idx on book(entity_code, entity_version, product_line, division) tablespace &INDEX_TS;
+--CREATE INDEX bk_cp_et_pl_dn_idx on book(entity_code, entity_version, product_line, division);

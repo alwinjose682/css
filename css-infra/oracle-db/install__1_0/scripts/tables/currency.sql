@@ -5,8 +5,6 @@ pm_flag VARCHAR2(1) NOT NULL CONSTRAINT ccy_pm_chk CHECK(pm_flag IN('Y','N')),  
 cut_off_time TIMESTAMP(0),                 										    -- { cutOffTime }
 active VARCHAR2(1) NOT NULL CONSTRAINT ccy_active_chk CHECK(active IN('Y','N')),    -- { active | nullable = false, length = 1 | STRING }
 entry_time TIMESTAMP(3)                   										    -- { entryTime }
-)
-tablespace &DATA_TS
-;
+);
 
 ALTER TABLE currency ADD CONSTRAINT ccy_pk PRIMARY KEY(curr_code); -- No need for index as number of currencies are limited

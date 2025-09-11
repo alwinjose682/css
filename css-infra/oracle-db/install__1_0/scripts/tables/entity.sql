@@ -8,8 +8,6 @@ country_name VARCHAR2(25),                                                      
 bic_code VARCHAR2(11),                                                              -- { bicCode }
 active VARCHAR2(1) NOT NULL CONSTRAINT ent_active_chk CHECK(active IN('Y','N')),        -- { active | nullable = false, length = 1 | STRING }
 entry_time TIMESTAMP(3)                                                             -- { entryTime }
-)
-tablespace &DATA_TS
-;
+);
 
-ALTER TABLE entity ADD CONSTRAINT ent_pk PRIMARY KEY(entity_code, entity_version) USING INDEX tablespace &INDEX_TS;
+ALTER TABLE entity ADD CONSTRAINT ent_pk PRIMARY KEY(entity_code, entity_version);

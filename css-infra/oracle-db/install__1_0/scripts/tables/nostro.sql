@@ -18,10 +18,8 @@ cut_in_hours_offset NUMBER(2),                                                  
 payment_limit NUMBER(*,0),                                                          -- { paymentLimit | scale = 5 }
 active VARCHAR2(1) NOT NULL CONSTRAINT nstr_active_chk CHECK(active IN('Y','N')),        -- { active | nullable = false, length = 1 | STRING }
 entry_time TIMESTAMP(3)                                                             -- { entryTime }
-)
-tablespace &DATA_TS
-;
+);
 
-ALTER TABLE nostro ADD CONSTRAINT nstr_pk PRIMARY KEY(nostro_id, nostro_version) USING INDEX tablespace &INDEX_TS;
+ALTER TABLE nostro ADD CONSTRAINT nstr_pk PRIMARY KEY(nostro_id, nostro_version);
 ALTER TABLE nostro ADD CONSTRAINT nstr_ent_fk FOREIGN KEY(entity_code, entity_version) REFERENCES entity(entity_code, entity_version);
---CREATE INDEX nstr_et_cr_idx on nostro(entity_code, entity_version, curr_code) tablespace &INDEX_TS;
+--CREATE INDEX nstr_et_cr_idx on nostro(entity_code, entity_version, curr_code);

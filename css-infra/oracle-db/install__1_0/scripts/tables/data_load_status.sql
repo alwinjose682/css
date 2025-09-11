@@ -4,8 +4,6 @@ load_type VARCHAR2(10),                                                         
 start_time TIMESTAMP(3),                                                            -- { startTime }
 end_time TIMESTAMP(3),                                                              -- { endTime }
 status VARCHAR2(15)                                                                 -- { status }
-)
-tablespace &DATA_TS
-;
+);
 
 --ALTER TABLE data_load_status MODIFY id NUMBER(10) <....>;

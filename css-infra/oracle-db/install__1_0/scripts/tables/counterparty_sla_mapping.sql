@@ -8,10 +8,8 @@ curr_code VARCHAR2(3),                                                      	-- 
 secondary_ledger_account VARCHAR2(5),                                       	-- { secondaryLedgerAccount }
 active VARCHAR2(1) NOT NULL CONSTRAINT cpsm_active_chk CHECK(active IN('Y','N')),    -- { active | length = 1, nullable = false | STRING }
 entry_time TIMESTAMP(3)                                                    		-- { entryTime }
-)
-tablespace &DATA_TS
-;
+);
 
-ALTER TABLE counterparty_sla_mapping ADD CONSTRAINT cpsm_pk PRIMARY key(mapping_id, mapping_version) USING INDEX tablespace &INDEX_TS;
+ALTER TABLE counterparty_sla_mapping ADD CONSTRAINT cpsm_pk PRIMARY key(mapping_id, mapping_version);
 ALTER TABLE counterparty_sla_mapping ADD CONSTRAINT cpsm_cp_fk FOREIGN KEY(counterparty_code, counterparty_version) REFERENCES counterparty(counterparty_code, counterparty_version);
---CREATE INDEX cpsm_cp_et_idx on counterparty_sla_mapping(counterparty_code, counterparty_version, entity_code) tablespace &INDEX_TS;
+--CREATE INDEX cpsm_cp_et_idx on counterparty_sla_mapping(counterparty_code, counterparty_version, entity_code);

@@ -1,6 +1,4 @@
 --set echo off scan on feedback off verify off
-define DATA_TS=&1
-define INDEX_TS=&2
 
 prompt *** CREATING TABLES ***
 prompt counterparty

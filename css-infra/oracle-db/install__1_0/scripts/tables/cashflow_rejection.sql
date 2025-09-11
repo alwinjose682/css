@@ -19,9 +19,7 @@ num_of_retries NUMBER(10),
 created_date_time TIMESTAMP(3),
 input_by VARCHAR2(10),
 updated_date_time TIMESTAMP(3)
-)
-tablespace &DATA_TS
-;
+);
 
-ALTER TABLE cashflow_rejection ADD CONSTRAINT cfrej_pk PRIMARY KEY(id) USING INDEX tablespace &INDEX_TS;
-CREATE INDEX cfrej_replay_idx on cashflow_rejection(value_date, curr_code, replayable) tablespace &INDEX_TS;
+ALTER TABLE cashflow_rejection ADD CONSTRAINT cfrej_pk PRIMARY KEY(id);
+CREATE INDEX cfrej_replay_idx on cashflow_rejection(value_date, curr_code, replayable);

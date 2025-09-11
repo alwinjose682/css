@@ -25,11 +25,9 @@ payment_suppression_category VARCHAR2(30) NOT NULL,				        			-- { paymentSu
 input_by VARCHAR2(10),                                                     			-- { inputBy | ORDINAL }
 input_by_user_id VARCHAR2(10),                                          			-- { inputByUserID }
 input_date_time TIMESTAMP(3)                                         			    -- { inputDateTime }
-)
-tablespace &DATA_TS
-;
+);
 
-ALTER TABLE cashflow ADD CONSTRAINT cf_pk PRIMARY KEY(cashflow_id, cashflow_version) USING INDEX tablespace &INDEX_TS;
+ALTER TABLE cashflow ADD CONSTRAINT cf_pk PRIMARY KEY(cashflow_id, cashflow_version);
 ALTER TABLE cashflow ADD CONSTRAINT cf_uniq_1 UNIQUE(cashflow_id, cashflow_version,fo_cashflow_id, fo_cashflow_version);
-CREATE INDEX cf_confirmation_idx on cashflow(fo_cashflow_id, fo_cashflow_version, trade_id, trade_version) tablespace &INDEX_TS;
---CREATE INDEX cf_netting_idx on cashflow(value_date, curr_code, payment_suppressed) tablespace &INDEX_TS; -- index for netting is not required as there is no netting window in current design. Netting for CFs of any VD is done on confirmation event
+CREATE INDEX cf_confirmation_idx on cashflow(fo_cashflow_id, fo_cashflow_version, trade_id, trade_version);
+--CREATE INDEX cf_netting_idx on cashflow(value_date, curr_code, payment_suppressed); -- index for netting is not required as there is no netting window in current design. Netting for CFs of any VD is done on confirmation event
