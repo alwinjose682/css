@@ -2,7 +2,7 @@
 -XX:+HeapDumpOnOutOfMemoryError
 -XX:HeapDumpPath=./logs
 
-# App specific log directory
+# Log directory
 -Dapp.log.filePath=./logs
 
 # Required for apache ignite
