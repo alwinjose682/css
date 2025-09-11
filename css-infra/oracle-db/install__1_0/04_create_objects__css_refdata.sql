@@ -4,37 +4,37 @@ define INDEX_TS=&2
 
 prompt *** CREATING TABLES ***
 prompt counterparty
-@@tables/counterparty
+@scripts/tables/counterparty
 
 prompt counterparty_netting_profile
-@@tables/counterparty_netting_profile
+@scripts/tables/counterparty_netting_profile
 
 prompt counterparty_sla_mapping
-@@tables/counterparty_sla_mapping
+@scripts/tables/counterparty_sla_mapping
 
 prompt ssi
-@@tables/ssi
+@scripts/tables/ssi
 
 prompt country
-@@tables/country
+@scripts/tables/country
 
 prompt currency
-@@tables/currency
+@scripts/tables/currency
 
 prompt entity
-@@tables/entity
+@scripts/tables/entity
 
 prompt book
-@@tables/book
+@scripts/tables/book
 
 prompt nostro
-@@tables/nostro
+@scripts/tables/nostro
 
 prompt data_load_status
-@@tables/data_load_status
+@scripts/tables/data_load_status
 
 prompt *** PROVIDING GRANTS ***
-@@grants/grants_css_refdata
+@scripts/grants/grants_css_refdata
 
 --set echo on feedback on verify on
 exit

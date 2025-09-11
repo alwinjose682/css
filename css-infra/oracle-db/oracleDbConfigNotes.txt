@@ -8,8 +8,8 @@
 --Using the Lite image
 ---Starting an Oracle Database 23ai Free Lite Container
 podman run -d -p 127.0.0.1:1521:1521 container-registry.oracle.com/database/free:23.7.0.0-lite-amd64
-podman exec 807368dadbb6 ./setPassword.sh sysdbapass
-podman exec -it 807368dadbb6 sqlplus sys/sysdbapass@FREEPDB1 as sysdba
+podman exec 807368dadbb6 ./setPassword.sh freepass
+podman exec -it 807368dadbb6 sqlplus sys/freepass@FREEPDB1 as sysdba
 
 --Connecting to Oracle Database Free
 	https://docs.oracle.com/en/database/oracle/oracle-database/23/xeinl/connecting-oracle-database-free.html#GUID-190C65CE-E2B0-4C8E-9BF4-4A3BE53AFCD8
