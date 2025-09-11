@@ -99,7 +99,7 @@ Financial institutions have backoffice systems that perform various tasks after 
 
 **Containerized components:**
 
-Container registries used:
+Following container registries needs to be configured for podman or docker to pull the images:
 cat ~/.config/containers/registries.conf -> unqualified-search-registries = ['docker.io','ghrc.io','quay.io','container-registry.oracle.com']
 
 1. cd css-infra/ignite-cache
@@ -123,28 +123,40 @@ cat ~/.config/containers/registries.conf -> unqualified-search-registries = ['do
 
 ### Steps to setup Oracle Database
 
-1) podman run -d -p 127.0.0.1:1521:1521 -e ORACLE_PWD=sysdbapass container-registry.oracle.com/database/express:21.3.0-xe
-2) Note the container id from above command. The same container needs to be used when running the application
-2) Copy this entire directory: 'css-infra/oracle-db/install__1_0' to the container(anywhere, even in /tmp). <br/> ex: podman cp css-infra/oracle-db/install__1_0 <container-id>:/tmp
-3) Run the script: css-infra/oracle-db/install__1_0/install.sh
-4) The script outputs the information of users, tables, indexes, sequences etc that are created. You may check it to verify that the DB objects are created
+1) Go to <css-source-directory>/css-infra/oracle-db
+2) podman run --rm --name cssdb -d -p 127.0.0.1:1521:1521 -e ORACLE_PWD=freepass -e SQLPATH=$SQLPATH:/opt/oracle/scripts/setup -v cssdbdata:/opt/oracle/oradata -v ./install__1_0:/opt/oracle/scripts/setup container-registry.oracle.com/database/express:21.3.0-xe
+   <br/>**NOTE**: In addition to the database, this command creates a named docker volume that will be persisted across container creations. Run this to remove the volume if needed: 'podman volume rm cssdbdata'
+3) podman exec -it cssdb /opt/oracle/scripts/setup/install.sh
+   <br/>**NOTE**: The install script outputs the information about creating users, tables, indexes, sequences etc. You may check it to verify that the DB objects are created successfully.
 
 ### Steps to run
 
 **NOTE:**
 
 - The CSS components use commonly used port numbers like 8080...8095, 10800 etc
-- Logs will be written in a directory named 'logs' in the css project's root directory. *Example: cashflow-consumer logs will be written in '<css-root-dir>/logs/<profile>/cashflow-consumer'*
+- Logs will be written in following directory path: '<css-root-dir>/app/<app-name>/logs'
 - Use the start scripts to run the CSS Components inorder to have the appropriate jvm args and commandline parameters
 
 | Component       | Command                                                                                                                                                                                                                                            |
 |-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Oracle Database | (If Oracle database is used) <br/> podman start <container-id> (container-id is the oracle DB container-id that was setup in the previous step)                                                                                                    | 
+| Oracle Database | (If Oracle database is used) <br/> podman run --rm --name cssdb -d -p 127.0.0.1:1521:1521 -e ORACLE_PWD=freepass -v cssdbdata:/opt/oracle/oradata container-registry.oracle.com/database/express:21.3.0-xe                                         | 
 | Ignite Cache    | podman run -d --rm -p 127.0.0.1:8095:8080,127.0.0.1:10800:10800 alw.io/ignite                                                                                                                                                                      | 
 | Kafka           | podman run -d --rm -p 127.0.0.1:9092:9092 docker.io/apache/kafka:4.0.0                                                                                                                                                                             |
 | Schema Registry | podman run -d --rm --net=host -e SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=PLAINTEXT://localhost:9092 -e SCHEMA_REGISTRY_HOST_NAME=localhost -e SCHEMA_REGISTRY_LISTENERS=http://localhost:8995 docker.io/confluentinc/cp-schema-registry:7.9.1 |
 |                 | ***---   Wait for 1 or 2 minutes for above components to start and become active   ---***                                                                                                                                                          |
 | CSS Components  | cd css-lib/css-scripts/app<br/> 1) ./start.sh css-infra/h2-server (If H2 DB is used) <br/> 2) ./start.sh db-cache-data-loader (NOTE: Data load may take more than 5 mins) <br/> 3) ./start.sh fo-simulator <br/> 4) ./start.sh cashflow-consumer   |
+
+### Steps to stop
+
+| Component        | Command                    | Comment                                                                            |
+|------------------|----------------------------|------------------------------------------------------------------------------------|
+| Oracle Database  | podman stop cssdb -t 60    | Oracle DB takes longer to shutdown. By default docker executes SIGKILL in 10 sec   |
+| Other components | podman stop <container-id> | Other components stops before default timeout                                      |
+
+### Steps to remove docker volume - Only if required to remove persisted data
+| Component        | Command                     | Comment           |
+|------------------|-----------------------------|-------------------|
+| Oracle Database  | podman volume rm cssdbdata  |  |
 
 #### REST endpoints to start or stop Cashflow Generators
 
