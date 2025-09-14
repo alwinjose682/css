@@ -2,6 +2,8 @@
 create user css
 identified by freepass;
 
+alter user css quota unlimited on USERS;
+
 create role css_role not identified;
 grant create table to css_role;
 grant create session to css_role;
@@ -13,6 +15,8 @@ alter user css default role all; --to re-grant the roles at login
 --css_refdata
 create user css_refdata
 identified by freepass;
+
+alter user css_refdata quota unlimited on USERS;
 
 grant css_role to css_refdata;
 grant css_role to sys with admin option;
