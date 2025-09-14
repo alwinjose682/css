@@ -1,4 +1,7 @@
+===================================================================================================
 --Oracle DB
+---Initial setup
+cd to css-infra/oracle-db;
 podman run \
 --rm \
 --name cssdb \
@@ -8,11 +11,25 @@ podman run \
 -e SQLPATH=$SQLPATH:/opt/oracle/scripts/setup \
 -v cssdbdata:/opt/oracle/oradata \
 -v ./install__1_0:/opt/oracle/scripts/setup \
-container-registry.oracle.com/database/express:21.3.0-xe
+container-registry.oracle.com/database/express:21.3.0-xe;
+podman exec -it cssdb /opt/oracle/scripts/setup/install.sh;
 
+---Further runs after initial setup
+podman run --rm --name cssdb -d -p 127.0.0.1:1521:1521 -v cssdbdata:/opt/oracle/oradata container-registry.oracle.com/database/express:21.3.0-xe
+
+---Database backup and restore
+----backup cssdbdata volume
+stop cssdb before taking backup
+docker run --rm -v cssdbdata:/dbdata --name tmpcntr docker.io/library/ubuntu:latest /bin/bash
+podman run --rm --volumes-from tmpcntr -v $(pwd):/backup docker.io/library/ubuntu:latest tar cvf /backup/1_1.tar /dbdata
+----restore cssdbdata volume
+docker run -v /dbdata --name dbstore2 ubuntu /bin/bash
+podman run --rm --volumes-from dbstore2 -v $(pwd):/backup ubuntu bash -c "cd /dbdata && tar xvf /backup/backup.tar --strip 1"
+===================================================================================================
 --Apache Ignite Cache
-cd to css-infra/ignite-cache; podman build -t alw.io/ignite:latest .
-build via dockerfile
+cd to css-infra/ignite-cache;
+podman build -t alw.io/ignite:latest .
+
 podman run \
 --rm \
 -d \
@@ -25,6 +42,7 @@ NOTE: This version of kafka uses KRaft, not Zookeeper.
       This is apache kafka, not confluent inc's kafka
 
 podman pull docker.io/apache/kafka:4.0.0
+
 podman run \
 --rm \
 -d \
@@ -40,6 +58,7 @@ Note: Following are must to discover and connect to kafka:
       SchemaRegistry debug can be enabled by setting this env variable: 'SCHEMA_REGISTRY_DEBUG=true'
 
 podman pull docker.io/confluentinc/cp-schema-registry:7.9.1
+
 podman run \
 --rm \
 -d \
