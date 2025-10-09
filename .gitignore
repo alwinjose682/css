@@ -1,0 +1,10 @@
+/logs/
+/app/
+target/
+.idea/
+*.iml
+gitStatus.sh
+
+/confirmation-consumer/
+/netting-service/
+
