@@ -11,11 +11,9 @@ Financial institutions have backoffice systems that perform various tasks after 
 
 **NOTE:**
 
-- The CSS project is divided into multiple modules each having a separate git repository.
-- This repository groups together all the CSS repositories and does not contain any code.
-- Detailed documentation for each component along with its code is within the component's specific repository. Example, for documentation and code of cashflow-consumer, check [cashflow-consumer]
+- Detailed documentation for each component within the component's specific directory. Example, for documentation and code of cashflow-consumer, check [cashflow-consumer]
   repository
-- All CSS components like DB, Cache, Kafka etc can be run together in a single machine.
+- All CSS components like DB, Cache, Kafka etc can be run locally in a single machine.
 
 **What is completed?**
 
@@ -26,15 +24,15 @@ Financial institutions have backoffice systems that perform various tasks after 
 - [**Database and Cache Data Loader**][db-cache-data-loader]   : Loads the generated reference data in database and in memory cache
 - [**Infrastructure used by CSS**][css-infra]              : Configurations, SQL files etc for **Database**, **Ignite Cache** and **Kafka**
 
-[cashflow-consumer]: https://github.com/alwinjose682/css-cashflow-consumer/
+[cashflow-consumer]: https://github.com/alwinjose682/css/tree/master/cashflow-consumer
 
-[fo-simulator]: https://github.com/alwinjose682/css-fo-simulator/
+[fo-simulator]: https://github.com/alwinjose682/css/tree/master/fo-simulator
 
-[refdata-generator]: https://github.com/alwinjose682/css-refdata-generator/
+[refdata-generator]: https://github.com/alwinjose682/css/tree/master/refdata-generator
 
-[db-cache-data-loader]: https://github.com/alwinjose682/css-db-cache-data-loader/
+[db-cache-data-loader]: https://github.com/alwinjose682/css/tree/master/db-cache-data-loader
 
-[css-infra]: https://github.com/alwinjose682/css-infra/
+[css-infra]: https://github.com/alwinjose682/css/tree/master/css-infra
 
 **What is pending?**
 
