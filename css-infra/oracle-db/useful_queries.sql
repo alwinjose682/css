@@ -14,3 +14,15 @@ select * from dba_users;
 
 --Tables
 SELECT * FROM all_tables WHERE tablespace_name='CSS_DATA'
+
+--Truncate all ref data tables, owner="CSS_REFDATA"
+truncate table DATA_LOAD_STATUS;
+truncate table BOOK;
+truncate table NOSTRO;
+truncate table ENTITY;
+truncate table COUNTERPARTY_NETTING_PROFILE;
+truncate table COUNTERPARTY_SLA_MAPPING;
+truncate table SSI;
+truncate table COUNTERPARTY;
+truncate table COUNTRY;
+truncate table CURRENCY;
