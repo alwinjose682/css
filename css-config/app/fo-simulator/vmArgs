@@ -1,0 +1,13 @@
+# Common args
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=./logs
+
+# Log directory
+-Dapp.log.filePath=./logs
+
+# Required for apache ignite
+--add-opens java.base/java.nio=ALL-UNNAMED
+
+# JFR
+-XX:StartFlightRecording:maxage=20m,maxsize=500M,dumponexit=true,filename=./recordings/fo_simulator__%p_%t.jfr
+-XX:FlightRecorderOptions:repository=./recordings
