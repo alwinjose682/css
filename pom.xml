@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+            NOTE: The sole purpose of this pom is to easily import the entire project in intelliJ idea. This pom is not involved in the CSS project's build
+		  The parent pom for the project is in directory: css-lib/css-parent
+    -->
+
+    <groupId>css-wrapper</groupId>
+    <artifactId>css-wrapper-pom</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+</project>
