@@ -7,7 +7,3 @@
 
 # Required for apache ignite
 --add-opens java.base/java.nio=ALL-UNNAMED
-
-# JFR
--XX:StartFlightRecording:maxage=20m,maxsize=500M,dumponexit=true,filename=./recordings/db_cache_data_loader__%p_%t.jfr
--XX:FlightRecorderOptions:repository=./recordings

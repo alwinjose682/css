@@ -1,0 +1,8 @@
+# Default JFR args
+
+-XX:FlightRecorderOptions:repository=./recordings
+-XX:StartFlightRecording:"\
+maxage=20m,\
+maxsize=500M,\
+dumponexit=true,\
+filename=./recordings/db_cache_data_loader__%p_%t.jfr"
