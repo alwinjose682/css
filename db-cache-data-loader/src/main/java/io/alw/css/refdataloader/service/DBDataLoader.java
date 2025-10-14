@@ -76,7 +76,7 @@ public class DBDataLoader {
             entityCount += 1;
             nostroCount += nostros.size();
 
-            txrw.executeWithoutResult(_ -> {
+            txrw.executeWithoutResult("entityCode: " + entity.entityCode(), _ -> {
                 dao.save(entity, nostros);
             });
         }
@@ -97,7 +97,7 @@ public class DBDataLoader {
             nettingProfileCount += nettingProfiles.size();
             slaMappingCount += slaMappings.size();
 
-            txrw.executeWithoutResult(_ -> {
+            txrw.executeWithoutResult("counterpartyID: " + counterparty.counterpartyCode(), _ -> {
                 dao.save(counterparty, ssis, nettingProfiles, slaMappings);
             });
         }
