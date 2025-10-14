@@ -20,6 +20,7 @@
         <module>model-shared</module>
         <module>tx-template</module>
         <module>serialization-schema</module>
+        <module>profiling-shared</module>
     </modules>
 
 </project>
