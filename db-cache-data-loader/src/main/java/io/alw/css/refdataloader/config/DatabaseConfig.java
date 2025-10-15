@@ -26,9 +26,10 @@ public class DatabaseConfig {
         config.setJdbcUrl(dsProps.url());
         config.setUsername(dsProps.username());
         config.setPassword(dsProps.password());
-        config.setAutoCommit(false); // IMPORTANT
+        config.setAutoCommit(false); // IMPORTANT (spring.datasource.hikari.auto-commit=false)
 //        config.setConnectionTimeout();
 //        config.setIdleTimeout();
+//        config.setMaxLifetime();
 
         //TODO:
         // config.setThreadFactory(Thread.ofVirtual().factory());
@@ -61,12 +62,22 @@ public class DatabaseConfig {
         props.put("hibernate.dialect", "org.hibernate.dialect.OracleDialect");
     }
 
-//    private void setPerformanceProperties(Map<String, String> props) {
+    private void setPerformanceProperties(Map<String, String> props) {
+        /*
+        props.put("hibernate.connection.provider_disables_autocommit", "true"); // But, this does not work if spring's read-only transaction is used. The workaround to fix this causes other issues. Check vlad's article: "Spring Transaction and Connection Management"
+        */
+
+        props.put("hibernate.jdbc.batch_size", "200");
+        props.put("hibernate.order_inserts", "true");
+        props.put("hibernate.order_updates", "true");
+        //        props.put("hibernate.jdbc.batch_versioned_data","true"); // Not Applicable for db-cache-data-loader
+        //        props.put("hibernate.generate_statistics","true"); # Not used. Instead, JFR profile data produced by hibernate-jfr is used
+
+
 //        props.put("eclipselink.jdbc.native-sql", "true");
-//        props.put("eclipselink.jdbc.batch-writing", "JDBC");
-//        props.put("eclipselink.jdbc.batch-writing.size", "1000");
-//    }
-//
+    }
+
+//    ------------------------------------------------------------------------------------------------------------------------------------
 //    private void setCachingProperties(Map<String, String> props) {
 //        props.put("eclipselink.cache.type.default", "NONE");
 //        props.put("eclipselink.jdbc.cache-statements", "true");
