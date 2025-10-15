@@ -20,7 +20,8 @@
     <description>Common definition for Cashflow Settlement Services</description>
 
     <properties>
-        <java.version>24</java.version>
+        <java.version>25</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!--        Non-Test     -->
         <avro.version>1.12.0</avro.version>
@@ -33,10 +34,12 @@
         <jakarta-validation-api.version>3.1.0</jakarta-validation-api.version>
         <mapstruct.version>1.6.3</mapstruct.version>
 
+
         <!--        Test        -->
         <junit.version>5.10.3</junit.version>
         <assertj.version>3.26.0</assertj.version>
-        <mockito-core.version>5.12.0</mockito-core.version>
+        <mockito-core.version>5.20.0</mockito-core.version>
+        <mockito.core.jar>${env.MAVEN_REPO}/org/mockito/mockito-core/5.20.0/mockito-core-5.20.0.jar</mockito.core.jar>
         <!--        Plugins     -->
         <!--        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>-->
         <!--        <maven-surefire-plugin.version>3.4.0</maven-surefire-plugin.version>-->
@@ -163,6 +166,9 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <configuration>
                         <skip>${maven-surefire-plugin.skip}</skip>
+                        <argLine>
+                            -Dnet.bytebuddy.experimental=true -javaagent:${mockito.core.jar}
+                        </argLine>
                     </configuration>
                 </plugin>
                 <plugin>
