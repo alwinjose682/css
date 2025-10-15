@@ -127,6 +127,7 @@
                 <configuration>
                     <argLine>
                         --add-opens java.base/java.nio=ALL-UNNAMED
+                        -Dnet.bytebuddy.experimental=true -javaagent:${mockito.core.jar}
                     </argLine>
                 </configuration>
             </plugin>

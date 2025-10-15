@@ -79,7 +79,7 @@ Financial institutions have backoffice systems that perform various tasks after 
 
 **Requirements**
 
-- Java: version 24
+- Java: version 25
 - Build tool: maven
 - Preferred OS: Linux or Mac OS
 - Container provider: podman or docker
@@ -92,6 +92,10 @@ Financial institutions have backoffice systems that perform various tasks after 
 - The build and start scripts are linux bash scripts. To build and run in windows, it is required to write equivalent windows scripts
 - By default the database used is Oracle DB. Few config changes and a code change are required to use H2 DB
 - As of now, the H2 DB files are configured to be written to the home directory of the user: /home/<user>
+
+### Set OS env variable with mockito jar path(Temporary)
+
+The project is upgraded to use Java 25. Therefore, Mockito now uses bytebuddy in experimental mode. Due to this the full path of mockito-core-jar is required to be specified in an OS env variable named: MAVEN_REPO. This is temporary and required only till bytebuddy(and Mockito) officially supports Java 25.
 
 ### Steps to build
 
