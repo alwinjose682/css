@@ -10,6 +10,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.function.Consumer;
 
+import static io.alw.css.profiling.SimpleEventActions.beginJfrEvent;
+import static io.alw.css.profiling.SimpleEventActions.endJfrEvent;
+
 public final class TXRW {
     private final TransactionTemplate txrw;
 
@@ -22,10 +25,32 @@ public final class TXRW {
     }
 
     public <T> T execute(TransactionCallback<T> action) throws TransactionException {
-        return txrw.execute(action);
+        WriteEvent event = new WriteEvent();
+        beginJfrEvent(event);
+        T res = txrw.execute(action);
+        endJfrEvent(event);
+        return res;
     }
 
     public void executeWithoutResult(Consumer<TransactionStatus> action) throws TransactionException {
+        WriteEvent event = new WriteEvent();
+        beginJfrEvent(event);
         txrw.executeWithoutResult(action);
+        endJfrEvent(event);
+    }
+
+    public <T> T execute(String ctxId, TransactionCallback<T> action) throws TransactionException {
+        WriteEvent event = new WriteEvent();
+        beginJfrEvent(event);
+        T res = txrw.execute(action);
+        endJfrEvent(event, e -> ((WriteEvent) e).ctxId = ctxId);
+        return res;
+    }
+
+    public void executeWithoutResult(String ctxId, Consumer<TransactionStatus> action) throws TransactionException {
+        WriteEvent event = new WriteEvent();
+        beginJfrEvent(event);
+        txrw.executeWithoutResult(action);
+        endJfrEvent(event, e -> ((WriteEvent) e).ctxId = ctxId);
     }
 }

@@ -5,11 +5,15 @@ function start(){
 
   ### App specific VM args (JVM Args specified in a file)
   #### https://docs.oracle.com/en/java/javase/24/docs/specs/man/java.html#java-command-line-argument-files
-  vmArgsFile="${appCfgDir}/vmArgs"
+  argFiles=""
+  for argFile in $(cat "${appCfgDir}/javaCmdLineArgFiles" | tr -s '[:blank:]') ; do
+    argFiles="${argFiles} @${appCfgDir}/${argFile}"
+    argFilesForDisplay="${argFilesForDisplay} @${argFile}"
+  done
 
   ### Java cmd
   javaCmd="java \
-@${vmArgsFile} \
+${argFiles} \
 -Dspring.config.location=${APP_CFG_DIR_ROOT}/,${appCfgDir}/ \
 -Dlogging.config=${appCfgDir}/logback-spring.xml \
 -Dspring.profiles.active=${PROJ_PROFILES} \
@@ -19,7 +23,7 @@ function start(){
 
 echo "\
 JAR_FILE      :      ${appBinDir}/${appJar}
-VM_ARGS_FILE  :      ${vmArgsFile}
+VM_ARG_FILES  :      ${argFilesForDisplay}
 JAVA_CMD      :      ${javaCmd}\
 "
 
@@ -118,6 +122,7 @@ PROJ_PROFILES :      ${PROJ_PROFILES}
 APP_CFG_DIR   :      ${appCfgDir}
 CERT_DIR      :      ${CERT_DIR}
 APP_LOG_DIR   :      ${PROJ_APP_DIR}/${appDir}/logs
+JFR_REC_DIR   :      ${PROJ_APP_DIR}/${appDir}/recordings
 "
 
 if [ -z "${APP_CFG_DIR_ROOT}" ] || [ -z "${CONFIG_STAGE}" ] || [ -z "${PROJ_APP_DIR}" ] || [ -z "${CERT_DIR}" ];then

@@ -18,6 +18,11 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-orm</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.alw.css</groupId>
+            <artifactId>profiling-shared</artifactId>
+            <version>1.0.0</version>
+        </dependency>
     </dependencies>
 
 </project>

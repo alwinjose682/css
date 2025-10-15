@@ -1,0 +1,8 @@
+# Default JFR args
+
+-XX:FlightRecorderOptions:repository=./recordings
+-XX:StartFlightRecording:"\
+maxage=10m,\
+maxsize=1G,\
+dumponexit=true,\
+filename=./recordings/cashflow_consumer__%p_%t.jfr"
