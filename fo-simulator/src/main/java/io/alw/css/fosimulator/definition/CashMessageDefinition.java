@@ -36,7 +36,7 @@ public sealed abstract class CashMessageDefinition
     // Values that change for each build. These also remain un-modified for each build
     /// After each build of the definition, the existing [FoCashMessageBuilder] (`bdr`) is just replaced with a new one.
     private FoCashMessageBuilder bdr;
-    private long dayForBuild;
+    private long dayForMsgDefinition;
 
     // Message Store and Related
     protected final CashMessageStore messageStore;
@@ -86,6 +86,9 @@ public sealed abstract class CashMessageDefinition
 
     // Amendment Related - START
 
+    //TODO:
+    //  1. Create another abstract class in between CashMessageDefinition and BaseDefinition named AmendableMsgDefinition
+    //  2. Create a utility class to hold the utility methods
     protected CashMessageDefinition withAmendedMessagesOf(List<FoCashMessage> messagesToBeAmended) {
         for (FoCashMessage msg : messagesToBeAmended) {
             switch (cyclicAmendableFieldsProvider.next()) {
@@ -183,7 +186,7 @@ public sealed abstract class CashMessageDefinition
 
     // Message Store Related - START
     protected List<FoCashMessage> getMessagesToBeAmended() {
-        final long currentDay = dayForBuild;
+        final long currentDay = dayForMsgDefinition;
         List<FoCashMessage> msgsToBeAmended = new ArrayList<>();
         for (; lastMessageRetrievalDay <= currentDay; ++lastMessageRetrievalDay) {
             List<FoCashMessage> msgs = messageStore.remove(lastMessageRetrievalDay);
@@ -198,7 +201,8 @@ public sealed abstract class CashMessageDefinition
     protected void rndmlySelectValidAmendCandidatesAndSave(List<FoCashMessage> msgs, Predicate<FoCashMessage> inclusionCriteria) {
         long[] amendmentDelayDay = new long[1];
         Predicate<FoCashMessage> finalInclusionCriteria = msg -> inclusionCriteria
-                .and(m -> m.cashflowVersion() + m.tradeVersion() <= cashMessageDefinitionProperties.maxNumOfAmendments()).test(msg)
+                .and(m -> m.cashflowVersion() + m.tradeVersion() <= cashMessageDefinitionProperties.maxNumOfAmendments())
+                .test(msg)
                 && (amendmentDelayDay[0] = rndm.nextInt(0, maxAmendmentGenerationDelayInDays)) > maxAmendmentGenerationDelayInDays_relatedVal;
 
         msgs.stream()
@@ -210,7 +214,7 @@ public sealed abstract class CashMessageDefinition
     /// TODO: Need to refactor such that this is the only method which can be invoked from implementations of [CashMessageDefinition]. This is to ensure that this method is indeed invoked FIRST.
     /// This method ensures that the same day is used at all points of building the definition.
     protected CashMessageDefinition newDefinition() {
-        dayForBuild = dayTicker.day();
+        dayForMsgDefinition = dayTicker.day();
         return this;
     }
 
@@ -251,24 +255,24 @@ public sealed abstract class CashMessageDefinition
 
     /// Check the documentation for [CashMessageDefinition#getRndmValueDate()]
     ///
-    /// `numOfDefinitionCreationsForValueDateToRemainSameAsCurrentDayCounter` - determines the first N number of definitions for which a random number should not be added to the current [CashMessageDefinition#dayForBuild]
+    /// `numOfDefinitionCreationsForValueDateToRemainSameAsCurrentDayCounter` - determines the first N number of definitions for which a random number should not be added to the current [CashMessageDefinition#dayForMsgDefinition]
     protected LocalDate getRndmValueDate(long numOfDefinitionCreationsForValueDateToRemainSameAsCurrentDayCounter) {
         if (counter() <= numOfDefinitionCreationsForValueDateToRemainSameAsCurrentDayCounter) {
-            long daysToAdd = dayForBuild;
+            long daysToAdd = dayForMsgDefinition;
             return initialValueDate.plusDays(daysToAdd);
         } else {
             return getRndmValueDate();
         }
     }
 
-    /// Returns the value date which can randomly range from [CashMessageDefinitionProperties#vdBackwardDays] to [CashMessageDefinitionProperties#vdForwardDays] with respect to the current [CashMessageDefinition#dayForBuild].
+    /// Returns the value date which can randomly range from [CashMessageDefinitionProperties#vdBackwardDays] to [CashMessageDefinitionProperties#vdForwardDays] with respect to the current [CashMessageDefinition#dayForMsgDefinition].
     /// This means this method can return back valued date as well, but the percentage of back valued cashMessages is configured to be very less.
     protected LocalDate getRndmValueDate() {
         final long daysToAdd;
         if (isAnNthDefinition(cashMessageDefinitionProperties.numOfCfsForABackVdCf())) {
             daysToAdd = rndm.nextInt(Math.negateExact(cashMessageDefinitionProperties.vdBackwardDays()), -1);
         } else {
-            daysToAdd = dayForBuild + rndm.nextInt(0, cashMessageDefinitionProperties.vdForwardDays());
+            daysToAdd = dayForMsgDefinition + rndm.nextInt(0, cashMessageDefinitionProperties.vdForwardDays());
         }
         return initialValueDate.plusDays(daysToAdd);
     }
