@@ -79,7 +79,7 @@ public class RefDataGenerator {
 
         for (var currency : RefDataCollection.singleton().currencies) {
             List<Nostro> nostros = new NostroTemplate(entity, (Currency) currency)
-                    .withDefaults()
+                    .withCustomTemplateValues()
                     .childTemplate(rndm.nextInt(5, 10))
                     .buildWithChildTemplates();
             allNostros.addAll(nostros);
@@ -108,7 +108,7 @@ public class RefDataGenerator {
 
             // Build Counterparty
             List<Counterparty> counterparties = new CounterpartyTemplate()
-                    .withDefaults()
+                    .withCustomTemplateValues()
                     .internal(rndm.nextBoolean())
                     .childTemplate(rndm.nextInt(0, 5))
                     .buildWithChildTemplates();
@@ -163,7 +163,7 @@ public class RefDataGenerator {
                 // Build Ssi
                 for (var currency : PreDefinedTestData.singleton().currencies) {
                     List<Ssi> ssisForEachCurrency = new SsiTemplate(cp, currency, tradeType)
-                            .withDefaults()
+                            .withCustomTemplateValues()
                             .childTemplate(rndm.nextInt(2, 7))
                             .buildWithChildTemplates();
                     ssis.addAll(ssisForEachCurrency);
@@ -175,7 +175,7 @@ public class RefDataGenerator {
 
                 // Build CounterpartyNettingProfile
                 List<CounterpartyNettingProfile> cpnpsForEachProduct = new CounterpartyNettingProfileTemplate(cp)
-                        .withDefaults()
+                        .withCustomTemplateValues()
                         .product(tradeType)
                         .netForAnyEntity(rndm.nextBoolean())
                         .netByParentCounterpartyCode(rndm.nextBoolean())
@@ -189,7 +189,7 @@ public class RefDataGenerator {
             final List<CounterpartySlaMapping> cpsms;
             if (shouldGenerateCpSlaMapping) {
                 cpsms = new CounterpartySlaMappingTemplate(cp, secondaryNostros.get(rndm.nextInt(0, secondaryNostros.size())))
-                        .withDefaults()
+                        .withCustomTemplateValues()
                         .buildWithChildTemplates();
             } else {
                 cpsms = new ArrayList<>();

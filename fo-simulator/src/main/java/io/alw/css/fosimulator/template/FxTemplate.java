@@ -35,7 +35,7 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore {
         List<FoCashMessage> newAndAmendedMsgs = ((FxTemplate) newTemplateBuilder())
                 .withAmendedMessagesOf(messagesToBeAmended)
                 .withRelatedTemplate(this::buildCounterSide)
-                .withDefaults()
+                .withCustomTemplateValues()
                 .buildWithRelatedTemplates();
 
         // Select new cash messages for future amendments and add to the message store
@@ -66,10 +66,10 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore {
     }
 
     @Override
-    public TemplateBuilder<FoCashMessage> withDefaults() {
+    public TemplateBuilder<FoCashMessage> withCustomTemplateValues() {
         IdProvider idProvider = IdProvider.singleton();
         // Create the builder with base values
-        FoCashMessageBuilder bdr = getBuilderWithDefaultValues();
+        FoCashMessageBuilder bdr = getFoCashMsgBuilderForNewTemplate();
         // Generate cashflowID for the counter side of this FX deal
         counterSideCashflowId = idProvider.nextCashflowId();
         // Set the values specific to FX trade

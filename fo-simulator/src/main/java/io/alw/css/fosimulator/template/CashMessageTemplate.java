@@ -39,11 +39,11 @@ sealed abstract class CashMessageTemplate
     protected final DayTicker dayTicker;
     protected final RefDataService refDataService;
 
-    public CashMessageTemplate(Entity entity, TradeType tradeType, TransactionType transactionType,RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
-        this(null, entity, tradeType, transactionType,rndm, initialValueDate, refDataService, dayTicker, cashMsgTemplateProps);
+    public CashMessageTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
+        this(null, entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMsgTemplateProps);
     }
 
-    private CashMessageTemplate(FoCashMessage parent, Entity entity, TradeType tradeType, TransactionType transactionType,RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
+    private CashMessageTemplate(FoCashMessage parent, Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
         super(parent);
         this.entityCode = entity.entityCode();
         this.currCode = entity.currCode();
@@ -57,8 +57,8 @@ sealed abstract class CashMessageTemplate
 
     protected abstract TradeEventActionPair getNextEventActionPair(TradeEventType amendMsgEvt, TradeEventAction amendMsgAct);
 
-    /// TODO: Need to refactor such that this is the only method which can be invoked from implementations of [CashMessageTemplate]. This is to ensure that this method is indeed invoked FIRST.
     /// This method ensures that the same day is used at all points of building the template.
+    /// This method is the starting point to build a template
     protected CashMessageTemplate newTemplateBuilder() {
         msgTemplateHelper.setDayForMsgTemplate(dayTicker.day());
         return this;
@@ -66,8 +66,10 @@ sealed abstract class CashMessageTemplate
 
     /// NOTE: New [CashMessageTemplate] instances are not created by this method.
     /// Instead, the existing [FoCashMessageBuilder] (`bdr`) is just replaced with a new one and then new values are assigned.
-    protected FoCashMessageBuilder getBuilderWithDefaultValues() {
-        bdr = newFoCashMessageBuilder();
+    protected FoCashMessageBuilder getFoCashMsgBuilderForNewTemplate() {
+        msgTemplateHelper.incrementCounter();
+        bdr = FoCashMessageBuilder.builder();
+
         IdProvider idProvider = IdProvider.singleton();
         final String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionType();
         bdr
@@ -94,11 +96,6 @@ sealed abstract class CashMessageTemplate
         ;
 
         return bdr;
-    }
-
-    private FoCashMessageBuilder newFoCashMessageBuilder() {
-        msgTemplateHelper.incrementCounter();
-        return FoCashMessageBuilder.builder();
     }
 
     /// NOTE: The [CashMessageTemplate#counter] is not incremented by this method

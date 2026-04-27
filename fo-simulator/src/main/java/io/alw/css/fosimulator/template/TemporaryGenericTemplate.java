@@ -37,7 +37,7 @@ public final class TemporaryGenericTemplate extends CashMessageTemplateWithDataS
         // Build amended cashMessages and cashMessages for a new FX trade. There are 2 cashMessages for a single FX trade
         List<FoCashMessage> newAndAmendedMsgs = ((CashMessageTemplateWithDataStore) newTemplateBuilder())
                 .withAmendedMessagesOf(messagesToBeAmended)
-                .withDefaults()
+                .withCustomTemplateValues()
                 .buildWithRelatedTemplates();
 
         // Select new cash messages for future amendments and add to the message store
@@ -47,9 +47,9 @@ public final class TemporaryGenericTemplate extends CashMessageTemplateWithDataS
     }
 
     @Override
-    public TemplateBuilder<FoCashMessage> withDefaults() {
+    public TemplateBuilder<FoCashMessage> withCustomTemplateValues() {
         // Create the builder with base values
-        FoCashMessageBuilder bdr = getBuilderWithDefaultValues();
+        FoCashMessageBuilder bdr = getFoCashMsgBuilderForNewTemplate();
         bdr
                 .valueDate(msgTemplateHelper.getRndmValueDate(20))
                 .tradeLinks(null)

@@ -32,7 +32,7 @@ public final class CounterpartyNettingProfileTemplate extends TemplateBuilder<Co
     }
 
     @Override
-    public CounterpartyNettingProfileTemplate withDefaults() {
+    public CounterpartyNettingProfileTemplate withCustomTemplateValues() {
         LongTokenGenerator idGntr = utilities.idGntr;
         StringRefDataProvider stringRefDataProvider = utilities.stringRefDataProvider;
 
