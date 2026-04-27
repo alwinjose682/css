@@ -1,7 +1,7 @@
-package io.alw.css.refdtgtr.definitions;
+package io.alw.css.refdtgtr.templates;
 
 import io.alw.css.refdtgtr.config.ConfigParams;
-import io.alw.datagen.definition.CountAware;
+import io.alw.datagen.template.CountAware;
 import io.alw.datagen.formattingtemplate.TokenFormattingTemplate;
 import io.alw.datagen.formattingtemplate.WidthAwareConcatenatingTemplate;
 import io.alw.css.refdtgtr.provider.StringRefDataProvider;
@@ -11,8 +11,8 @@ import io.alw.datagen.tokengenerator.LongTokenGenerator;
 
 import java.util.random.RandomGenerator;
 
-public final class NostroDefinitionUtilities implements CountAware {
-    private static NostroDefinitionUtilities utilities;
+public final class NostroTemplateUtilities implements CountAware {
+    private static NostroTemplateUtilities utilities;
 
     private long counter;
     public final AlphaNumericTokenGenerator idGenerator;
@@ -25,7 +25,7 @@ public final class NostroDefinitionUtilities implements CountAware {
     public final StringRefDataProvider counterpartyTypeProvider;
     public final RandomGenerator rndmGntr;
 
-    private NostroDefinitionUtilities() {
+    private NostroTemplateUtilities() {
         this.counter = 0L;
 
         this.idGenerator = new AlphaNumericTokenGenerator(4, new char[]{'n', '6', 'a'});
@@ -39,11 +39,11 @@ public final class NostroDefinitionUtilities implements CountAware {
         this.rndmGntr = RandomGenerator.getDefault();
     }
 
-    public static NostroDefinitionUtilities singleton() {
+    public static NostroTemplateUtilities singleton() {
         if (utilities == null) {
-            synchronized (NostroDefinitionUtilities.class) {
+            synchronized (NostroTemplateUtilities.class) {
                 if (utilities == null) {
-                    utilities = new NostroDefinitionUtilities();
+                    utilities = new NostroTemplateUtilities();
                 }
                 return utilities;
             }

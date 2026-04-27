@@ -1,6 +1,6 @@
 package io.alw.css.fosimulator.model;
 
-import io.alw.css.fosimulator.definition.IdProvider;
+import io.alw.css.fosimulator.template.IdProvider;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 

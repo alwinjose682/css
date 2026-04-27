@@ -1,24 +1,24 @@
-package io.alw.css.refdtgtr.definitions;
+package io.alw.css.refdtgtr.templates;
 
 import io.alw.datagen.tokengenerator.LongTokenGenerator;
-import io.alw.datagen.definition.CountAware;
+import io.alw.datagen.template.CountAware;
 
-public final class CounterpartySlaMappingDefinitionUtilities implements CountAware {
-    private static CounterpartySlaMappingDefinitionUtilities utilities;
+public final class CounterpartySlaMappingTemplateUtilities implements CountAware {
+    private static CounterpartySlaMappingTemplateUtilities utilities;
 
     private long counter;
     final LongTokenGenerator idGntr;
 
-    CounterpartySlaMappingDefinitionUtilities() {
+    CounterpartySlaMappingTemplateUtilities() {
         this.counter = 0L;
         this.idGntr = new LongTokenGenerator(100L);
     }
 
-    static CounterpartySlaMappingDefinitionUtilities singleton() {
+    static CounterpartySlaMappingTemplateUtilities singleton() {
         if (utilities == null) {
-            synchronized (CounterpartySlaMappingDefinitionUtilities.class) {
+            synchronized (CounterpartySlaMappingTemplateUtilities.class) {
                 if (utilities == null) {
-                    utilities = new CounterpartySlaMappingDefinitionUtilities();
+                    utilities = new CounterpartySlaMappingTemplateUtilities();
                 }
             }
         }

@@ -1,7 +1,7 @@
-package io.alw.css.refdtgtr.definitions;
+package io.alw.css.refdtgtr.templates;
 
 import io.alw.css.refdtgtr.config.ConfigParams;
-import io.alw.datagen.definition.CountAware;
+import io.alw.datagen.template.CountAware;
 import io.alw.datagen.formattingtemplate.SimpleConcatenatingTemplate;
 import io.alw.datagen.formattingtemplate.TokenFormattingTemplate;
 import io.alw.datagen.formattingtemplate.WidthAwareConcatenatingTemplate;
@@ -11,8 +11,8 @@ import io.alw.datagen.tokengenerator.BinaryStringTokenGenerator;
 import io.alw.datagen.tokengenerator.IdentityStringTokenGenerator;
 import io.alw.datagen.tokengenerator.LongTokenGenerator;
 
-public final class CounterpartyDefinitionUtilities implements CountAware {
-    private static CounterpartyDefinitionUtilities utilities;
+public final class CounterpartyTemplateUtilities implements CountAware {
+    private static CounterpartyTemplateUtilities utilities;
 
     private long counter;
     private final BinaryStringTokenGenerator<String, Long> idProvider;
@@ -21,7 +21,7 @@ public final class CounterpartyDefinitionUtilities implements CountAware {
     private final RefDataProvider refDataProvider;
     private final StringRefDataProvider counterpartyTypeProvider;
 
-    private CounterpartyDefinitionUtilities() {
+    private CounterpartyTemplateUtilities() {
         this.counter = 0L;
         this.idProvider = new BinaryStringTokenGenerator<>(new IdentityStringTokenGenerator("CP"), new LongTokenGenerator());
         this.simpleConcatenatingTemplate = SimpleConcatenatingTemplate.singleton();
@@ -30,11 +30,11 @@ public final class CounterpartyDefinitionUtilities implements CountAware {
         this.counterpartyTypeProvider = new StringRefDataProvider();
     }
 
-    public static CounterpartyDefinitionUtilities singleton() {
+    public static CounterpartyTemplateUtilities singleton() {
         if (utilities == null) {
-            synchronized (CounterpartyDefinitionUtilities.class) {
+            synchronized (CounterpartyTemplateUtilities.class) {
                 if (utilities == null) {
-                    utilities = new CounterpartyDefinitionUtilities();
+                    utilities = new CounterpartyTemplateUtilities();
                 }
                 return utilities;
             }

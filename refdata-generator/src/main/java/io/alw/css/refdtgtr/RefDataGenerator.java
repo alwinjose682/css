@@ -5,7 +5,7 @@ import io.alw.css.domain.cashflow.TradeType;
 import io.alw.datagen.TestDataGeneratable;
 import io.alw.css.domain.referencedata.*;
 import io.alw.css.refdtgtr.config.Json;
-import io.alw.css.refdtgtr.definitions.*;
+import io.alw.css.refdtgtr.templates.*;
 import io.alw.css.refdtgtr.domain.CounterpartyType;
 import io.alw.css.refdtgtr.domain.PreDefinedTestData;
 import io.alw.css.refdtgtr.model.CounterpartyAndDependentData;
@@ -78,10 +78,10 @@ public class RefDataGenerator {
         List<Nostro> allNostros = new ArrayList<>();
 
         for (var currency : RefDataCollection.singleton().currencies) {
-            List<Nostro> nostros = new NostroDefinition(entity, (Currency) currency)
-                    .withDefaults()
-                    .childDefinitions(rndm.nextInt(5, 10))
-                    .buildWithChildDefinitions();
+            List<Nostro> nostros = new NostroTemplate(entity, (Currency) currency)
+                    .withCustomTemplateValues()
+                    .childTemplate(rndm.nextInt(5, 10))
+                    .buildWithChildTemplates();
             allNostros.addAll(nostros);
 
             int numOfNostros = nostros.size();
@@ -107,11 +107,11 @@ public class RefDataGenerator {
         for (int idx = 0; idx < minimumRequiredCounterpartyCnt * multiplierNumForMinimumRequiredCounterpartyCnt; idx++) {
 
             // Build Counterparty
-            List<Counterparty> counterparties = new CounterpartyDefinition()
-                    .withDefaults()
+            List<Counterparty> counterparties = new CounterpartyTemplate()
+                    .withCustomTemplateValues()
                     .internal(rndm.nextBoolean())
-                    .childDefinitions(rndm.nextInt(0, 5))
-                    .buildWithChildDefinitions();
+                    .childTemplate(rndm.nextInt(0, 5))
+                    .buildWithChildTemplates();
             int numOfCps = counterparties.size();
             totalCounterparties += numOfCps;
             //System.out.println("Number of counterparties: " + numOfCps);
@@ -162,10 +162,10 @@ public class RefDataGenerator {
 
                 // Build Ssi
                 for (var currency : PreDefinedTestData.singleton().currencies) {
-                    List<Ssi> ssisForEachCurrency = new SsiDefinition(cp, currency, tradeType)
-                            .withDefaults()
-                            .childDefinitions(rndm.nextInt(2, 7))
-                            .buildWithChildDefinitions();
+                    List<Ssi> ssisForEachCurrency = new SsiTemplate(cp, currency, tradeType)
+                            .withCustomTemplateValues()
+                            .childTemplate(rndm.nextInt(2, 7))
+                            .buildWithChildTemplates();
                     ssis.addAll(ssisForEachCurrency);
 
                     ++numOfCps;
@@ -174,12 +174,12 @@ public class RefDataGenerator {
                 }
 
                 // Build CounterpartyNettingProfile
-                List<CounterpartyNettingProfile> cpnpsForEachProduct = new CounterpartyNettingProfileDefinition(cp)
-                        .withDefaults()
+                List<CounterpartyNettingProfile> cpnpsForEachProduct = new CounterpartyNettingProfileTemplate(cp)
+                        .withCustomTemplateValues()
                         .product(tradeType)
                         .netForAnyEntity(rndm.nextBoolean())
                         .netByParentCounterpartyCode(rndm.nextBoolean())
-                        .buildWithChildDefinitions();
+                        .buildWithChildTemplates();
                 cpnps.addAll(cpnpsForEachProduct);
 
             }
@@ -188,9 +188,9 @@ public class RefDataGenerator {
             // Any nostro, irrespective of entity, can be used
             final List<CounterpartySlaMapping> cpsms;
             if (shouldGenerateCpSlaMapping) {
-                cpsms = new CounterpartySlaMappingDefinition(cp, secondaryNostros.get(rndm.nextInt(0, secondaryNostros.size())))
-                        .withDefaults()
-                        .buildWithChildDefinitions();
+                cpsms = new CounterpartySlaMappingTemplate(cp, secondaryNostros.get(rndm.nextInt(0, secondaryNostros.size())))
+                        .withCustomTemplateValues()
+                        .buildWithChildTemplates();
             } else {
                 cpsms = new ArrayList<>();
             }

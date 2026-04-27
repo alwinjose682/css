@@ -1,12 +1,12 @@
-package io.alw.css.refdtgtr.definitions;
+package io.alw.css.refdtgtr.templates;
 
 import io.alw.css.refdtgtr.provider.StringRefDataProvider;
 import io.alw.css.refdtgtr.provider.RefDataProvider;
 import io.alw.datagen.tokengenerator.LongTokenGenerator;
-import io.alw.datagen.definition.CountAware;
+import io.alw.datagen.template.CountAware;
 
-final class CounterpartyNettingProfileDefinitionUtilities implements CountAware {
-    private static CounterpartyNettingProfileDefinitionUtilities utilities;
+final class CounterpartyNettingProfileTemplateUtilities implements CountAware {
+    private static CounterpartyNettingProfileTemplateUtilities utilities;
 
     private long counter;
     final LongTokenGenerator idGntr;
@@ -14,18 +14,18 @@ final class CounterpartyNettingProfileDefinitionUtilities implements CountAware 
     final RefDataProvider refDataProvider;
 
 
-    CounterpartyNettingProfileDefinitionUtilities() {
+    CounterpartyNettingProfileTemplateUtilities() {
         this.counter = 0L;
         this.idGntr = new LongTokenGenerator(999L);
         this.stringRefDataProvider = new StringRefDataProvider();
         this.refDataProvider = new RefDataProvider();
     }
 
-    static CounterpartyNettingProfileDefinitionUtilities singleton() {
+    static CounterpartyNettingProfileTemplateUtilities singleton() {
         if (utilities == null) {
-            synchronized (CounterpartyNettingProfileDefinitionUtilities.class) {
+            synchronized (CounterpartyNettingProfileTemplateUtilities.class) {
                 if (utilities == null) {
-                    utilities = new CounterpartyNettingProfileDefinitionUtilities();
+                    utilities = new CounterpartyNettingProfileTemplateUtilities();
                 }
             }
         }

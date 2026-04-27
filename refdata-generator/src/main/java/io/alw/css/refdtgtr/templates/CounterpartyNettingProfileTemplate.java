@@ -1,4 +1,4 @@
-package io.alw.css.refdtgtr.definitions;
+package io.alw.css.refdtgtr.templates;
 
 import io.alw.css.domain.cashflow.TradeType;
 import io.alw.css.domain.common.CssNettingType;
@@ -11,28 +11,28 @@ import io.alw.css.refdtgtr.model.TestDataType;
 import io.alw.css.refdtgtr.provider.StringRefDataProvider;
 import io.alw.css.refdtgtr.provider.RefDataProvider;
 import io.alw.datagen.tokengenerator.LongTokenGenerator;
-import io.alw.datagen.definition.BaseDefinition;
+import io.alw.datagen.template.TemplateBuilder;
 
 import java.time.LocalDateTime;
 
-public final class CounterpartyNettingProfileDefinition extends BaseDefinition<CounterpartyNettingProfile> {
-    private final CounterpartyNettingProfileDefinitionUtilities utilities;
+public final class CounterpartyNettingProfileTemplate extends TemplateBuilder<CounterpartyNettingProfile> {
+    private final CounterpartyNettingProfileTemplateUtilities utilities;
     private final CounterpartyNettingProfileBuilder bdr;
     private final Counterparty counterparty;
 
-    public CounterpartyNettingProfileDefinition(Counterparty counterparty) {
+    public CounterpartyNettingProfileTemplate(Counterparty counterparty) {
         this(counterparty, null);
     }
 
-    private CounterpartyNettingProfileDefinition(Counterparty counterparty, CounterpartyNettingProfile parent) {
+    private CounterpartyNettingProfileTemplate(Counterparty counterparty, CounterpartyNettingProfile parent) {
         super(parent);
-        this.utilities = CounterpartyNettingProfileDefinitionUtilities.singleton();
+        this.utilities = CounterpartyNettingProfileTemplateUtilities.singleton();
         this.bdr = CounterpartyNettingProfileBuilder.builder();
         this.counterparty = counterparty;
     }
 
     @Override
-    public CounterpartyNettingProfileDefinition withDefaults() {
+    public CounterpartyNettingProfileTemplate withCustomTemplateValues() {
         LongTokenGenerator idGntr = utilities.idGntr;
         StringRefDataProvider stringRefDataProvider = utilities.stringRefDataProvider;
 
@@ -48,18 +48,18 @@ public final class CounterpartyNettingProfileDefinition extends BaseDefinition<C
         return this;
     }
 
-    public CounterpartyNettingProfileDefinition product(TradeType product) {
+    public CounterpartyNettingProfileTemplate product(TradeType product) {
         bdr.product(product);
         return this;
     }
 
-    public CounterpartyNettingProfileDefinition netByParentCounterpartyCode(boolean netByParentCounterpartyCode) {
+    public CounterpartyNettingProfileTemplate netByParentCounterpartyCode(boolean netByParentCounterpartyCode) {
         bdr.netByParentCounterpartyCode(netByParentCounterpartyCode);
         return this;
     }
 
     /// If netForAnyEntity is true, sets [CounterpartyNettingProfile#entityCode] as null. Else, assigns an entity code
-    public CounterpartyNettingProfileDefinition netForAnyEntity(boolean netForAnyEntity) {
+    public CounterpartyNettingProfileTemplate netForAnyEntity(boolean netForAnyEntity) {
         bdr.netForAnyEntity(netForAnyEntity);
         if (netForAnyEntity) {
             bdr.entityCode(null);
@@ -72,12 +72,12 @@ public final class CounterpartyNettingProfileDefinition extends BaseDefinition<C
     }
 
     @Override
-    public CounterpartyNettingProfile buildDefinition() {
+    public CounterpartyNettingProfile buildTemplate() {
         return bdr.build();
     }
 
     @Override
-    protected CounterpartyNettingProfileDefinition childDefinition(CounterpartyNettingProfile parent) {
+    protected CounterpartyNettingProfileTemplate childTemplate(CounterpartyNettingProfile parent) {
         throw new RuntimeException("Children types are not allowed for CounterpartyNettingProfile");
     }
 }
