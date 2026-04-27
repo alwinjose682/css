@@ -1,11 +1,11 @@
-package io.alw.css.refdtgtr.definitions;
+package io.alw.css.refdtgtr.templates;
 
 import io.alw.css.domain.referencedata.Counterparty;
 import io.alw.css.domain.referencedata.CounterpartyBuilder;
 import io.alw.css.domain.referencedata.Entity;
 import io.alw.css.refdtgtr.config.ConfigParams;
 import io.alw.css.refdtgtr.domain.CounterpartyType;
-import io.alw.datagen.definition.BaseDefinition;
+import io.alw.datagen.template.TemplateBuilder;
 import io.alw.datagen.formattingtemplate.TokenFormattingTemplate;
 import io.alw.css.refdtgtr.model.CountryStateCurrency;
 import io.alw.datagen.model.AffixPosition;
@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/// Child counterparties will be created by inheriting following fields from primary definition:
+/// Child counterparties will be created by inheriting following fields from primary template:
 /// - internal
 /// - counterpartyType
 /// - entityCode
@@ -27,24 +27,24 @@ import java.util.List;
 /// It is valid for a single entity to have multiple counterparty codes
 ///
 /// Note: Creating child counterparty is optional
-public final class CounterpartyDefinition extends BaseDefinition<Counterparty> {
-    private final CounterpartyDefinitionUtilities utilities;
+public final class CounterpartyTemplate extends TemplateBuilder<Counterparty> {
+    private final CounterpartyTemplateUtilities utilities;
     private final CounterpartyBuilder cptyBdr;
     private final CountryStateCurrency countryStateCurrency;
 
-    public CounterpartyDefinition() {
+    public CounterpartyTemplate() {
         this(null, null);
     }
 
-    /// childDefinitions will be created by inheriting following fields from primary definition:
+    /// childTemplates will be created by inheriting following fields from primary template:
     /// - internal
     /// - counterpartyType
     /// - entityCode
     /// - primary
     /// - parentCounterpartyCode
-    private CounterpartyDefinition(CountryStateCurrency countryStateCurrency, Counterparty parent) {
+    private CounterpartyTemplate(CountryStateCurrency countryStateCurrency, Counterparty parent) {
         super(parent);
-        this.utilities = CounterpartyDefinitionUtilities.singleton();
+        this.utilities = CounterpartyTemplateUtilities.singleton();
         this.cptyBdr = CounterpartyBuilder.builder();
         // Below is to ensure that all child CPs have the same Entity and Entity related data
         this.countryStateCurrency = countryStateCurrency == null
@@ -53,7 +53,7 @@ public final class CounterpartyDefinition extends BaseDefinition<Counterparty> {
     }
 
     @Override
-    public CounterpartyDefinition withDefaults() {
+    public CounterpartyTemplate withDefaults() {
         BinaryStringTokenGenerator<String, Long> idProvider = utilities.idProvider();
         TokenFormattingTemplate<String, String> simpleConcatenatingTemplate = utilities.simpleConcatenatingTemplate();
         List<String> idValues = idProvider.next();
@@ -96,7 +96,7 @@ public final class CounterpartyDefinition extends BaseDefinition<Counterparty> {
     }
 
     private void setParentAndParentCounterpartyCode() {
-        if (isParentDefinition()) {
+        if (isParentTemplate()) {
             cptyBdr.parent(true);
             cptyBdr.parentCounterpartyCode(null);
         } else {
@@ -106,7 +106,7 @@ public final class CounterpartyDefinition extends BaseDefinition<Counterparty> {
     }
 
     /// If counterparty is internal, then entityCode, counterpartyType and bicCode needs to match the internal property
-    public CounterpartyDefinition internal(boolean internal) {
+    public CounterpartyTemplate internal(boolean internal) {
         cptyBdr.internal(internal);
         if (internal) {
             setEntityCode();
@@ -117,7 +117,7 @@ public final class CounterpartyDefinition extends BaseDefinition<Counterparty> {
     }
 
     private void setCounterpartyType(boolean internal) {
-        if (!isParentDefinition()) {
+        if (!isParentTemplate()) {
             cptyBdr.counterpartyType(parent.counterpartyType());
         } else {
             if (internal) {
@@ -130,7 +130,7 @@ public final class CounterpartyDefinition extends BaseDefinition<Counterparty> {
 
     private void setEntityCode() {
         if (cptyBdr.internal()) {
-            if (isParentDefinition()) {
+            if (isParentTemplate()) {
                 Entity entity = (Entity) utilities.testDataProvider().next(TestDataType.ENTITY);
                 cptyBdr.entityCode(entity.entityCode());
             } else {
@@ -141,13 +141,13 @@ public final class CounterpartyDefinition extends BaseDefinition<Counterparty> {
     }
 
     @Override
-    public Counterparty buildDefinition() {
+    public Counterparty buildTemplate() {
         return cptyBdr.build();
     }
 
     @Override
-    protected CounterpartyDefinition childDefinition(Counterparty parent) {
-        return new CounterpartyDefinition(this.countryStateCurrency, parent)
+    protected CounterpartyTemplate childTemplate(Counterparty parent) {
+        return new CounterpartyTemplate(this.countryStateCurrency, parent)
                 .withDefaults()
                 .internal(cptyBdr.internal());
     }

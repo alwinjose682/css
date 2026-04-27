@@ -1,11 +1,11 @@
-package io.alw.css.refdtgtr.definitions;
+package io.alw.css.refdtgtr.templates;
 
 import io.alw.css.domain.referencedata.Currency;
 import io.alw.css.domain.referencedata.Entity;
 import io.alw.css.domain.referencedata.Nostro;
 import io.alw.css.domain.referencedata.NostroBuilder;
 import io.alw.css.refdtgtr.config.ConfigParams;
-import io.alw.datagen.definition.BaseDefinition;
+import io.alw.datagen.template.TemplateBuilder;
 import io.alw.datagen.formattingtemplate.TokenFormattingTemplate;
 import io.alw.datagen.model.AffixPosition;
 import io.alw.css.refdtgtr.model.TestDataType;
@@ -20,26 +20,26 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class NostroDefinition extends BaseDefinition<Nostro> {
-    private final NostroDefinitionUtilities utilities;
+public class NostroTemplate extends TemplateBuilder<Nostro> {
+    private final NostroTemplateUtilities utilities;
     private final NostroBuilder nsBdr;
     private final Entity entity;
     private final Currency currency;
 
-    public NostroDefinition(Entity entity, Currency currency) {
+    public NostroTemplate(Entity entity, Currency currency) {
         this(entity, currency, null);
     }
 
-    private NostroDefinition(Entity entity, Currency currency, Nostro parent) {
+    private NostroTemplate(Entity entity, Currency currency, Nostro parent) {
         super(parent);
-        this.utilities = NostroDefinitionUtilities.singleton();
+        this.utilities = NostroTemplateUtilities.singleton();
         this.nsBdr = NostroBuilder.builder();
         this.entity = entity;
         this.currency = currency;
     }
 
     @Override
-    public NostroDefinition withDefaults() {
+    public NostroTemplate withDefaults() {
         AlphaNumericTokenGenerator idProvider = utilities.idGenerator;
         AlphaNumericTokenGenerator slaCodeProvider = utilities.slaCodeGenerator;
         LongTokenGenerator bnkAccNumGntr = utilities.bankAccountNumberGenerator;
@@ -53,17 +53,17 @@ public class NostroDefinition extends BaseDefinition<Nostro> {
                 .entityVersion(entity.entityVersion())
                 .currCode(currency.currCode())
                 .secondaryLedgerAccount(slaCodeProvider.nextAsString())
-                .primary(this.isParentDefinition())
+                .primary(this.isParentTemplate())
                 .beneBic(entity.bicCode())
                 .bankBic(bicCodeTemplate.apply("", getBicCodeTokenValues("BK"), "X", AffixPosition.SUFFIX, 2).toUpperCase())
                 .bankAccount(bnkAccNumTmplt.apply("00", List.of(bnkAccNumGntr.nextAsString()), ""))
                 .bankLine1(utilities.stringRefDataProvider.next(TestDataType.STATE_OR_CITY_OR_STREET_GENERIC_NAMES))
-                .corrBic(utilities.isAnNthDefinition(10) ? bicCodeTemplate.apply("", getBicCodeTokenValues("CR"), "X", AffixPosition.SUFFIX, 2).toUpperCase() : null)
-                .corrAccount(utilities.isAnNthDefinition(10) ? bnkAccNumTmplt.apply("", List.of(bnkAccNumGntr.nextAsString()), "00") : null)
-                .corrLine1(utilities.isAnNthDefinition(10) ? utilities.stringRefDataProvider.next(TestDataType.STATE_OR_CITY_OR_STREET_GENERIC_NAMES) : null)
+                .corrBic(utilities.isAnNthItem(10) ? bicCodeTemplate.apply("", getBicCodeTokenValues("CR"), "X", AffixPosition.SUFFIX, 2).toUpperCase() : null)
+                .corrAccount(utilities.isAnNthItem(10) ? bnkAccNumTmplt.apply("", List.of(bnkAccNumGntr.nextAsString()), "00") : null)
+                .corrLine1(utilities.isAnNthItem(10) ? utilities.stringRefDataProvider.next(TestDataType.STATE_OR_CITY_OR_STREET_GENERIC_NAMES) : null)
                 .cutOffTime(currencyMap.get(currency.currCode()).cutOffTime())
                 .cutInHoursOffset(utilities.rndmGntr.nextInt(2, 12))
-                .paymentLimit(utilities.isAnNthDefinition(6) ? BigDecimal.valueOf(utilities.rndmGntr.nextLong(10000000)) : new BigDecimal("0"))
+                .paymentLimit(utilities.isAnNthItem(6) ? BigDecimal.valueOf(utilities.rndmGntr.nextLong(10000000)) : new BigDecimal("0"))
                 .active(true)
                 .entryTime(LocalDateTime.now())
         ;
@@ -83,12 +83,12 @@ public class NostroDefinition extends BaseDefinition<Nostro> {
     }
 
     @Override
-    public Nostro buildDefinition() {
+    public Nostro buildTemplate() {
         return nsBdr.build();
     }
 
     @Override
-    protected NostroDefinition childDefinition(Nostro parent) {
-        return new NostroDefinition(this.entity, this.currency, parent).withDefaults();
+    protected NostroTemplate childTemplate(Nostro parent) {
+        return new NostroTemplate(this.entity, this.currency, parent).withDefaults();
     }
 }

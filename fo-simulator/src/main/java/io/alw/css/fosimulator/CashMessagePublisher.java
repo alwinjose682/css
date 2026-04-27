@@ -13,7 +13,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import java.util.List;
 import java.util.function.Consumer;
 
-// TODO: This class has to publish the messages to CSS cashflow-consumer component
 public class CashMessagePublisher implements Consumer<List<FoCashMessage>> {
     private final static Logger log = LoggerFactory.getLogger(CashMessagePublisher.class);
     private final KafkaTopicProperties kafkaTopicProperties;

@@ -1,4 +1,4 @@
-package io.alw.css.fosimulator.definition;
+package io.alw.css.fosimulator.template;
 
 import java.util.concurrent.atomic.AtomicLong;
 

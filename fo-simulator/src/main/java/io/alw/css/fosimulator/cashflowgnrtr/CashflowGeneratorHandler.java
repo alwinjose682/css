@@ -5,14 +5,14 @@ import io.alw.css.domain.cashflow.TradeType;
 import io.alw.css.domain.cashflow.TransactionType;
 import io.alw.css.fosimulator.CashMessagePublisher;
 import io.alw.css.fosimulator.CssTaskExecutor;
-import io.alw.css.fosimulator.definition.FxDefinition;
-import io.alw.css.fosimulator.definition.IdProvider;
-import io.alw.css.fosimulator.definition.TemporaryGenericDefinition;
+import io.alw.css.fosimulator.template.FxTemplate;
+import io.alw.css.fosimulator.template.IdProvider;
+import io.alw.css.fosimulator.template.TemporaryGenericTemplate;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.GeneratorDetail;
 import io.alw.css.fosimulator.model.CashflowGenerationInitialValues;
 import io.alw.css.fosimulator.model.properties.CashflowGeneratorProperties;
-import io.alw.css.fosimulator.model.properties.CashMessageDefinitionProperties;
+import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +24,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
+import java.util.random.RandomGenerator;
 
 public final class CashflowGeneratorHandler {
     private final static Logger log = LoggerFactory.getLogger(CashflowGeneratorHandler.class);
@@ -32,7 +33,7 @@ public final class CashflowGeneratorHandler {
     private final Map<String, List<CashflowGenerator>> generatorMap;
 
     private final CashflowGeneratorProperties cashflowGeneratorProperties;
-    private final CashMessageDefinitionProperties cashMessageDefinitionProperties;
+    private final CashMessageTemplateProperties cashMessageTemplateProperties;
     private final CashMessagePublisher cashMessagePublisher;
     private final RefDataService refDataService;
     private final DayTicker dayTicker;
@@ -41,9 +42,9 @@ public final class CashflowGeneratorHandler {
     // Initial Generator Values - initialized only once
     private CashflowGenerationInitialValues cfGenerationInitialValues;
 
-    public CashflowGeneratorHandler(CashflowGeneratorProperties cashflowGeneratorProperties, CashMessageDefinitionProperties cashMessageDefinitionProperties, CashMessagePublisher cashMessagePublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
+    public CashflowGeneratorHandler(CashflowGeneratorProperties cashflowGeneratorProperties, CashMessageTemplateProperties cashMessageTemplateProperties, CashMessagePublisher cashMessagePublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
         this.cashflowGeneratorProperties = cashflowGeneratorProperties;
-        this.cashMessageDefinitionProperties = cashMessageDefinitionProperties;
+        this.cashMessageTemplateProperties = cashMessageTemplateProperties;
         this.cashMessagePublisher = cashMessagePublisher;
         this.refDataService = refDataService;
         this.dayTicker = DayTicker.initSingleton(10, 30, 2, cssTaskExecutor);
@@ -177,13 +178,14 @@ public final class CashflowGeneratorHandler {
 
     private Supplier<List<FoCashMessage>> createCashMessageSupplier(TransactionType transactionType, TradeType tradeType, Entity entity) {
         LocalDate initialValueDate = cfGenerationInitialValues.valueDate();
+        RandomGenerator rndm = RandomGenerator.getDefault();
         return switch (tradeType) {
-            case FX -> new FxDefinition(entity, transactionType, initialValueDate, refDataService, dayTicker, cashMessageDefinitionProperties);
-            case PAYMENT -> new TemporaryGenericDefinition(entity, TradeType.PAYMENT, transactionType, initialValueDate, refDataService, dayTicker, cashMessageDefinitionProperties);
-            case FX_NDF -> new TemporaryGenericDefinition(entity, TradeType.FX_NDF, transactionType, initialValueDate, refDataService, dayTicker, cashMessageDefinitionProperties);
-            case BOND -> new TemporaryGenericDefinition(entity, TradeType.BOND, transactionType, initialValueDate, refDataService, dayTicker, cashMessageDefinitionProperties);
-            case REPO -> new TemporaryGenericDefinition(entity, TradeType.REPO, transactionType, initialValueDate, refDataService, dayTicker, cashMessageDefinitionProperties);
-            case OPTION -> new TemporaryGenericDefinition(entity, TradeType.OPTION, transactionType, initialValueDate, refDataService, dayTicker, cashMessageDefinitionProperties);
+            case FX -> new FxTemplate(entity, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
+            case PAYMENT -> new TemporaryGenericTemplate(entity, TradeType.PAYMENT, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
+            case FX_NDF -> new TemporaryGenericTemplate(entity, TradeType.FX_NDF, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
+            case BOND -> new TemporaryGenericTemplate(entity, TradeType.BOND, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
+            case REPO -> new TemporaryGenericTemplate(entity, TradeType.REPO, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
+            case OPTION -> new TemporaryGenericTemplate(entity, TradeType.OPTION, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
         };
     }
 

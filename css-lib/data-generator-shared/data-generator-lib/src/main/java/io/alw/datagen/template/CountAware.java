@@ -1,4 +1,4 @@
-package io.alw.datagen.definition;
+package io.alw.datagen.template;
 
 public interface CountAware {
     long counter();
@@ -6,8 +6,8 @@ public interface CountAware {
     /// The sub class must invoke this method at the appropriate place to increment the counter
     void incrementCounter();
 
-    /// TO check, for example, the definition is 10th definition or the definition is the next 10th definition etc.
-    default boolean isAnNthDefinition(int nth) {
+    /// TO check, for example, the item occurs at a 10th position in a sequence
+    default boolean isAnNthItem(int nth) {
         return counter() % nth == 0;
     }
 }
