@@ -19,10 +19,10 @@ public enum TradeEventType {
     /// All EventAction, including REMOVE, are valid for AMEND and CORRECTION.
     /// Once REMOVEd the CF is cancelled in CSS, but trade remains live in FO, but remains Un-Authorized.
     /// Later, when Authorized, via one of the TradeEventType, a new cashflow will be generated and send to CSS.
-    AMEND(List.of(ADD,MODIFY,REMOVE)),
-    CORRECTION(List.of(ADD,MODIFY,REMOVE)), // Correction is required only for special cases. For example, when the value of the security decreases 10% or more. Not applicable for all trades.
+    AMEND(List.of(ADD, MODIFY, REMOVE)),
+    CORRECTION(List.of(ADD, MODIFY, REMOVE)), // Correction is required only for special cases. For example, when the value of the security decreases 10% or more. Not applicable for all trades.
     /// EventAction.REMOVE is not valid for BOOK_MOVE.
-    BOOK_MOVE(List.of(ADD,MODIFY)),
+    BOOK_MOVE(List.of(ADD, MODIFY)),
 
     /// Full trade cancellation. Only EventAction.ADD is valid
     CANCEL(List.of(ADD)),
@@ -36,7 +36,8 @@ public enum TradeEventType {
     EXPIRE(List.of(ADD)),
 
     // MM, Repo
-    /// Only EventAction.ADD is valid.
+    /// Only EventAction.ADD is valid for INTEREST_ACTION, ROLL and TERMINATE
+    INTEREST_ACTION(List.of(ADD)),
     ROLL(List.of(ADD)),
     /// Terminate is not trade cancellation. Ex, Early maturity of MM Term deal
     TERMINATE(List.of(ADD)),
@@ -48,7 +49,7 @@ public enum TradeEventType {
 
     // FixedIncome, like Bond
     /// Only EventAction.ADD is valid.
-    INTEREST_ACTION(List.of(ADD)),
+    COUPON(List.of(ADD)),
     MATURE(List.of(ADD));
 
     private final List<TradeEventAction> actions;

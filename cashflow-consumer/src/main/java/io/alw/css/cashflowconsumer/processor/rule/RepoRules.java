@@ -6,6 +6,7 @@ import java.util.List;
 
 import static io.alw.css.cashflowconsumer.processor.rule.CashflowOrder.NON_FIRST;
 import static io.alw.css.domain.cashflow.RevisionType.COR;
+import static io.alw.css.domain.cashflow.RevisionType.NEW;
 import static io.alw.css.domain.cashflow.TradeEventAction.ADD;
 import static io.alw.css.domain.cashflow.TradeType.REPO;
 
@@ -15,5 +16,9 @@ public final class RepoRules implements RuleDefinition {
             new TradeEventAndAction(TradeEventType.TERMINATE, ADD)
     ));
 
-    static List<Rule> rules = List.of(rule1);
+    private static final Rule rule2 = new Rule(REPO, NEW, NON_FIRST, List.of(
+            new TradeEventAndAction(TradeEventType.INTEREST_ACTION, ADD)
+    ));
+
+    static List<Rule> rules = List.of(rule1, rule2);
 }
