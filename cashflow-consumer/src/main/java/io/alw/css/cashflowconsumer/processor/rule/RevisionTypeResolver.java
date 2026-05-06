@@ -19,6 +19,7 @@ public final class RevisionTypeResolver {
     private static final Map<CashflowOrder, List<Rule>> ndfRules = combineWithCommonRulesAndGroupByCashflowOrder(NdfRules.rules);
     private static final Map<CashflowOrder, List<Rule>> bondRules = combineWithCommonRulesAndGroupByCashflowOrder(BondRules.rules);
     private static final Map<CashflowOrder, List<Rule>> repoRules = combineWithCommonRulesAndGroupByCashflowOrder(RepoRules.rules);
+    private static final Map<CashflowOrder, List<Rule>> mmRules = combineWithCommonRulesAndGroupByCashflowOrder(MmRules.rules);
     private static final Map<CashflowOrder, List<Rule>> optionRules = combineWithCommonRulesAndGroupByCashflowOrder(OptionRules.rules);
 
     public static RevisionType resolve(boolean firstCashflow, TradeType tradeType, TradeEventType tradeEventType, TradeEventAction tradeEventAction) {
@@ -66,6 +67,7 @@ public final class RevisionTypeResolver {
             case FX_NDF -> ndfRules;
             case BOND -> bondRules;
             case REPO -> repoRules;
+            case MM -> mmRules;
             case OPTION -> optionRules;
         };
     }

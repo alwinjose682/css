@@ -185,6 +185,7 @@ public final class CashflowGeneratorHandler {
             case FX_NDF -> new TemporaryGenericTemplate(entity, TradeType.FX_NDF, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
             case BOND -> new TemporaryGenericTemplate(entity, TradeType.BOND, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
             case REPO -> new TemporaryGenericTemplate(entity, TradeType.REPO, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
+            case MM -> new TemporaryGenericTemplate(entity, TradeType.MM, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
             case OPTION -> new TemporaryGenericTemplate(entity, TradeType.OPTION, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
         };
     }
