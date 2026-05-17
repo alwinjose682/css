@@ -11,7 +11,9 @@ trade_type VARCHAR2(15),                                                 			-- {
 book_code VARCHAR2(5),                                                  			-- { bookCode }
 counter_book_code VARCHAR2(5),                                          			-- { counterBookCode }
 transaction_type VARCHAR2(16),                                     					-- { transactionType | STRING }
+--trade_event_type VARCHAR2(16) default 'DUMMY',
 rate NUMBER(30,10),                                                        			-- { rate | scale = PaymentConstants.RATE_SCALE }
+--rate_type VARCHAR2(7) default 'DUMMY',
 value_date DATE,                                                 					-- { valueDate }
 --list<tradelinkentity> tradeLinks,                                     			-- { @OneToMany | chk src file for full info }
 entity_code VARCHAR2(5),                                                			-- { entityCode }

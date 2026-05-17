@@ -39,6 +39,9 @@ sealed abstract class CashMessageTemplate
     protected final DayTicker dayTicker;
     protected final RefDataService refDataService;
 
+    //Common Constants
+    protected final static int VERSION_ONE = 1;
+
     public CashMessageTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
         this(null, entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMsgTemplateProps);
     }
@@ -66,7 +69,7 @@ sealed abstract class CashMessageTemplate
 
     /// NOTE: New [CashMessageTemplate] instances are not created by this method.
     /// Instead, the existing [FoCashMessageBuilder] (`bdr`) is just replaced with a new one and then new values are assigned.
-    protected FoCashMessageBuilder getFoCashMsgBuilderForNewTemplate() {
+    protected FoCashMessageBuilder getNewFoCashMsgBuilder() {
         msgTemplateHelper.incrementCounter();
         bdr = FoCashMessageBuilder.builder();
 
@@ -83,9 +86,9 @@ sealed abstract class CashMessageTemplate
                 .tradeEventAction(TradeEventAction.ADD)
                 // Id values
                 .tradeID(idProvider.nextTradeId())
-                .tradeVersion(1)
+                .tradeVersion(VERSION_ONE)
                 .cashflowID(idProvider.nextCashflowId())
-                .cashflowVersion(1)
+                .cashflowVersion(VERSION_ONE)
                 // Entity dependent fields. Book codes are dummy for now
                 .bookCode(refDataService.dummyBookCode())
                 .counterBookCode(msgTemplateHelper.isInterbookTransaction() ? refDataService.dummyCounterBookCode() : null) // Also a TransactionType dependent
