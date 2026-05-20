@@ -27,7 +27,7 @@ public abstract class TemplateBuilder<T extends TestDataGeneratable> {
         this.parent = parent;
     }
 
-    public abstract TemplateBuilder<T> withCustomTemplateValues();
+    public abstract TemplateBuilder<T> withTemplateValues();
 
     public abstract T buildTemplate();
 

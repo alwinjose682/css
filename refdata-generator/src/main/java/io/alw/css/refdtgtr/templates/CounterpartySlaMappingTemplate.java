@@ -29,7 +29,7 @@ public class CounterpartySlaMappingTemplate extends TemplateBuilder<Counterparty
     }
 
     @Override
-    public CounterpartySlaMappingTemplate withCustomTemplateValues() {
+    public CounterpartySlaMappingTemplate withTemplateValues() {
         LongTokenGenerator idGntr = utilities.idGntr;
 
         bdr

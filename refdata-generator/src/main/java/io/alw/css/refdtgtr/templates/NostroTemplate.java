@@ -39,7 +39,7 @@ public class NostroTemplate extends TemplateBuilder<Nostro> {
     }
 
     @Override
-    public NostroTemplate withCustomTemplateValues() {
+    public NostroTemplate withTemplateValues() {
         AlphaNumericTokenGenerator idProvider = utilities.idGenerator;
         AlphaNumericTokenGenerator slaCodeProvider = utilities.slaCodeGenerator;
         LongTokenGenerator bnkAccNumGntr = utilities.bankAccountNumberGenerator;
@@ -89,6 +89,6 @@ public class NostroTemplate extends TemplateBuilder<Nostro> {
 
     @Override
     protected NostroTemplate childTemplate(Nostro parent) {
-        return new NostroTemplate(this.entity, this.currency, parent).withCustomTemplateValues();
+        return new NostroTemplate(this.entity, this.currency, parent).withTemplateValues();
     }
 }

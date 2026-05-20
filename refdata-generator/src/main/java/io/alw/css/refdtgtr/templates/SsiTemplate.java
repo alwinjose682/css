@@ -40,7 +40,7 @@ public final class SsiTemplate extends TemplateBuilder<Ssi> {
     }
 
     @Override
-    public SsiTemplate withCustomTemplateValues() {
+    public SsiTemplate withTemplateValues() {
         AlphaNumericTokenGenerator idGenerator = utilities.idGenerator;
         StringRefDataProvider stringRefDataProvider = utilities.stringRefDataProvider;
         LongTokenGenerator bnkAccNumGntr = utilities.bankAccountNumberGenerator;
@@ -87,6 +87,6 @@ public final class SsiTemplate extends TemplateBuilder<Ssi> {
 
     @Override
     protected SsiTemplate childTemplate(Ssi parent) {
-        return new SsiTemplate(parent, this.counterparty, this.currency, this.product).withCustomTemplateValues();
+        return new SsiTemplate(parent, this.counterparty, this.currency, this.product).withTemplateValues();
     }
 }
