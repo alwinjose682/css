@@ -41,7 +41,7 @@ public final class TemporaryGenericTemplate extends CashMessageTemplateWithDataS
                 .buildWithRelatedTemplates();
 
         // Select new cash messages for future amendments and add to the message store
-        msgStoreHelper.rndmlySelectValidAmendCandidatesAndSave(newAndAmendedMsgs, inclusionCriteria);
+        msgStoreHelper.selectAmendCandidatesAndSave(newAndAmendedMsgs, inclusionCriteria);
 
         return newAndAmendedMsgs;
     }

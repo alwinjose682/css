@@ -23,7 +23,7 @@ import static io.alw.css.fosimulator.model.TradeLinkConstants.tradeLink_parentCa
 
 sealed abstract class CashMessageTemplateWithDataStore
         extends CashMessageTemplate
-        permits FxTemplate, TemporaryGenericTemplate {
+        permits FxTemplate, MmTemplate, TemporaryGenericTemplate {
 
     // Message Store and Related
     protected final CashMessageStoreHelper msgStoreHelper;

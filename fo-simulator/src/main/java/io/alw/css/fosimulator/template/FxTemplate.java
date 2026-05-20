@@ -20,7 +20,7 @@ import static io.alw.css.fosimulator.model.TradeLinkConstants.tradeLink_counterS
 
 public final class FxTemplate extends CashMessageTemplateWithDataStore {
     private long counterSideCashflowId;
-    private final static Predicate<FoCashMessage> inclusionCriteria = msg -> msg.tradeEventType() != TradeEventType.CANCEL;
+    private final static Predicate<FoCashMessage> amendableMsgCriteria = msg -> msg.tradeEventType() != TradeEventType.CANCEL;
 
     public FxTemplate(Entity entity, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMessageTemplateProperties) {
         super(entity, TradeType.FX, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
@@ -39,7 +39,7 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore {
                 .buildWithRelatedTemplates();
 
         // Select new cash messages for future amendments and add to the message store
-        msgStoreHelper.rndmlySelectValidAmendCandidatesAndSave(newAndAmendedMsgs, inclusionCriteria);
+        msgStoreHelper.selectAmendCandidatesAndSave(newAndAmendedMsgs, amendableMsgCriteria);
 
         return newAndAmendedMsgs;
     }

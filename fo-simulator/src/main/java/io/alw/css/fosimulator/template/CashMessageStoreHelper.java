@@ -44,7 +44,7 @@ final class CashMessageStoreHelper {
     }
 
     /// Randomly select valid amend candidates and save in [CashMessageStore] with a random retrieval day. Random retrieval day depends on [CashMessageTemplate#maxAmendmentGenerationDelayInDays]
-    void rndmlySelectValidAmendCandidatesAndSave(List<FoCashMessage> msgs, Predicate<FoCashMessage> inclusionCriteria) {
+    void selectAmendCandidatesAndSave(List<FoCashMessage> msgs, Predicate<FoCashMessage> inclusionCriteria) {
         long[] amendmentDelayDay = new long[1];
         Predicate<FoCashMessage> finalInclusionCriteria = msg -> inclusionCriteria
                 .and(m -> m.cashflowVersion() + m.tradeVersion() <= cashMsgTemplateProps.maxPermittedAmendments())
