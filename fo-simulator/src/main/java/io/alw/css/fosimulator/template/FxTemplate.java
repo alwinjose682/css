@@ -53,11 +53,12 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore {
         String currCode = entity.currCode();
 
         FoCashMessageBuilder fx2Bdr = createBuilderFrom(fxSide1)
-                // Values that differ for counter side of the FX deal
+                // Id and version of fxSide2 already determined when fxSide1 was created
                 .cashflowID(ids.cashflowID())
                 .cashflowVersion(ids.cashflowVersion())
                 .tradeID(ids.tradeID())
                 .tradeVersion(ids.tradeVersion())
+                // Values that differ for counter side of the FX deal
                 .counterpartyCode(counterpartyCode)
                 .entityCode(entityCode)
                 .currCode(currCode)
