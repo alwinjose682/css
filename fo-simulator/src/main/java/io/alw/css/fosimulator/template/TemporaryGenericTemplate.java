@@ -49,7 +49,7 @@ public final class TemporaryGenericTemplate extends CashMessageTemplateWithDataS
     @Override
     public TemplateBuilder<FoCashMessage> withTemplateValues() {
         // Create the builder with base values
-        FoCashMessageBuilder bdr = getFoCashMsgBuilderForNewTemplate();
+        FoCashMessageBuilder bdr = getNewFoCashMsgBuilder();
         bdr
                 .valueDate(msgTemplateHelper.getRndmValueDate(20))
                 .tradeLinks(null)

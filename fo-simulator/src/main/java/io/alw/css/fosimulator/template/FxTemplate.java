@@ -19,11 +19,13 @@ import static io.alw.css.domain.cashflow.TradeEventType.*;
 import static io.alw.css.fosimulator.model.TradeLinkConstants.tradeLink_counterSide;
 
 public final class FxTemplate extends CashMessageTemplateWithDataStore {
-    private long counterSideCashflowId;
     private final static Predicate<FoCashMessage> amendableMsgCriteria = msg -> msg.tradeEventType() != TradeEventType.CANCEL;
 
     public FxTemplate(Entity entity, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMessageTemplateProperties) {
         super(entity, TradeType.FX, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
+    }
+
+    private record TradeIds(long cashflowID, int cashflowVersion, long tradeID, int tradeVersion) {
     }
 
     @Override
@@ -34,7 +36,6 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore {
         // Build amended cashMessages and cashMessages for a new FX trade. There are 2 cashMessages for a single FX trade
         List<FoCashMessage> newAndAmendedMsgs = ((FxTemplate) newTemplateBuilder())
                 .withAmendedMessagesOf(messagesToBeAmended)
-                .withRelatedTemplate(this::buildCounterSide)
                 .withTemplateValues()
                 .buildWithRelatedTemplates();
 
@@ -44,41 +45,63 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore {
         return newAndAmendedMsgs;
     }
 
-    /// Builds the counter side of the given FX message
-    private FoCashMessage buildCounterSide(FoCashMessage fx1) {
-        String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(fx1.counterpartyCode());
-        Entity entity = refDataService.entityOtherThan(rndm, fx1.entityCode());
+    /// Builds the counter side(side 2) of the fx message
+    private FoCashMessage buildCounterSide(FoCashMessage fxSide1, TradeIds ids) {
+        String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(fxSide1.counterpartyCode());
+        Entity entity = refDataService.entityOtherThan(rndm, fxSide1.entityCode());
         String entityCode = entity.entityCode();
         String currCode = entity.currCode();
 
-        FoCashMessageBuilder fx2Bdr = createBuilderFrom(fx1)
+        FoCashMessageBuilder fx2Bdr = createBuilderFrom(fxSide1)
                 // Values that differ for counter side of the FX deal
-                .cashflowID(counterSideCashflowId)
+                .cashflowID(ids.cashflowID())
+                .cashflowVersion(ids.cashflowVersion())
+                .tradeID(ids.tradeID())
+                .tradeVersion(ids.tradeVersion())
                 .counterpartyCode(counterpartyCode)
                 .entityCode(entityCode)
                 .currCode(currCode)
-                .tradeLinks(List.of(new TradeLink(tradeLink_counterSide, String.valueOf(fx1.cashflowID()))))
-                .payOrReceive(fx1.payOrReceive() == PayOrReceive.RECEIVE ? PayOrReceive.PAY : PayOrReceive.RECEIVE)
+                .tradeLinks(List.of(
+                        TradeLinkBuilder.builder()
+                                .linkType(tradeLink_counterSide)
+                                .relatedReference(null)
+                                .relatedFoCashflowID(fxSide1.cashflowID())
+                                .relatedFoCashflowVersion(fxSide1.cashflowVersion())
+                                .relatedTradeID(fxSide1.tradeID())
+                                .relatedTradeVersion(fxSide1.tradeVersion())
+                                .build()))
+                .payOrReceive(fxSide1.payOrReceive() == PayOrReceive.RECEIVE ? PayOrReceive.PAY : PayOrReceive.RECEIVE)
                 .amount(BigDecimal.valueOf(rndm.nextDouble(2, 95036))); // TODO and NOTE: The amount of the other side of FX trade is not calculated based on rate. It is just a random number which is incorrect.
         // bookCode and counterBookCode are not changed as they are dummy values as of now
 
         return fx2Bdr.build();
     }
 
+    /// Build side 1 of the fx message
     @Override
     public TemplateBuilder<FoCashMessage> withTemplateValues() {
         IdProvider idProvider = IdProvider.singleton();
-        // Create the builder with base values
-        FoCashMessageBuilder bdr = getFoCashMsgBuilderForNewTemplate();
-        // Generate cashflowID for the counter side of this FX deal
-        counterSideCashflowId = idProvider.nextCashflowId();
-        // Set the values specific to FX trade
+        // Create FoCashMessage builder for new template with default base values
+        FoCashMessageBuilder bdr = getNewFoCashMsgBuilder();
+        // Generate trade IDs for the counter side of the FX deal
+        var counterSideIds = new TradeIds(idProvider.nextCashflowId(), bdr.cashflowVersion(), bdr.tradeID(), bdr.tradeVersion());
+        // Set the values specific to the FX trade being built
         bdr
                 .valueDate(msgTemplateHelper.getRndmValueDate(50))
-                .tradeLinks(List.of(new TradeLink(tradeLink_counterSide, String.valueOf(counterSideCashflowId))))
+                .tradeLinks(List.of(
+                        TradeLinkBuilder.builder()
+                                .linkType(tradeLink_counterSide)
+                                .relatedReference(null)
+                                .relatedFoCashflowID(counterSideIds.cashflowID())
+                                .relatedFoCashflowVersion(counterSideIds.cashflowVersion())
+                                .relatedTradeID(counterSideIds.tradeID())
+                                .relatedTradeVersion(counterSideIds.tradeVersion())
+                                .build()))
                 .payOrReceive(rndm.nextBoolean() ? PayOrReceive.PAY : PayOrReceive.RECEIVE)
                 .amount(BigDecimal.valueOf(rndm.nextDouble(2, 95036)))
         ;
+
+        this.withRelatedTemplate((fxSide1) -> buildCounterSide(fxSide1, counterSideIds));
 
         return this;
     }

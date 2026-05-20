@@ -43,6 +43,10 @@ public interface CashflowMapper {
             tle.setCashflowVersion(cashflowVersion);
             tle.setLinkType(tl.linkType());
             tle.setRelatedReference(tl.relatedReference());
+            tle.setRelatedFoCashflowID(tl.relatedFoCashflowID());
+            tle.setRelatedFoCashflowVersion(tl.relatedFoCashflowVersion());
+            tle.setRelatedTradeID(tl.relatedTradeID());
+            tle.setRelatedTradeVersion(tl.relatedTradeVersion());
             tle.setCashflow(cashflowEntity);
             return tle;
         }).toList();
