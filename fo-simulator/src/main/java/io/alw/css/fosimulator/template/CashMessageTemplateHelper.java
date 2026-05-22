@@ -50,12 +50,39 @@ final class CashMessageTemplateHelper implements CountAware {
     /// This means this method can return back valued date as well, but the percentage of back valued cashMessages is configured to be very less.
     LocalDate getRndmValueDate() {
         final long daysToAdd;
-        if (isAnNthItem(cashMsgTemplateProps.numOfCfsForABackVdCf())) {
+        if (isAnNthItem(cashMsgTemplateProps.numOfCfsForABackVdCf())) { // A back valued cashflow will be created only when this becomes true
             daysToAdd = rndm.nextInt(Math.negateExact(cashMsgTemplateProps.vdBackwardDays()), -1);
         } else {
             daysToAdd = dayForMsgTemplate + rndm.nextInt(0, cashMsgTemplateProps.vdForwardDays());
         }
         return initialValueDate.plusDays(daysToAdd);
+    }
+
+    LocalDate getRndmFutureValuedDate() {
+        return getRndmFutureValueDateRelativeTo(initialValueDate, false, 0);
+    }
+
+    /// NOTE: This method can create valueDate higher than cashMsgTemplateProps::vdForwardDays()
+    /// NOTE: The method can return a current or future valued date even though the param`isBackValuedDateExpectedAsResult` is set to true
+    LocalDate getRndmFutureValueDateRelativeTo(LocalDate givenDate, boolean isBackValuedDateExpectedAsResult, long minimumNumOfDaysIntoFutureRelativeToTheGivenDate) {
+        final long daysToAdd;
+        if (!isBackValuedDateExpectedAsResult) {
+            daysToAdd = dayForMsgTemplate + minimumNumOfDaysIntoFutureRelativeToTheGivenDate + rndm.nextInt(0, 360 + cashMsgTemplateProps.vdForwardDays());
+        } else {
+            daysToAdd = minimumNumOfDaysIntoFutureRelativeToTheGivenDate;
+        }
+
+        return givenDate.plusDays(daysToAdd);
+    }
+
+    /// If the resultant value date after adding `daysToAdd` is after `dateRangeEnd`, then `dateRangeEnd` is returned as the result, because the value date returned must be within the given date range
+    public LocalDate getFutureValueDate(long daysToAdd, LocalDate dateRangeStart, LocalDate dateRangeEnd) {
+        LocalDate resultVD = dateRangeStart.plusDays(dayForMsgTemplate + daysToAdd);
+        if (dateRangeStart.isAfter(dateRangeEnd)) {
+            return dateRangeEnd;
+        } else {
+            return resultVD;
+        }
     }
 
     String getCounterpartyCorrespondingToTransactionType() {

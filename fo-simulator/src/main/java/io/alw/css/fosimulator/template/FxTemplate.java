@@ -6,6 +6,7 @@ import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
+import io.alw.css.fosimulator.template.common.CashflowIds;
 import io.alw.datagen.template.TemplateBuilder;
 
 import java.math.BigDecimal;
@@ -23,9 +24,6 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore {
 
     public FxTemplate(Entity entity, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMessageTemplateProperties) {
         super(entity, TradeType.FX, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
-    }
-
-    private record TradeIds(long cashflowID, int cashflowVersion, long tradeID, int tradeVersion) {
     }
 
     @Override
@@ -46,18 +44,19 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore {
     }
 
     /// Builds the counter side(side 2) of the fx message
-    private FoCashMessage buildCounterSide(FoCashMessage fxSide1, TradeIds ids) {
+    private FoCashMessage buildCounterSide(FoCashMessage fxSide1, CashflowIds ids) {
         String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(fxSide1.counterpartyCode());
         Entity entity = refDataService.entityOtherThan(rndm, fxSide1.entityCode());
         String entityCode = entity.entityCode();
         String currCode = entity.currCode();
 
         FoCashMessageBuilder fx2Bdr = createBuilderFrom(fxSide1)
-                // Values that differ for counter side of the FX deal
+                // Id and version of fxSide2 already determined when fxSide1 was created
                 .cashflowID(ids.cashflowID())
                 .cashflowVersion(ids.cashflowVersion())
                 .tradeID(ids.tradeID())
                 .tradeVersion(ids.tradeVersion())
+                // Values that differ for counter side of the FX deal
                 .counterpartyCode(counterpartyCode)
                 .entityCode(entityCode)
                 .currCode(currCode)
@@ -84,7 +83,7 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore {
         // Create FoCashMessage builder for new template with default base values
         FoCashMessageBuilder bdr = getNewFoCashMsgBuilder();
         // Generate trade IDs for the counter side of the FX deal
-        var counterSideIds = new TradeIds(idProvider.nextCashflowId(), bdr.cashflowVersion(), bdr.tradeID(), bdr.tradeVersion());
+        var counterSideIds = new CashflowIds(idProvider.nextCashflowId(), VERSION_ONE, bdr.tradeID(), bdr.tradeVersion());
         // Set the values specific to the FX trade being built
         bdr
                 .valueDate(msgTemplateHelper.getRndmValueDate(50))
