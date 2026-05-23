@@ -67,7 +67,7 @@ final class CashMessageTemplateHelper implements CountAware {
     LocalDate getRndmFutureValueDateRelativeTo(LocalDate givenDate, boolean isBackValuedDateExpectedAsResult, long minimumNumOfDaysIntoFutureRelativeToTheGivenDate) {
         final long daysToAdd;
         if (!isBackValuedDateExpectedAsResult) {
-            daysToAdd = dayForMsgTemplate + minimumNumOfDaysIntoFutureRelativeToTheGivenDate + rndm.nextInt(0, 360 + cashMsgTemplateProps.vdForwardDays());
+            daysToAdd = dayForMsgTemplate + minimumNumOfDaysIntoFutureRelativeToTheGivenDate + rndm.nextInt(0, 365 + cashMsgTemplateProps.vdForwardDays());
         } else {
             daysToAdd = minimumNumOfDaysIntoFutureRelativeToTheGivenDate;
         }

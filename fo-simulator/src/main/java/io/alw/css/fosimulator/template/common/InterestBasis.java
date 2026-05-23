@@ -1,5 +1,5 @@
 package io.alw.css.fosimulator.template.common;
 
 public enum InterestBasis {
-    ThirtyBy360
+    /*ActBy360, ActBy365, ActByAct,*/ ThirtyBy360
 }
