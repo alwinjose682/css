@@ -6,6 +6,8 @@ import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
+import io.alw.css.fosimulator.store.CashMessageStore;
+import io.alw.css.fosimulator.store.InMemoryCashMessageStore;
 import io.alw.css.fosimulator.template.common.CashflowIds;
 import io.alw.datagen.template.TemplateBuilder;
 
@@ -19,28 +21,56 @@ import static io.alw.css.domain.cashflow.TradeEventAction.*;
 import static io.alw.css.domain.cashflow.TradeEventType.*;
 import static io.alw.css.fosimulator.model.TradeLinkConstants.tradeLink_counterSide;
 
-public final class FxTemplate extends CashMessageTemplateWithDataStore {
-    private final static Predicate<FoCashMessage> amendableMsgCriteria = msg -> msg.tradeEventType() != TradeEventType.CANCEL;
+public final class FxTemplate extends CashMessageTemplateWithDataStore<FoCashMessage> {
+    // Message Store and Related
+    private final CashMessageStoreHelper<FoCashMessage> msgStoreHelper;
+    private final Predicate<FoCashMessage> amendableMsgSelectionCriteria = msg -> msg.tradeEventType() != TradeEventType.CANCEL
+            && (msg.cashflowVersion() + msg.tradeVersion() <= msgTemplateHelper.cashMsgTemplateProps.maxPermittedAmendments() && msg.cashflowID() % 10 + msg.tradeID() % 10 > 10 /* To choose random cashflows*/);
 
     public FxTemplate(Entity entity, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMessageTemplateProperties) {
         super(entity, TradeType.FX, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
+
+        CashMessageStore<FoCashMessage> msgStore = new InMemoryCashMessageStore<>();
+        this.msgStoreHelper = new CashMessageStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
     }
 
     @Override
-    public List<FoCashMessage> get() {
-        // Get cash messages that need to be amended
-        final List<FoCashMessage> messagesToBeAmended = msgStoreHelper.getMessagesToBeAmended();
-
+    protected FxTemplate templateBuildSteps() {
         // Build amended cashMessages and cashMessages for a new FX trade. There are 2 cashMessages for a single FX trade
-        List<FoCashMessage> newAndAmendedMsgs = ((FxTemplate) newTemplateBuilder())
-                .withAmendedMessagesOf(messagesToBeAmended)
-                .withTemplateValues()
-                .buildWithRelatedTemplates();
+        ((FxTemplate) newTemplateBuilder())
+                .withMessageAmendments()
+                .withTemplateValues();
 
-        // Select new cash messages for future amendments and add to the message store
-        msgStoreHelper.selectAmendCandidatesAndSave(newAndAmendedMsgs, amendableMsgCriteria);
+        return this;
+    }
 
-        return newAndAmendedMsgs;
+    /// Build side 1 of the fx message
+    @Override
+    public TemplateBuilder<FoCashMessage> withTemplateValues() {
+        IdProvider idProvider = IdProvider.singleton();
+        // Create FoCashMessage builder for new template with default base values
+        FoCashMessageBuilder bdr = getNewFoCashMsgBuilder();
+        // Generate trade IDs for the counter side of the FX deal
+        var counterSideIds = new CashflowIds(idProvider.nextCashflowId(), VERSION_ONE, bdr.tradeID(), bdr.tradeVersion());
+        // Set the values specific to the FX trade being built
+        bdr
+                .valueDate(msgTemplateHelper.getRndmValueDate(50))
+                .tradeLinks(List.of(
+                        TradeLinkBuilder.builder()
+                                .linkType(tradeLink_counterSide)
+                                .relatedReference(null)
+                                .relatedFoCashflowID(counterSideIds.cashflowID())
+                                .relatedFoCashflowVersion(counterSideIds.cashflowVersion())
+                                .relatedTradeID(counterSideIds.tradeID())
+                                .relatedTradeVersion(counterSideIds.tradeVersion())
+                                .build()))
+                .payOrReceive(rndm.nextBoolean() ? PayOrReceive.PAY : PayOrReceive.RECEIVE)
+                .amount(BigDecimal.valueOf(rndm.nextDouble(2, 95036)))
+        ;
+
+        this.withRelatedTemplate((fxSide1) -> buildCounterSide(fxSide1, counterSideIds));
+
+        return this;
     }
 
     /// Builds the counter side(side 2) of the fx message
@@ -76,35 +106,6 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore {
         return fx2Bdr.build();
     }
 
-    /// Build side 1 of the fx message
-    @Override
-    public TemplateBuilder<FoCashMessage> withTemplateValues() {
-        IdProvider idProvider = IdProvider.singleton();
-        // Create FoCashMessage builder for new template with default base values
-        FoCashMessageBuilder bdr = getNewFoCashMsgBuilder();
-        // Generate trade IDs for the counter side of the FX deal
-        var counterSideIds = new CashflowIds(idProvider.nextCashflowId(), VERSION_ONE, bdr.tradeID(), bdr.tradeVersion());
-        // Set the values specific to the FX trade being built
-        bdr
-                .valueDate(msgTemplateHelper.getRndmValueDate(50))
-                .tradeLinks(List.of(
-                        TradeLinkBuilder.builder()
-                                .linkType(tradeLink_counterSide)
-                                .relatedReference(null)
-                                .relatedFoCashflowID(counterSideIds.cashflowID())
-                                .relatedFoCashflowVersion(counterSideIds.cashflowVersion())
-                                .relatedTradeID(counterSideIds.tradeID())
-                                .relatedTradeVersion(counterSideIds.tradeVersion())
-                                .build()))
-                .payOrReceive(rndm.nextBoolean() ? PayOrReceive.PAY : PayOrReceive.RECEIVE)
-                .amount(BigDecimal.valueOf(rndm.nextDouble(2, 95036)))
-        ;
-
-        this.withRelatedTemplate((fxSide1) -> buildCounterSide(fxSide1, counterSideIds));
-
-        return this;
-    }
-
     @Override
     protected TradeEventActionPair getNextEventActionPair(TradeEventType amendMsgEvt, TradeEventAction amendMsgAct) {
         int rndmNum = rndm.nextInt(1, 100);
@@ -133,5 +134,27 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore {
 
             default -> throw new IllegalStateException("Unexpected value: " + amendMsgEvt);
         };
+    }
+
+    /// Returns the same value that is passed to this method because, unlike other templates like [MmTemplate], this template does not need to store a MessageContext instead of just a list of FoCashMessage
+    @Override
+    protected List<FoCashMessage> mapToMessageContext(List<FoCashMessage> cashMessages) {
+        return cashMessages;
+    }
+
+    /// Returns the same value that is passed to this method because, unlike other templates like [MmTemplate], this template does not need to store a MessageContext instead of just a list of FoCashMessage
+    @Override
+    protected List<FoCashMessage> mapToCashMessage(List<FoCashMessage> messageContext) {
+        return messageContext;
+    }
+
+    @Override
+    protected CashMessageStoreHelper<FoCashMessage> msgStoreHelper() {
+        return msgStoreHelper;
+    }
+
+    @Override
+    protected Predicate<FoCashMessage> amendableMsgSelectionCriteria() {
+        return amendableMsgSelectionCriteria;
     }
 }

@@ -6,8 +6,6 @@ import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
-import io.alw.css.fosimulator.store.CashMessageStore;
-import io.alw.css.fosimulator.store.InMemoryCashMessageStore;
 import io.alw.datagen.provider.CyclicStringDataProvider;
 
 import java.math.BigDecimal;
@@ -15,29 +13,59 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 
 import static io.alw.css.fosimulator.model.AmendableFoCashMessageFields.*;
 import static io.alw.css.fosimulator.model.TradeLinkConstants.*;
 import static io.alw.css.fosimulator.model.TradeLinkConstants.tradeLink_parentCashflow;
 
-sealed abstract class CashMessageTemplateWithDataStore
+/// The type parameter M stands for MessageContext which is a combination of [FoCashMessage] and its metadata created by the implementations of this class.
+/// Some implementations choose to store MessageContext instead of just FoCashMessage in [io.alw.css.fosimulator.store.CashMessageStore]
+sealed abstract class CashMessageTemplateWithDataStore<M>
         extends CashMessageTemplate
         permits FxTemplate, MmTemplate, TemporaryGenericTemplate {
-
-    // Message Store and Related
-    protected final CashMessageStoreHelper msgStoreHelper;
-    private static final int maxAmendmentGenerationDelayInDays = 20; // NOTE: Increasing this value will result in retaining the messages requiring amendment for a longer period in the messageStore. Hence, will also result in increased size of the messageStore
-    private static final int maxAmendmentGenerationDelayInDays_relatedVal = 5;
-
-    // Others
     private final CyclicStringDataProvider cyclicAmendableFieldsProvider;
 
     public CashMessageTemplateWithDataStore(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
         super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMsgTemplateProps);
-        CashMessageStore msgStore = new InMemoryCashMessageStore();
-        this.msgStoreHelper = new CashMessageStoreHelper(dayTicker.firstDay(), maxAmendmentGenerationDelayInDays, maxAmendmentGenerationDelayInDays_relatedVal, msgStore, rndm, msgTemplateHelper, cashMsgTemplateProps);
         this.cyclicAmendableFieldsProvider = new CyclicStringDataProvider(List.of(VALUE_DATE, AMOUNT, COUNTERPARTY_CODE));
+    }
+
+    // Implementation to be provided by child classes
+    protected abstract CashMessageTemplateWithDataStore<M> templateBuildSteps();
+
+    protected abstract List<M> mapToMessageContext(List<FoCashMessage> cashMessages);
+
+    protected abstract List<FoCashMessage> mapToCashMessage(List<M> messageContext);
+
+    protected abstract CashMessageStoreHelper<M> msgStoreHelper();
+
+    protected abstract Predicate<FoCashMessage> amendableMsgSelectionCriteria();
+
+    /// Returns messages(new+amends) which can be consumed by the CashflowGenerators
+    @Override
+    public List<FoCashMessage> get() {
+        // Build the cash messages(newly created + amendments)
+        List<FoCashMessage> msgs = this
+                .templateBuildSteps()
+                .buildWithRelatedTemplates();
+
+        // Select new cash messages for future amendments and add to the message store
+        List<FoCashMessage> amendableCashMsgs = msgs.stream().filter(amendableMsgSelectionCriteria()).toList();
+        msgStoreHelper().storeMessageDataForAmendment(mapToMessageContext(amendableCashMsgs));
+
+        // Return messages(new+amends) which can be consumed by the CashflowGenerators
+        return msgs;
+    }
+
+    protected CashMessageTemplateWithDataStore<M> withMessageAmendments() {
+        // Get cash message data that need to be amended
+        final List<M> messageContextsForAmendment = msgStoreHelper().retrieveMessageDataForAmendment();
+        // Add the list of foCashMessages for amendment to the template build step
+        this.withAmendedMessagesOf(mapToCashMessage(messageContextsForAmendment));
+
+        return this;
     }
 
     protected CashMessageTemplate withAmendedMessagesOf(List<FoCashMessage> messagesToBeAmended) {

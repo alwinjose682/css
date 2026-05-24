@@ -6,10 +6,9 @@ import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
-import io.alw.css.fosimulator.template.common.CashflowIds;
-import io.alw.css.fosimulator.template.common.InterestBasis;
-import io.alw.css.fosimulator.template.common.InterestPayoutFrequency;
-import io.alw.css.fosimulator.template.common.MmTemplateMetadata;
+import io.alw.css.fosimulator.store.CashMessageStore;
+import io.alw.css.fosimulator.store.InMemoryCashMessageStore;
+import io.alw.css.fosimulator.template.common.*;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
 import io.alw.datagen.template.TemplateBuilder;
 
@@ -31,31 +30,50 @@ import static io.alw.css.domain.cashflow.RateType.FIXED;
 import static io.alw.css.domain.cashflow.RateType.FLOAT;
 import static io.alw.css.fosimulator.template.common.InterestPayoutFrequency.*;
 
-public final class MmTemplate extends CashMessageTemplateWithDataStore {
-    private final static Predicate<FoCashMessage> amendableMsgCriteria = ;
+public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMessageContext> {
     private final Supplier<MmType> cyclicMmTypeProvider = new CyclicMmTypeProvider(List.of(TERM, TERM, CALL));
     private final Supplier<RateType> cyclicRateTypeProvider = new CyclicRateTypeProvider(List.of(FIXED, FLOAT, FIXED, FLOAT));
     private final Supplier<InterestPayoutFrequency> cyclicIpFrequencyProvider = new CyclicInterestPayoutFrequencyProvider(List.of(DAY, MONTHLY, MONTHLY, MONTHLY, PRINCIPAL_MATURITY, MONTHLY, QUARTERLY, QUARTERLY, SEMI_ANNUALLY, YEARLY, PRINCIPAL_MATURITY));
 
+    // Message Store and Related
+    private final CashMessageStoreHelper<MmCashMessageContext> msgStoreHelper;
+    private final Predicate<FoCashMessage> amendableMsgSelectionCriteria = ;
+
     public MmTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
         super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMsgTemplateProps);
+
+        CashMessageStore<MmCashMessageContext> msgStore = new InMemoryCashMessageStore<>();
+        this.msgStoreHelper = new CashMessageStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
     }
 
     @Override
-    public List<FoCashMessage> get() {
-        // Get cash messages that need to be amended
-        final List<FoCashMessage> messagesToBeAmended = msgStoreHelper.getMessagesToBeAmended();
+    protected CashMessageTemplateWithDataStore<MmCashMessageContext> templateBuildSteps() {
+        // Build cash messages for a new MM trade(new+amendments). An MM Trade can have three type of cashflows: Principal, Interest and Maturity
+        ((MmTemplate) newTemplateBuilder())
+                .withMessageAmendments()
+                .withTemplateValues();
 
-        // Build amended cashMessages and cashMessages for a new MM trade. An MM Trade can have three type of cashflows: Principal, Interest and Maturity
-        List<FoCashMessage> newAndAmendedMsgs = ((MmTemplate) newTemplateBuilder())
-                .withAmendedMessagesOf(messagesToBeAmended)
-                .withTemplateValues()
-                .buildWithRelatedTemplates();
+        return this;
+    }
 
-        // Select new cash messages for future amendments and add to the message store
-        msgStoreHelper.selectAmendCandidatesAndSave(newAndAmendedMsgs, amendableMsgCriteria);
+    @Override
+    protected List<MmCashMessageContext> mapToMessageContext(List<FoCashMessage> cashMessages) {
 
-        return newAndAmendedMsgs;
+    }
+
+    @Override
+    protected List<FoCashMessage> mapToCashMessage(List<MmCashMessageContext> messageContext) {
+
+    }
+
+    @Override
+    protected CashMessageStoreHelper<MmCashMessageContext> msgStoreHelper() {
+        return msgStoreHelper;
+    }
+
+    @Override
+    protected Predicate<FoCashMessage> amendableMsgSelectionCriteria() {
+        return amendableMsgSelectionCriteria;
     }
 
     @Override

@@ -6,6 +6,8 @@ import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
+import io.alw.css.fosimulator.store.CashMessageStore;
+import io.alw.css.fosimulator.store.InMemoryCashMessageStore;
 import io.alw.datagen.template.TemplateBuilder;
 
 import java.math.BigDecimal;
@@ -22,28 +24,47 @@ import static io.alw.css.domain.cashflow.TradeEventType.REBOOK;
 
 /// Note: This is only a temporary template that is used only till the [TradeType] specific templates are written.
 /// Currently, only FX trade has a proper template: [FxTemplate]
-public final class TemporaryGenericTemplate extends CashMessageTemplateWithDataStore {
-    private final static Predicate<FoCashMessage> inclusionCriteria = msg -> msg.tradeEventType() != TradeEventType.CANCEL;
+public final class TemporaryGenericTemplate extends CashMessageTemplateWithDataStore<FoCashMessage> {
+    private final CashMessageStoreHelper<FoCashMessage> msgStoreHelper;
+    private final Predicate<FoCashMessage> amendableMsgSelectionCriteria = msg -> msg.tradeEventType() != TradeEventType.CANCEL
+            && (msg.cashflowVersion() + msg.tradeVersion() <= msgTemplateHelper.cashMsgTemplateProps.maxPermittedAmendments() && msg.cashflowID() % 10 + msg.tradeID() % 10 > 10 /* To choose random cashflows*/);
 
     public TemporaryGenericTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMessageTemplateProperties) {
         super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
+
+        CashMessageStore<FoCashMessage> msgStore = new InMemoryCashMessageStore<>();
+        this.msgStoreHelper = new CashMessageStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
     }
 
     @Override
-    public List<FoCashMessage> get() {
-        // Get cash messages that need to be amended
-        final List<FoCashMessage> messagesToBeAmended = msgStoreHelper.getMessagesToBeAmended();
+    protected TemporaryGenericTemplate templateBuildSteps() {
+        ((TemporaryGenericTemplate) newTemplateBuilder())
+                .withMessageAmendments()
+                .withTemplateValues();
 
-        // Build amended cashMessages and cashMessages for a new FX trade. There are 2 cashMessages for a single FX trade
-        List<FoCashMessage> newAndAmendedMsgs = ((CashMessageTemplateWithDataStore) newTemplateBuilder())
-                .withAmendedMessagesOf(messagesToBeAmended)
-                .withTemplateValues()
-                .buildWithRelatedTemplates();
+        return this;
+    }
 
-        // Select new cash messages for future amendments and add to the message store
-        msgStoreHelper.selectAmendCandidatesAndSave(newAndAmendedMsgs, inclusionCriteria);
+    /// Returns the same value that is passed to this method because, unlike other templates like [MmTemplate], this template does not need to store a MessageContext instead of just a list of FoCashMessage
+    @Override
+    protected List<FoCashMessage> mapToMessageContext(List<FoCashMessage> cashMessages) {
+        return cashMessages;
+    }
 
-        return newAndAmendedMsgs;
+    /// Returns the same value that is passed to this method because, unlike other templates like [MmTemplate], this template does not need to store a MessageContext instead of just a list of FoCashMessage
+    @Override
+    protected List<FoCashMessage> mapToCashMessage(List<FoCashMessage> messageContext) {
+        return messageContext;
+    }
+
+    @Override
+    protected CashMessageStoreHelper<FoCashMessage> msgStoreHelper() {
+        return msgStoreHelper;
+    }
+
+    @Override
+    protected Predicate<FoCashMessage> amendableMsgSelectionCriteria() {
+        return amendableMsgSelectionCriteria;
     }
 
     @Override

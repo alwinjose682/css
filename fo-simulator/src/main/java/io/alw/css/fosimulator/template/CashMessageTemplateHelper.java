@@ -20,7 +20,7 @@ final class CashMessageTemplateHelper implements CountAware {
     private final RandomGenerator rndm;
 
     // Spring Beans
-    private final CashMessageTemplateProperties cashMsgTemplateProps;
+    final CashMessageTemplateProperties cashMsgTemplateProps;
     private final RefDataService refDataService;
 
     private long counter;

@@ -4,9 +4,9 @@ import io.alw.css.domain.cashflow.FoCashMessage;
 
 import java.util.List;
 
-public sealed interface CashMessageStore permits InMemoryCashMessageStore {
-    void add(long retrievalDay, FoCashMessage foCashMessage);
+public sealed interface CashMessageStore<T> permits InMemoryCashMessageStore {
+    void add(long retrievalDay, T cashMsgDatum);
 
-    /// The list of [FoCashMessage] retrieved are removed from the store and will no longer be available again in the store
-    List<FoCashMessage> remove(long retrievalDay);
+    /// The list of T retrieved are removed from the store and will no longer be available again in the store
+    List<T> remove(long retrievalDay);
 }
