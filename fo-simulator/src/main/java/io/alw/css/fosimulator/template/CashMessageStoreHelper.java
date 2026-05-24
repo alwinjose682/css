@@ -44,15 +44,18 @@ final class CashMessageStoreHelper {
     }
 
     /// Randomly select valid amend candidates and save in [CashMessageStore] with a random retrieval day. Random retrieval day depends on [CashMessageTemplate#maxAmendmentGenerationDelayInDays]
-    void selectAmendCandidatesAndSave(List<FoCashMessage> msgs, Predicate<FoCashMessage> inclusionCriteria) {
-        long[] amendmentDelayDay = new long[1];
+    void randomlySelectAmendCandidatesAndStore(List<FoCashMessage> msgs, Predicate<FoCashMessage> inclusionCriteria) {
         Predicate<FoCashMessage> finalInclusionCriteria = msg -> inclusionCriteria
-                .and(m -> m.cashflowVersion() + m.tradeVersion() <= cashMsgTemplateProps.maxPermittedAmendments())
-                .test(msg)
-                && (amendmentDelayDay[0] = rndm.nextInt(0, maxAmendmentGenerationDelayInDays)) > maxAmendmentGenerationDelayInDays_relatedVal;
+                .and(m -> m.cashflowVersion() + m.tradeVersion() <= cashMsgTemplateProps.maxPermittedAmendments()
+                        &&
+                        m.cashflowID() % 10 + m.tradeID() % 10 > 10 // To choose random cashflows
+                )
+                .test(msg);
+
+        long futureAmendmentDay = rndm.nextLong(lastMessageRetrievalDay, lastMessageRetrievalDay + maxAmendmentGenerationDelayInDays);
 
         msgs.stream()
                 .filter(finalInclusionCriteria)
-                .forEach(msg -> msgStore.add(amendmentDelayDay[0], msg));
+                .forEach(msg -> msgStore.add(futureAmendmentDay, msg));
     }
 }
