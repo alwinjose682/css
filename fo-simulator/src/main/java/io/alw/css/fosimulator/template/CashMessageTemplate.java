@@ -6,8 +6,10 @@ import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
+import io.alw.css.fosimulator.template.common.CashflowIds;
+import io.alw.css.fosimulator.template.common.MessageContext;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
-import io.alw.datagen.template.TemplateBuilder;
+import io.alw.datagen.template.AggregateTemplateBuilder;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -20,13 +22,15 @@ import java.util.random.RandomGenerator;
 ///
 /// [CashMessageTemplate] instances are both a trade type template and a supplier of the build output of the template
 /// Each instance of this class is supposed to be exclusive for a single thread
-sealed abstract class CashMessageTemplate
-        extends TemplateBuilder<FoCashMessage>
+sealed abstract class CashMessageTemplate<M extends MessageContext>
+        extends AggregateTemplateBuilder<M>
         implements Supplier<List<FoCashMessage>>
         permits CashMessageTemplateWithDataStore {
 
-    // Variable values for each template build. Also, these remain un-modified for each template build.
-    /// After each build of the template, the existing [FoCashMessageBuilder] (`bdr`) is just replaced with a new one.
+    /// Variable values for each template build. These values remain un-modified for each template build.
+    /// After each build of the template, the [MessageContext] (msgCtx) and [FoCashMessageBuilder] (`bdr`) references are just assigned with new instances
+    // Message Context and FoCashMessage builder
+    protected M msgCtx;
     private FoCashMessageBuilder bdr;
 
     // Constant values for each instance of CashMessageTemplate
@@ -49,7 +53,7 @@ sealed abstract class CashMessageTemplate
         this(null, entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMsgTemplateProps);
     }
 
-    private CashMessageTemplate(FoCashMessage parent, Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
+    private CashMessageTemplate(M parent, Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
         super(parent);
         this.entityCode = entity.entityCode();
         this.currCode = entity.currCode();
@@ -65,18 +69,18 @@ sealed abstract class CashMessageTemplate
 
     /// This method ensures that the same day is used at all points of building the template.
     /// This method is the starting point to build a template
-    protected CashMessageTemplate newTemplateBuilder() {
+    protected CashMessageTemplate<M> newTemplateBuilder() {
         msgTemplateHelper.setDayForMsgTemplate(dayTicker.day());
         return this;
     }
 
     /// NOTE: New [CashMessageTemplate] instances are not created by this method.
     /// Instead, the existing [FoCashMessageBuilder] (`bdr`) is just replaced with a new one and then new values are assigned.
-    protected FoCashMessageBuilder getNewFoCashMsgBuilder() {
+    protected FoCashMessageBuilder getNewCashMsgBuilder(CashflowIds ids, M msgCtx) {
         msgTemplateHelper.incrementCounter();
-        bdr = FoCashMessageBuilder.builder();
+        this.bdr = FoCashMessageBuilder.builder();
+        this.msgCtx = msgCtx;
 
-        IdProvider idProvider = IdProvider.singleton();
         final String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionType();
         bdr
                 // Fixed value for this template
@@ -88,10 +92,10 @@ sealed abstract class CashMessageTemplate
                 .tradeEventType(TradeEventType.NEW_TRADE)
                 .tradeEventAction(TradeEventAction.ADD)
                 // Id values
-                .tradeID(idProvider.nextTradeId())
-                .tradeVersion(VERSION_ONE)
-                .cashflowID(idProvider.nextCashflowId())
-                .cashflowVersion(VERSION_ONE)
+                .tradeID(ids.tradeID())
+                .tradeVersion(ids.tradeVersion())
+                .cashflowID(ids.cashflowID())
+                .cashflowVersion(ids.cashflowVersion())
                 // Entity dependent fields. Book codes are dummy for now
                 .bookCode(refDataService.dummyBookCode())
                 .counterBookCode(msgTemplateHelper.isInterbookTransaction() ? refDataService.dummyCounterBookCode() : null) // Also a TransactionType dependent
@@ -110,13 +114,10 @@ sealed abstract class CashMessageTemplate
     }
 
     @Override
-    public FoCashMessage buildTemplate() {
-        return bdr.build();
-    }
-
-    @Override
-    protected TemplateBuilder<FoCashMessage> childTemplate(FoCashMessage parent) {
-        throw new RuntimeException("This method is not supported for CashMessageTemplate");
+    public M finalBuildInstruction() {
+        FoCashMessage msg = bdr.build();
+        msgCtx.setFoCashMessage(msg);
+        return msgCtx;
     }
 
     private static List<BigDecimal> getRateList() {

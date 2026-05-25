@@ -31,13 +31,14 @@ import static io.alw.css.domain.cashflow.RateType.FLOAT;
 import static io.alw.css.fosimulator.template.common.InterestPayoutFrequency.*;
 
 public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMessageContext> {
-    private final Supplier<MmType> cyclicMmTypeProvider = new CyclicMmTypeProvider(List.of(TERM, TERM, CALL));
-    private final Supplier<RateType> cyclicRateTypeProvider = new CyclicRateTypeProvider(List.of(FIXED, FLOAT, FIXED, FLOAT));
-    private final Supplier<InterestPayoutFrequency> cyclicIpFrequencyProvider = new CyclicInterestPayoutFrequencyProvider(List.of(DAY, MONTHLY, MONTHLY, MONTHLY, PRINCIPAL_MATURITY, MONTHLY, QUARTERLY, QUARTERLY, SEMI_ANNUALLY, YEARLY, PRINCIPAL_MATURITY));
-
     // Message Store and Related
     private final CashMessageStoreHelper<MmCashMessageContext> msgStoreHelper;
-    private final Predicate<FoCashMessage> amendableMsgSelectionCriteria = ;
+    private final Predicate<MmCashMessageContext> amendableMsgSelectionCriteria = ;
+
+    // Metadata for MM FoCashMessage
+    private static final Supplier<MmType> cyclicMmTypeProvider = new CyclicMmTypeProvider(List.of(TERM, TERM, CALL));
+    private static final Supplier<RateType> cyclicRateTypeProvider = new CyclicRateTypeProvider(List.of(FIXED, FLOAT, FIXED, FLOAT));
+    private static final Supplier<InterestPayoutFrequency> cyclicIpFrequencyProvider = new CyclicInterestPayoutFrequencyProvider(List.of(DAY, MONTHLY, MONTHLY, MONTHLY, PRINCIPAL_MATURITY, MONTHLY, QUARTERLY, QUARTERLY, SEMI_ANNUALLY, YEARLY, PRINCIPAL_MATURITY));
 
     public MmTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
         super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMsgTemplateProps);
@@ -57,37 +58,18 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
     }
 
     @Override
-    protected List<MmCashMessageContext> mapToMessageContext(List<FoCashMessage> cashMessages) {
-
-    }
-
-    @Override
-    protected List<FoCashMessage> mapToCashMessage(List<MmCashMessageContext> messageContext) {
-
-    }
-
-    @Override
-    protected CashMessageStoreHelper<MmCashMessageContext> msgStoreHelper() {
-        return msgStoreHelper;
-    }
-
-    @Override
-    protected Predicate<FoCashMessage> amendableMsgSelectionCriteria() {
-        return amendableMsgSelectionCriteria;
-    }
-
-    @Override
     protected TradeEventActionPair getNextEventActionPair(TradeEventType amendMsgEvt, TradeEventAction amendMsgAct) {
 
     }
 
     /// Build new template for MM cashflow. A new MM trade can have 1 to 3 cashflows depending on whether its a TERM or CALL and depending on the interest cashflow
     @Override
-    public TemplateBuilder<FoCashMessage> withTemplateValues() {
-        // Build PRINCIPAL leg of the MoneyMarket trade with base values
-        FoCashMessageBuilder bdr = getNewFoCashMsgBuilder();
+    public TemplateBuilder<MmCashMessageContext> withTemplateValues() {
         // Create CashMessageContext for all three legs: PRINCIPAL, MATURITY, INTEREST
-        Map<MmLeg, MmCashMessageContext> msgContexts = getFirstVersionMsgContexts(bdr);
+        Map<MmLeg, MmCashMessageContext> msgCtxs = getFirstVersionMsgContexts();
+        // Build PRINCIPAL leg of the MoneyMarket trade with base values
+        final var principalCtx = msgCtxs.get(PRINCIPAL);
+        FoCashMessageBuilder bdr = getNewCashMsgBuilder(principalCtx.cashflowIds(), principalCtx);
         // Set values specific to the PRINCIPAL leg
         bdr
                 .valueDate(msgTemplateHelper.getRndmValueDate(30))
@@ -95,37 +77,39 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
                 .amount(BigDecimal.valueOf(rndm.nextDouble(100000, 98500000)))
         ;
 
-        final var principalContext = msgContexts.get(PRINCIPAL);
-        final var maturityContext = msgContexts.get(MATURITY);
-        final var interestContext = msgContexts.get(INTEREST);
+
+        final var maturityCtx = msgCtxs.get(MATURITY);
+        final var interestCtx = msgCtxs.get(INTEREST);
 
         // Set tradeLinks on the PRINCIPAL leg
-        if (maturityContext != null && interestContext != null) {
-            this.withRelatedTemplate((principalLeg) -> buildMaturityAndInterestLeg(principalLeg, interestContext, maturityContext));
-            bdr.tradeLinks(principalContext.allTradeLinks());
-        } else if (interestContext != null) {
-            this.withRelatedTemplate((principalLeg) -> buildInterestLeg(principalLeg, null, interestContext));
-            bdr.tradeLinks(principalContext.allTradeLinks());
-        } else if (maturityContext != null) {
-            this.withRelatedTemplate((principalLeg) -> buildMaturityLeg(principalLeg, maturityContext));
-            bdr.tradeLinks(principalContext.allTradeLinks());
+        if (maturityCtx != null && interestCtx != null) {
+            this.withRelatedObjectBuilder((principalCtxParam) -> buildMaturityAndInterestLeg(principalCtxParam, interestCtx, maturityCtx));
+            bdr.tradeLinks(principalCtx.allTradeLinks());
+        } else if (interestCtx != null) {
+            this.withRelatedObjectBuilder((principalCtxParam) -> buildInterestLeg(principalCtxParam, null, interestCtx));
+            bdr.tradeLinks(principalCtx.allTradeLinks());
+        } else if (maturityCtx != null) {
+            this.withRelatedObjectBuilder((principalCtxParam) -> buildMaturityLeg(principalCtxParam, maturityCtx));
+            bdr.tradeLinks(principalCtx.allTradeLinks());
         }
 
         return this;
     }
 
-    private FoCashMessage buildMaturityAndInterestLeg(FoCashMessage principalLeg, MmCashMessageContext interestContext, MmCashMessageContext maturityContext) {
+    private MmCashMessageContext buildMaturityAndInterestLeg(MmCashMessageContext principalCtx, MmCashMessageContext interestContext, MmCashMessageContext maturityContext) {
         // Determine valueDate of MATURITY leg ahead of building the MATURITY leg as it is needed for creating interest leg. A callback can also be used, but it requires changes and new wrapping objects in TemplateBuilder class
-        LocalDate maturityLegValueDate = msgTemplateHelper.getRndmFutureValueDateRelativeTo(principalLeg.valueDate(), false, 10);
+        LocalDate maturityLegValueDate = msgTemplateHelper.getRndmFutureValueDateRelativeTo(principalCtx.foCashMessage().valueDate(), false, 10);
         // Add building function of INTEREST leg
-        this.withRelatedTemplate((principalLegParam) -> buildInterestLeg(principalLegParam, maturityLegValueDate, interestContext));
+        this.withRelatedObjectBuilder((principalCtxParam) -> buildInterestLeg(principalCtxParam, maturityLegValueDate, interestContext));
         // Build the MATURITY leg
-        return buildMaturityLeg(principalLeg, interestContext.cashflowIds(), maturityLegValueDate, maturityContext);
+        return buildMaturityLeg(principalCtx, maturityLegValueDate, maturityContext);
     }
 
-    private FoCashMessage buildInterestLeg(FoCashMessage principalLeg, LocalDate maturityLegValueDate, MmCashMessageContext interestContext) {
-        // build the INTEREST leg
-        var interestLegIds = interestContext.cashflowIds();
+    private MmCashMessageContext buildInterestLeg(MmCashMessageContext principalCtx, LocalDate maturityLegValueDate, MmCashMessageContext interestCtx) {
+        var principalLeg = principalCtx.foCashMessage();
+
+        // Build the INTEREST leg
+        var interestLegIds = interestCtx.cashflowIds();
         var bdr = createBuilderFrom(principalLeg)
                 // Id and version of INTEREST leg was already determined when the PRINCIPAL was created
                 .cashflowID(interestLegIds.cashflowID())
@@ -133,16 +117,17 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
                 .tradeID(interestLegIds.tradeID())
                 .tradeVersion(interestLegIds.tradeVersion())
                 // Values that differ from PRINCIPAL leg
-                .valueDate(determineInterestLegValueDate(principalLeg.valueDate(), interestContext, maturityLegValueDate))
+                .valueDate(determineInterestLegValueDate(principalLeg.valueDate(), interestCtx, maturityLegValueDate))
                 .payOrReceive(principalLeg.payOrReceive() == PAY ? RECEIVE : PAY)
-                .amount(determineInterestLegAmount(principalLeg, maturityLegValueDate, interestContext))
-                .tradeLinks(interestContext.allTradeLinks());
+                .amount(determineInterestLegAmount(principalLeg, maturityLegValueDate, interestCtx))
+                .tradeLinks(interestCtx.allTradeLinks());
 
-        if (interestContext.rateType() == FLOAT && (VERSION_ONE != bdr.cashflowVersion() || VERSION_ONE != bdr.tradeVersion())) {
+        if (interestCtx.rateType() == FLOAT && (VERSION_ONE != bdr.cashflowVersion() || VERSION_ONE != bdr.tradeVersion())) {
             bdr.rate(cyclicRateProvider.get());
         }
 
-        return bdr.build();
+        interestCtx.setFoCashMessage(bdr.build());
+        return interestCtx;
     }
 
     /// NOTE: The amount returned is not a result of a proper calculation based on rate.
@@ -150,16 +135,16 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
     /// - principalAmount, interest basis, interest payout frequency, rate type and maturity date
     ///
     /// This is done solely to avoid calculations using BigDecimal. Actual amount is not required.
-    private BigDecimal determineInterestLegAmount(FoCashMessage principalLeg, LocalDate maturityLegValueDate, MmCashMessageContext interestContext) {
+    private BigDecimal determineInterestLegAmount(FoCashMessage principalLeg, LocalDate maturityLegValueDate, MmCashMessageContext interestCtx) {
 
         // If the interest amount was already determined, just re-use it
-        BigDecimal interestAmount = interestContext.interestAmount();
+        BigDecimal interestAmount = interestCtx.interestAmount();
         if (interestAmount != null) {
-            return switch (interestContext.rateType()) {
+            return switch (interestCtx.rateType()) {
                 case FIXED -> interestAmount;
                 case FLOAT -> {
                     BigDecimal newIntAmt = BigDecimal.valueOf(interestAmount.doubleValue() + 158);// Even though rate decrease the amount increases. This is ok! Actual amount is not required
-                    interestContext.setInterestAmount(newIntAmt);
+                    interestCtx.setInterestAmount(newIntAmt);
                     yield newIntAmt;
                 }
             };
@@ -168,12 +153,12 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
         // Determine the interest amount
         var principalAmount = principalLeg.amount();
         var principalValueDate = principalLeg.valueDate();
-        var newInterestAmount = switch (interestContext.interestBasis()) {
+        var newInterestAmount = switch (interestCtx.interestBasis()) {
             case ThirtyBy360 -> {
                 long numOfDays = ChronoUnit.DAYS.between(principalValueDate, maturityLegValueDate);
                 double tenPercentOfPrincipal = (principalAmount.doubleValue() / 100) * 10;
 
-                yield switch (interestContext.ipFrequency()) {
+                yield switch (interestCtx.ipFrequency()) {
                     case DAY -> BigDecimal.valueOf(tenPercentOfPrincipal / (double) numOfDays);
                     case MONTHLY -> BigDecimal.valueOf(tenPercentOfPrincipal / ((double) numOfDays / 30));
                     case QUARTERLY -> BigDecimal.valueOf(tenPercentOfPrincipal / ((double) numOfDays / 90));
@@ -184,13 +169,13 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
             }
         };
 
-        interestContext.setInterestAmount(newInterestAmount);
+        interestCtx.setInterestAmount(newInterestAmount);
         return newInterestAmount;
     }
 
-    private LocalDate determineInterestLegValueDate(LocalDate principalLegValueDate, MmCashMessageContext interestContext, LocalDate maturityLegValueDate) {
-        return switch (interestContext.interestBasis()) {
-            case ThirtyBy360 -> switch (interestContext.ipFrequency()) {
+    private LocalDate determineInterestLegValueDate(LocalDate principalLegValueDate, MmCashMessageContext interestCtx, LocalDate maturityLegValueDate) {
+        return switch (interestCtx.interestBasis()) {
+            case ThirtyBy360 -> switch (interestCtx.ipFrequency()) {
                 case DAY -> msgTemplateHelper.getFutureValueDate(1, principalLegValueDate, maturityLegValueDate);
                 case MONTHLY -> msgTemplateHelper.getFutureValueDate(30, principalLegValueDate, maturityLegValueDate);
                 case QUARTERLY -> msgTemplateHelper.getFutureValueDate(90, principalLegValueDate, maturityLegValueDate);
@@ -201,15 +186,17 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
         };
     }
 
-    private FoCashMessage buildMaturityLeg(FoCashMessage principalLeg, MmCashMessageContext maturityContext) {
-        LocalDate maturityLegValueDate = msgTemplateHelper.getRndmFutureValueDateRelativeTo(principalLeg.valueDate(), false, 10);
-        return buildMaturityLeg(principalLeg, null, maturityLegValueDate, maturityContext);
+    private MmCashMessageContext buildMaturityLeg(MmCashMessageContext principalCtx, MmCashMessageContext maturityCtx) {
+        LocalDate maturityLegValueDate = msgTemplateHelper.getRndmFutureValueDateRelativeTo(principalCtx.foCashMessage().valueDate(), false, 10);
+        return buildMaturityLeg(principalCtx, maturityLegValueDate, maturityCtx);
     }
 
-    private FoCashMessage buildMaturityLeg(FoCashMessage principalLeg, CashflowIds interestLegIds, LocalDate valueDate, MmCashMessageContext maturityContext) {
+    private MmCashMessageContext buildMaturityLeg(MmCashMessageContext principalCtx, LocalDate valueDate, MmCashMessageContext maturityCtx) {
+        var principalMsg = principalCtx.foCashMessage();
+
         // Build the MATURITY leg
-        var maturityLegIds = maturityContext.cashflowIds();
-        var bdr = createBuilderFrom(principalLeg)
+        var maturityLegIds = maturityCtx.cashflowIds();
+        var bdr = createBuilderFrom(principalMsg)
                 // Id and version of MATURITY leg was already determined when the PRINCIPAL was created
                 .cashflowID(maturityLegIds.cashflowID())
                 .cashflowVersion(maturityLegIds.cashflowVersion())
@@ -217,15 +204,16 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
                 .tradeVersion(maturityLegIds.tradeVersion())
                 // Values that differ from PRINCIPAL leg
                 .valueDate(valueDate)
-                .payOrReceive(principalLeg.payOrReceive() == PAY ? RECEIVE : PAY)
-                .amount(principalLeg.amount().negate())
-                .tradeLinks(maturityContext.allTradeLinks());
+                .payOrReceive(principalMsg.payOrReceive() == PAY ? RECEIVE : PAY)
+                .amount(principalMsg.amount().negate())
+                .tradeLinks(maturityCtx.allTradeLinks());
 
-        if (maturityContext.rateType() == FLOAT && (VERSION_ONE != bdr.cashflowVersion() || VERSION_ONE != bdr.tradeVersion())) {
+        if (maturityCtx.rateType() == FLOAT && (VERSION_ONE != bdr.cashflowVersion() || VERSION_ONE != bdr.tradeVersion())) {
             bdr.rate(cyclicRateProvider.get());
         }
 
-        return bdr.build();
+        maturityCtx.setFoCashMessage(bdr.build());
+        return maturityCtx;
     }
 
     private TradeLink buildTradeLink(MmLeg mmLeg, CashflowIds cashflowIds) {
@@ -241,22 +229,20 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
     /// Interest Basis is always assigned a constant: InterestBasis.ThirtyBy360. Corresponding calculation for other basis types are not implemented.
     /// Interest cashflow should be generated based on [InterestPayoutFrequency]
     /// Returns message contexts for cashflow version 1. The method parameter `principalLegBuilder` must be of cashflow version 1
-    private Map<MmLeg, MmCashMessageContext> getFirstVersionMsgContexts(FoCashMessageBuilder principalLegBuilder) {
+    private Map<MmLeg, MmCashMessageContext> getFirstVersionMsgContexts() {
         var mmType = cyclicMmTypeProvider.get();
         var rateType = cyclicRateTypeProvider.get();
         var ipFrequency = cyclicIpFrequencyProvider.get();
         var basis = InterestBasis.ThirtyBy360;
 
-        var idProvider = IdProvider.singleton();
-
-        var principalLegIds = new CashflowIds(principalLegBuilder.cashflowID(), principalLegBuilder.cashflowVersion(), principalLegBuilder.tradeID(), principalLegBuilder.tradeVersion());
+        var principalLegIds = CashMessageTemplateHelper.getIdsForVersionOneCashflowAndVersionOneTrade();
         var principalLegLink = buildTradeLink(PRINCIPAL, principalLegIds);
-        var interestLegIds = new CashflowIds(idProvider.nextCashflowId(), VERSION_ONE, principalLegBuilder.tradeID(), principalLegBuilder.tradeVersion());
+        var interestLegIds = CashMessageTemplateHelper.getIdsForVersionOneCashflowFromExistingTrade(principalLegIds);
         var interestLegLink = buildTradeLink(INTEREST, interestLegIds);
 
         return switch (mmType) {
             case TERM -> {
-                var maturityLegIds = new CashflowIds(idProvider.nextCashflowId(), VERSION_ONE, principalLegBuilder.tradeID(), principalLegBuilder.tradeVersion());
+                var maturityLegIds = CashMessageTemplateHelper.getIdsForVersionOneCashflowFromExistingTrade(principalLegIds);
                 var maturityLegLink = buildTradeLink(MATURITY, maturityLegIds);
                 var allTradeLinks = List.of(principalLegLink, interestLegLink, maturityLegLink);
 
@@ -290,5 +276,15 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
         CyclicInterestPayoutFrequencyProvider(List<InterestPayoutFrequency> dataList) {
             super(dataList);
         }
+    }
+
+    @Override
+    protected CashMessageStoreHelper<MmCashMessageContext> msgStoreHelper() {
+        return msgStoreHelper;
+    }
+
+    @Override
+    protected Predicate<MmCashMessageContext> amendableMsgSelectionCriteria() {
+        return amendableMsgSelectionCriteria;
     }
 }

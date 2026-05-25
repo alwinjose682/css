@@ -14,7 +14,7 @@ public final class MmCashMessageContext implements MessageContext {
     private final CashflowIds cashflowIds;
     private final List<TradeLink> allTradeLinks;
 
-    private FoCashMessage foCashMessage; //TODO: Make this LazyConstant?
+    private FoCashMessage foCashMessage;
     private BigDecimal interestAmount;
 
     public MmCashMessageContext(MmType mmType, MmLeg mmLeg, RateType rateType, InterestPayoutFrequency ipFrequency, InterestBasis interestBasis, CashflowIds cashflowIds, List<TradeLink> allTradeLinks) {
@@ -30,6 +30,21 @@ public final class MmCashMessageContext implements MessageContext {
     @Override
     public FoCashMessage foCashMessage() {
         return foCashMessage;
+    }
+
+    @Override
+    public void setFoCashMessage(FoCashMessage foCashMessage) {
+        this.foCashMessage = foCashMessage;
+    }
+
+    @Override
+    public <M extends MessageContext> List<FoCashMessage> mapToCashMessage(List<M> msgCtxs) {
+
+    }
+
+    @Override
+    public <M extends MessageContext> M with(FoCashMessage msg) {
+
     }
 
     public BigDecimal interestAmount() {
@@ -66,9 +81,5 @@ public final class MmCashMessageContext implements MessageContext {
 
     public List<TradeLink> allTradeLinks() {
         return allTradeLinks;
-    }
-
-    public void setFoCashMessage(FoCashMessage foCashMessage) {
-        this.foCashMessage = foCashMessage;
     }
 }

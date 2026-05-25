@@ -3,10 +3,13 @@ package io.alw.css.fosimulator.template;
 import io.alw.css.domain.cashflow.TransactionType;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
+import io.alw.css.fosimulator.template.common.CashflowIds;
 import io.alw.datagen.template.CountAware;
 
 import java.time.LocalDate;
 import java.util.random.RandomGenerator;
+
+import static io.alw.css.fosimulator.template.CashMessageTemplate.VERSION_ONE;
 
 
 /// NOTE: This helper class has variable state
@@ -32,6 +35,16 @@ final class CashMessageTemplateHelper implements CountAware {
         this.cashMsgTemplateProps = cashMsgTemplateProps;
         this.refDataService = refDataService;
         this.counter = 0L;
+    }
+
+    static CashflowIds getIdsForVersionOneCashflowAndVersionOneTrade() {
+        var idProvider = IdProvider.singleton();
+        return new CashflowIds(idProvider.nextCashflowId(), VERSION_ONE, idProvider.nextTradeId(), VERSION_ONE);
+    }
+
+    static CashflowIds getIdsForVersionOneCashflowFromExistingTrade(CashflowIds ids) {
+        var idProvider = IdProvider.singleton();
+        return new CashflowIds(idProvider.nextCashflowId(), VERSION_ONE, ids.tradeID(), ids.tradeVersion());
     }
 
     /// Check the documentation for [CashMessageTemplate#getRndmValueDate()]

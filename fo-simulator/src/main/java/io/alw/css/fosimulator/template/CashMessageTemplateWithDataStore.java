@@ -6,6 +6,7 @@ import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
+import io.alw.css.fosimulator.template.common.MessageContext;
 import io.alw.datagen.provider.CyclicStringDataProvider;
 
 import java.math.BigDecimal;
@@ -22,8 +23,8 @@ import static io.alw.css.fosimulator.model.TradeLinkConstants.tradeLink_parentCa
 
 /// The type parameter M stands for MessageContext which is a combination of [FoCashMessage] and its metadata created by the implementations of this class.
 /// Some implementations choose to store MessageContext instead of just FoCashMessage in [io.alw.css.fosimulator.store.CashMessageStore]
-sealed abstract class CashMessageTemplateWithDataStore<M>
-        extends CashMessageTemplate
+sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
+        extends CashMessageTemplate<M>
         permits FxTemplate, MmTemplate, TemporaryGenericTemplate {
     private final CyclicStringDataProvider cyclicAmendableFieldsProvider;
 
@@ -32,72 +33,78 @@ sealed abstract class CashMessageTemplateWithDataStore<M>
         this.cyclicAmendableFieldsProvider = new CyclicStringDataProvider(List.of(VALUE_DATE, AMOUNT, COUNTERPARTY_CODE));
     }
 
-    // Implementation to be provided by child classes
+    /// Implementation to be provided by child classes
     protected abstract CashMessageTemplateWithDataStore<M> templateBuildSteps();
-
-    protected abstract List<M> mapToMessageContext(List<FoCashMessage> cashMessages);
-
-    protected abstract List<FoCashMessage> mapToCashMessage(List<M> messageContext);
 
     protected abstract CashMessageStoreHelper<M> msgStoreHelper();
 
-    protected abstract Predicate<FoCashMessage> amendableMsgSelectionCriteria();
+    protected abstract Predicate<M> amendableMsgSelectionCriteria();
 
     /// Returns messages(new+amends) which can be consumed by the CashflowGenerators
     @Override
     public List<FoCashMessage> get() {
         // Build the cash messages(newly created + amendments)
-        List<FoCashMessage> msgs = this
+        List<M> msgCtxs = this
                 .templateBuildSteps()
-                .buildWithRelatedTemplates();
+                .build();
 
         // Select new cash messages for future amendments and add to the message store
-        List<FoCashMessage> amendableCashMsgs = msgs.stream().filter(amendableMsgSelectionCriteria()).toList();
-        msgStoreHelper().storeMessageDataForAmendment(mapToMessageContext(amendableCashMsgs));
+        List<M> amendableCashMsgs = msgCtxs.stream().filter(amendableMsgSelectionCriteria()).toList();
+        msgStoreHelper().storeMessageDataForAmendment(amendableCashMsgs);
 
         // Return messages(new+amends) which can be consumed by the CashflowGenerators
-        return msgs;
+        return msgCtx.mapToCashMessage(msgCtxs);
     }
 
     protected CashMessageTemplateWithDataStore<M> withMessageAmendments() {
         // Get cash message data that need to be amended
         final List<M> messageContextsForAmendment = msgStoreHelper().retrieveMessageDataForAmendment();
         // Add the list of foCashMessages for amendment to the template build step
-        this.withAmendedMessagesOf(mapToCashMessage(messageContextsForAmendment));
+        this.withAmendedMessagesOf(messageContextsForAmendment);
 
         return this;
     }
 
-    protected CashMessageTemplate withAmendedMessagesOf(List<FoCashMessage> messagesToBeAmended) {
-        for (FoCashMessage msg : messagesToBeAmended) {
+    protected CashMessageTemplate<M> withAmendedMessagesOf(List<M> msgContextsForAmendment) {
+        for (M msgContext : msgContextsForAmendment) {
+//            var msg = msgContext.foCashMessage();
             switch (cyclicAmendableFieldsProvider.next()) {
-                case VALUE_DATE -> this.withRelatedTemplate(this::buildAmendedMessageForValueDate, msg);
-                case AMOUNT -> this.withRelatedTemplate(this::buildAmendedMessageForAmount, msg);
-                case COUNTERPARTY_CODE -> this.withRelatedTemplate(this::buildAmendedMessageForCounterparty, msg);
+                case VALUE_DATE -> this.withRelatedObjectBuilder(this::buildAmendedMessageForValueDate, msgContext);
+                case AMOUNT -> this.withRelatedObjectBuilder(this::buildAmendedMessageForAmount, msgContext);
+                case COUNTERPARTY_CODE -> this.withRelatedObjectBuilder(this::buildAmendedMessageForCounterparty, msgContext);
             }
         }
         return this;
     }
 
-    private FoCashMessage buildAmendedMessageForCounterparty(FoCashMessage msg) {
+    private M buildAmendedMessageForCounterparty(M msgCtx) {
         // NOTE: Here, it is required to get a counterpartyCode that is not used by 1) the current cashMessage being amended and 2) the counter side cashMessage of the current cashMessage
         // But, counterpartyCode of point 2 above is not available handy and hence there is a risk that the counterpartyCode used by counter side cashMessage may be re-used.
-        String newCounterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(msg.counterpartyCode());
-        return getBuilderWithDefaultAmdntBaseFrom(msg)
+        String newCounterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(msgCtx.foCashMessage().counterpartyCode());
+        FoCashMessage amendedMsg = getBuilderWithDefaultAmdntBaseFrom(msgCtx)
                 .counterpartyCode(newCounterpartyCode)
                 .build();
+
+        // return new messageContext with amended message
+        return msgCtx.with(amendedMsg);
     }
 
-    private FoCashMessage buildAmendedMessageForAmount(FoCashMessage msg) {
-        return getBuilderWithDefaultAmdntBaseFrom(msg)
+    private M buildAmendedMessageForAmount(M msgCtx) {
+        var amendedMsg = getBuilderWithDefaultAmdntBaseFrom(msgCtx)
                 .amount(BigDecimal.valueOf(rndm.nextDouble(2, 75036)))
                 .build();
+
+        // return new messageContext with amended message
+        return msgCtx.with(amendedMsg);
     }
 
-    private FoCashMessage buildAmendedMessageForValueDate(FoCashMessage msg) {
-        return getBuilderWithDefaultAmdntBaseFrom(msg)
+    private M buildAmendedMessageForValueDate(M msgCtx) {
+        var amendedMsg = getBuilderWithDefaultAmdntBaseFrom(msgCtx)
                 .valueDate(msgTemplateHelper.getRndmValueDate())
                 .build();
+
+        // return new messageContext with amended message
+        return msgCtx.with(amendedMsg);
     }
 
     /// If NOT rebooked, then, increments the cashflow version and randomly chooses to increment the trade version
@@ -106,7 +113,8 @@ sealed abstract class CashMessageTemplateWithDataStore<M>
     ///
     /// 1) create a new trade with a new cashflow. The trade event is 'TradeEventType.REBOOK' and not 'TradeEventType.NEW_TRADE'
     /// 2) create cashflow to cancel the original cashflow. The trade event is 'TradeEventType.REBOOK'
-    private FoCashMessageBuilder getBuilderWithDefaultAmdntBaseFrom(FoCashMessage msg) {
+    private FoCashMessageBuilder getBuilderWithDefaultAmdntBaseFrom(M msgCtx) {
+        var msg = msgCtx.foCashMessage();
         TradeEventActionPair nextEventAndAction = getNextEventActionPair(msg.tradeEventType(), msg.tradeEventAction());
         FoCashMessageBuilder amndBdr = createBuilderFrom(msg);
 
@@ -120,17 +128,18 @@ sealed abstract class CashMessageTemplateWithDataStore<M>
         }
         // If rebooked
         else {
-            // 1. Create new trade and cashflow IDs
+            // 1. Create new trade ID and cashflow ID
             IdProvider idProvider = IdProvider.singleton();
             final long newTradeID = idProvider.nextTradeId();
             final long newCashflowID = idProvider.nextCashflowId();
 
             // 2. Create cancellation for the original cashflow and register in the TemplateBuilder
-            this.withRelatedTemplate(msg1 -> {
-                        final int newCashflowVersion = msg1.cashflowVersion() + 1;
-                        final int newTradeVersion = msg1.tradeVersion();
+            this.withRelatedObjectBuilder(msgCtxParam -> {
+                        var msgParam = msgCtxParam.foCashMessage();
+                        final int newCashflowVersion = msgParam.cashflowVersion() + 1;
+                        final int newTradeVersion = msgParam.tradeVersion();
 
-                        List<TradeLink> newTradeLinks = msg1.tradeLinks() != null && !msg1.tradeLinks().isEmpty() ? new ArrayList<>(msg1.tradeLinks()) : new ArrayList<>();
+                        List<TradeLink> newTradeLinks = msgParam.tradeLinks() != null && !msgParam.tradeLinks().isEmpty() ? new ArrayList<>(msgParam.tradeLinks()) : new ArrayList<>();
                         newTradeLinks.add(TradeLinkBuilder.builder()
                                 .linkType(tradeLink_childCashflow)
                                 .relatedReference(null)
@@ -139,7 +148,7 @@ sealed abstract class CashMessageTemplateWithDataStore<M>
                                 .relatedTradeID(newTradeID)
                                 .relatedTradeVersion(newTradeVersion)
                                 .build());
-                        return createBuilderFrom(msg1)
+                        var cancelMsg = createBuilderFrom(msgParam)
                                 // Id Version
                                 .tradeVersion(newTradeVersion)
                                 .cashflowVersion(newCashflowVersion)
@@ -148,11 +157,14 @@ sealed abstract class CashMessageTemplateWithDataStore<M>
                                 .tradeEventAction(TradeEventAction.ADD)
                                 .tradeLinks(Collections.unmodifiableList(newTradeLinks))
                                 .build();
-                    }
-                    , msg);
 
-            // 3. Create the new trade and cashflow
+                        return msgCtx.with(cancelMsg);
+                    }
+                    , msgCtx);
+
+            // 3. Create the new trade and cashflow (because of trade rebook)
             List<TradeLink> newTradeLinks = msg.tradeLinks() != null && !msg.tradeLinks().isEmpty() ? new ArrayList<>(msg.tradeLinks()) : new ArrayList<>();
+            // Add new trade link to the existing list of trade links
             newTradeLinks.add(TradeLinkBuilder.builder()
                     .linkType(tradeLink_parentCashflow)
                     .relatedReference(null)
