@@ -6,7 +6,7 @@ import io.alw.css.domain.referencedata.Currency;
 import io.alw.css.domain.referencedata.Ssi;
 import io.alw.css.domain.referencedata.SsiBuilder;
 import io.alw.css.refdtgtr.config.ConfigParams;
-import io.alw.datagen.template.TemplateBuilder;
+import io.alw.datagen.template.CascadingTemplateBuilder;
 import io.alw.datagen.formattingtemplate.TokenFormattingTemplate;
 import io.alw.datagen.model.AffixPosition;
 import io.alw.css.refdtgtr.model.TestDataType;
@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public final class SsiTemplate extends TemplateBuilder<Ssi> {
+public final class SsiTemplate extends CascadingTemplateBuilder<Ssi> {
     private final SsiTemplateUtilities utilities;
     private final SsiBuilder ssiBuilder;
     private final Counterparty counterparty;
@@ -81,7 +81,7 @@ public final class SsiTemplate extends TemplateBuilder<Ssi> {
     }
 
     @Override
-    public Ssi buildTemplate() {
+    public Ssi finalBuildInstruction() {
         return ssiBuilder.build();
     }
 

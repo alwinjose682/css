@@ -81,7 +81,7 @@ public class RefDataGenerator {
             List<Nostro> nostros = new NostroTemplate(entity, (Currency) currency)
                     .withTemplateValues()
                     .childTemplate(rndm.nextInt(5, 10))
-                    .buildWithChildTemplates();
+                    .build();
             allNostros.addAll(nostros);
 
             int numOfNostros = nostros.size();
@@ -111,7 +111,7 @@ public class RefDataGenerator {
                     .withTemplateValues()
                     .internal(rndm.nextBoolean())
                     .childTemplate(rndm.nextInt(0, 5))
-                    .buildWithChildTemplates();
+                    .build();
             int numOfCps = counterparties.size();
             totalCounterparties += numOfCps;
             //System.out.println("Number of counterparties: " + numOfCps);
@@ -165,7 +165,7 @@ public class RefDataGenerator {
                     List<Ssi> ssisForEachCurrency = new SsiTemplate(cp, currency, tradeType)
                             .withTemplateValues()
                             .childTemplate(rndm.nextInt(2, 7))
-                            .buildWithChildTemplates();
+                            .build();
                     ssis.addAll(ssisForEachCurrency);
 
                     ++numOfCps;
@@ -179,7 +179,7 @@ public class RefDataGenerator {
                         .product(tradeType)
                         .netForAnyEntity(rndm.nextBoolean())
                         .netByParentCounterpartyCode(rndm.nextBoolean())
-                        .buildWithChildTemplates();
+                        .build();
                 cpnps.addAll(cpnpsForEachProduct);
 
             }
@@ -190,7 +190,7 @@ public class RefDataGenerator {
             if (shouldGenerateCpSlaMapping) {
                 cpsms = new CounterpartySlaMappingTemplate(cp, secondaryNostros.get(rndm.nextInt(0, secondaryNostros.size())))
                         .withTemplateValues()
-                        .buildWithChildTemplates();
+                        .build();
             } else {
                 cpsms = new ArrayList<>();
             }
