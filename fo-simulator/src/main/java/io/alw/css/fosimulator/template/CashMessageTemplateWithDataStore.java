@@ -130,55 +130,56 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
         else {
             // 1. Create new trade ID and cashflow ID
             IdProvider idProvider = IdProvider.singleton();
-            final long newTradeID = idProvider.nextTradeId();
-            final long newCashflowID = idProvider.nextCashflowId();
+            final long rebookedTradeID = idProvider.nextTradeId();
+            final int rebookedTradeVersion = VERSION_ONE;
+            final long rebookedCashflowID = idProvider.nextCashflowId();
+            final int rebookedCashflowVersion = VERSION_ONE;
+            final int cancelledCashflowVersion = msg.cashflowVersion() + 1;
+            final int cancelledTradeVersion = msg.tradeVersion();
 
             // 2. Create cancellation for the original cashflow and register in the TemplateBuilder
-            this.withRelatedObjectBuilder(msgCtxParam -> {
-                        var msgParam = msgCtxParam.foCashMessage();
-                        final int newCashflowVersion = msgParam.cashflowVersion() + 1;
-                        final int newTradeVersion = msgParam.tradeVersion();
+            this.withRelatedObjectBuilder(() -> {
 
-                        List<TradeLink> newTradeLinks = msgParam.tradeLinks() != null && !msgParam.tradeLinks().isEmpty() ? new ArrayList<>(msgParam.tradeLinks()) : new ArrayList<>();
-                        newTradeLinks.add(TradeLinkBuilder.builder()
-                                .linkType(tradeLink_childCashflow)
-                                .relatedReference(null)
-                                .relatedFoCashflowID(newCashflowID)
-                                .relatedFoCashflowVersion(newCashflowVersion)
-                                .relatedTradeID(newTradeID)
-                                .relatedTradeVersion(newTradeVersion)
-                                .build());
-                        var cancelMsg = createBuilderFrom(msgParam)
-                                // Id Version
-                                .tradeVersion(newTradeVersion)
-                                .cashflowVersion(newCashflowVersion)
-                                // Trade Event and Action
-                                .tradeEventType(TradeEventType.CANCEL)
-                                .tradeEventAction(TradeEventAction.ADD)
-                                .tradeLinks(Collections.unmodifiableList(newTradeLinks))
-                                .build();
+                // Add trade link that corresponds to rebooked cashflow to the existing list of trade links
+                List<TradeLink> newTradeLinks = msg.tradeLinks() != null && !msg.tradeLinks().isEmpty() ? new ArrayList<>(msg.tradeLinks()) : new ArrayList<>();
+                newTradeLinks.add(TradeLinkBuilder.builder()
+                        .linkType(tradeLink_childCashflow)
+                        .relatedReference(null)
+                        .relatedFoCashflowID(rebookedCashflowID)
+                        .relatedFoCashflowVersion(rebookedCashflowVersion)
+                        .relatedTradeID(rebookedTradeID)
+                        .relatedTradeVersion(rebookedTradeVersion)
+                        .build());
+                var cancelMsg = createBuilderFrom(msg)
+                        // Id Version
+                        .tradeVersion(cancelledTradeVersion)
+                        .cashflowVersion(cancelledCashflowVersion)
+                        // Trade Event and Action
+                        .tradeEventType(TradeEventType.CANCEL)
+                        .tradeEventAction(TradeEventAction.ADD)
+                        .tradeLinks(Collections.unmodifiableList(newTradeLinks))
+                        .build();
 
-                        return msgCtx.with(cancelMsg);
-                    }
-                    , msgCtx);
+                return msgCtx.with(cancelMsg);
+            });
 
             // 3. Create the new trade and cashflow (because of trade rebook)
             List<TradeLink> newTradeLinks = msg.tradeLinks() != null && !msg.tradeLinks().isEmpty() ? new ArrayList<>(msg.tradeLinks()) : new ArrayList<>();
-            // Add new trade link to the existing list of trade links
+            // Add trade link of cancelled cashflow to the existing list of trade links
             newTradeLinks.add(TradeLinkBuilder.builder()
                     .linkType(tradeLink_parentCashflow)
                     .relatedReference(null)
                     .relatedFoCashflowID(msg.cashflowID())
-                    .relatedFoCashflowVersion(VERSION_ONE)
+                    .relatedFoCashflowVersion(cancelledCashflowVersion)
                     .relatedTradeID(msg.tradeID())
-                    .relatedTradeVersion(VERSION_ONE)
+                    .relatedTradeVersion(cancelledTradeVersion)
                     .build());
             amndBdr
                     // Id Version
-                    .tradeID(newTradeID)
-                    .tradeVersion(VERSION_ONE)
-                    .cashflowID(newCashflowID)
-                    .cashflowVersion(VERSION_ONE)
+                    .tradeID(rebookedTradeID)
+                    .tradeVersion(rebookedTradeVersion)
+                    .cashflowID(rebookedCashflowID)
+                    .cashflowVersion(rebookedCashflowVersion)
                     .tradeLinks(Collections.unmodifiableList(newTradeLinks));
         }
 
