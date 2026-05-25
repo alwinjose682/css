@@ -68,7 +68,7 @@ sealed abstract class CashMessageTemplate<M extends MessageContext>
     protected abstract TradeEventActionPair getNextEventActionPair(TradeEventType amendMsgEvt, TradeEventAction amendMsgAct);
 
     @Override
-    protected FoCashMessage buildRelatedObject(FoCashMessageBuilder relatedObjectBuilder) {
+    protected FoCashMessage buildGroupedOrRelatedItem(FoCashMessageBuilder relatedObjectBuilder) {
         if (relatedObjectBuilder.tradeLinks() == null || relatedObjectBuilder.tradeLinks().isEmpty()) {
             relatedObjectBuilder.tradeLinks(msgCtx.getAllTradeLinks());
         }

@@ -86,10 +86,10 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
             buildMaturityAndInterestLeg(principalCtx, interestCtx, maturityCtx);
             bdr.tradeLinks(principalCtx.allTradeLinks());
         } else if (interestCtx != null) {
-            this.withRelatedObjectBuilder(() -> buildInterestLeg(principalCtx, null, interestCtx));
+            this.withRelatedItem(() -> buildInterestLeg(principalCtx, null, interestCtx));
             bdr.tradeLinks(principalCtx.allTradeLinks());
         } else if (maturityCtx != null) {
-            this.withRelatedObjectBuilder(() -> buildMaturityLeg(principalCtx, maturityCtx));
+            this.withRelatedItem(() -> buildMaturityLeg(principalCtx, maturityCtx));
             bdr.tradeLinks(principalCtx.allTradeLinks());
         }
 
@@ -100,9 +100,9 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
         // Determine valueDate of MATURITY leg ahead of building the MATURITY leg as it is needed for creating interest leg. A callback can also be used, but it requires changes and new wrapping objects in TemplateBuilder class
         LocalDate maturityLegValueDate = msgTemplateHelper.getRndmFutureValueDateRelativeTo(principalCtx.foCashMessage().valueDate(), false, 10);
         // Add building function of INTEREST leg
-        this.withRelatedObjectBuilder(() -> buildInterestLeg(principalCtx, maturityLegValueDate, interestContext));
+        this.withRelatedItem(() -> buildInterestLeg(principalCtx, maturityLegValueDate, interestContext));
         // Add building function of MATURITY leg
-        this.withRelatedObjectBuilder(() -> buildMaturityLeg(principalCtx, maturityLegValueDate, maturityContext));
+        this.withRelatedItem(() -> buildMaturityLeg(principalCtx, maturityLegValueDate, maturityContext));
     }
 
     private FoCashMessageBuilder buildInterestLeg(MmCashMessageContext principalCtx, LocalDate maturityLegValueDate, MmCashMessageContext interestCtx) {

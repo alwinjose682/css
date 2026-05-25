@@ -69,9 +69,9 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
         for (M msgContext : msgContextsForAmendment) {
 //            var msg = msgContext.foCashMessage();
             switch (cyclicAmendableFieldsProvider.next()) {
-                case VALUE_DATE -> this.withRelatedObjectBuilder(() -> buildAmendedMessageForValueDate(msgContext));
-                case AMOUNT -> this.withRelatedObjectBuilder(() -> buildAmendedMessageForAmount(msgContext));
-                case COUNTERPARTY_CODE -> this.withRelatedObjectBuilder(() -> buildAmendedMessageForCounterparty(msgContext));
+                case VALUE_DATE -> this.withRelatedItem(() -> buildAmendedMessageForValueDate(msgContext));
+                case AMOUNT -> this.withRelatedItem(() -> buildAmendedMessageForAmount(msgContext));
+                case COUNTERPARTY_CODE -> this.withRelatedItem(() -> buildAmendedMessageForCounterparty(msgContext));
             }
         }
         return this;
@@ -126,7 +126,7 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
             final int cancelledTradeVersion = msg.tradeVersion();
 
             // 2. Create cancellation for the original cashflow and register in the TemplateBuilder
-            this.withRelatedObjectBuilder(() -> {
+            this.withRelatedItem(() -> {
 
                 // Add trade link that corresponds to rebooked cashflow to the existing list of trade links
                 List<TradeLink> newTradeLinks = msg.tradeLinks() != null && !msg.tradeLinks().isEmpty() ? new ArrayList<>(msg.tradeLinks()) : new ArrayList<>();

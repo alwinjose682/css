@@ -71,7 +71,7 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxCashMes
                 .amount(BigDecimal.valueOf(rndm.nextDouble(2, 95036)))
         ;
 
-        this.withRelatedObjectBuilder(() -> buildCounterSide(fxSide1Ctx, counterSideIds));
+        this.withRelatedItem(() -> buildCounterSide(fxSide1Ctx, counterSideIds));
 
         return this;
     }

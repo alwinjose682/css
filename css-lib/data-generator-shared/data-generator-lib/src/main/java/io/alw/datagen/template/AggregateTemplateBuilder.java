@@ -6,18 +6,32 @@ import java.util.*;
 import java.util.function.Supplier;
 
 public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, B, R> extends TemplateBuilder<T> {
-    private final Deque<Supplier<B>> relObjectBuilderSuppliers;
+    private final Deque<Supplier<B>> groupedItemBuilders;
+    private final Deque<Supplier<B>> relatedItemBuilders;
 
     protected AggregateTemplateBuilder(T parent) {
         super(parent);
-        this.relObjectBuilderSuppliers = new LinkedList<>();
+        this.groupedItemBuilders = new LinkedList<>();
+        this.relatedItemBuilders = new LinkedList<>();
     }
 
-    protected abstract R buildRelatedObject(B relatedObjectBuilder);
+    protected abstract R buildGroupedOrRelatedItem(B relatedObjectBuilder);
 
+    /// This method should be used if the final build output`R` needs to be associated with the root result `T`.
+    /// The association is made by the implementation of the abstract method [AggregateTemplateBuilder#buildGroupedOrRelatedItem(B)].
+    ///
     /// This method can be called recursively
-    public TemplateBuilder<T> withRelatedObjectBuilder(Supplier<B> firstBuildStep) {
-        relObjectBuilderSuppliers.push(firstBuildStep);
+    public TemplateBuilder<T> withGroupedItem(Supplier<B> firstBuildStep) {
+        groupedItemBuilders.push(firstBuildStep);
+        return this;
+    }
+
+    /// The final build output`R` from items added to this method is NOT intended to be associated with the root result `T`.
+    /// The association is made by the implementation of the abstract method [AggregateTemplateBuilder#buildGroupedOrRelatedItem(B)].
+    ///
+    /// This method can be called recursively
+    public TemplateBuilder<T> withRelatedItem(Supplier<B> firstBuildStep) {
+        relatedItemBuilders.push(firstBuildStep);
         return this;
     }
 
@@ -30,11 +44,19 @@ public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, B,
         final List<T> result = new ArrayList<>();
         result.add(parent);
 
-        // 4. Build all related objects using functions that do not require any operand
-        while (!relObjectBuilderSuppliers.isEmpty()) {
-            Supplier<B> firstBuildStep = relObjectBuilderSuppliers.pop();
+        // 2. Build items that need to be grouped together with parent/root item
+        while (!groupedItemBuilders.isEmpty()) {
+            Supplier<B> firstBuildStep = groupedItemBuilders.pop();
             B resultBuilder = firstBuildStep.get();
-            R related = buildRelatedObject(resultBuilder);
+            R related = buildGroupedOrRelatedItem(resultBuilder);
+            result.add(related);
+        }
+
+        // 3. Build items that do NOT need to be grouped together with parent/root item
+        while (!relatedItemBuilders.isEmpty()) {
+            Supplier<B> firstBuildStep = relatedItemBuilders.pop();
+            B resultBuilder = firstBuildStep.get();
+            R related = buildGroupedOrRelatedItem(resultBuilder);
             result.add(related);
         }
 
