@@ -83,29 +83,29 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
 
         // Set tradeLinks on the PRINCIPAL leg
         if (maturityCtx != null && interestCtx != null) {
-            this.withRelatedObjectBuilder((principalCtxParam) -> buildMaturityAndInterestLeg(principalCtxParam, interestCtx, maturityCtx));
+            buildMaturityAndInterestLeg(principalCtx, interestCtx, maturityCtx);
             bdr.tradeLinks(principalCtx.allTradeLinks());
         } else if (interestCtx != null) {
-            this.withRelatedObjectBuilder((principalCtxParam) -> buildInterestLeg(principalCtxParam, null, interestCtx));
+            this.withRelatedObjectBuilder(() -> buildInterestLeg(principalCtx, null, interestCtx));
             bdr.tradeLinks(principalCtx.allTradeLinks());
         } else if (maturityCtx != null) {
-            this.withRelatedObjectBuilder((principalCtxParam) -> buildMaturityLeg(principalCtxParam, maturityCtx));
+            this.withRelatedObjectBuilder(() -> buildMaturityLeg(principalCtx, maturityCtx));
             bdr.tradeLinks(principalCtx.allTradeLinks());
         }
 
         return this;
     }
 
-    private MmCashMessageContext buildMaturityAndInterestLeg(MmCashMessageContext principalCtx, MmCashMessageContext interestContext, MmCashMessageContext maturityContext) {
+    private void buildMaturityAndInterestLeg(MmCashMessageContext principalCtx, MmCashMessageContext interestContext, MmCashMessageContext maturityContext) {
         // Determine valueDate of MATURITY leg ahead of building the MATURITY leg as it is needed for creating interest leg. A callback can also be used, but it requires changes and new wrapping objects in TemplateBuilder class
         LocalDate maturityLegValueDate = msgTemplateHelper.getRndmFutureValueDateRelativeTo(principalCtx.foCashMessage().valueDate(), false, 10);
         // Add building function of INTEREST leg
-        this.withRelatedObjectBuilder((principalCtxParam) -> buildInterestLeg(principalCtxParam, maturityLegValueDate, interestContext));
-        // Build the MATURITY leg
-        return buildMaturityLeg(principalCtx, maturityLegValueDate, maturityContext);
+        this.withRelatedObjectBuilder(() -> buildInterestLeg(principalCtx, maturityLegValueDate, interestContext));
+        // Add building function of MATURITY leg
+        this.withRelatedObjectBuilder(() -> buildMaturityLeg(principalCtx, maturityLegValueDate, maturityContext));
     }
 
-    private MmCashMessageContext buildInterestLeg(MmCashMessageContext principalCtx, LocalDate maturityLegValueDate, MmCashMessageContext interestCtx) {
+    private FoCashMessageBuilder buildInterestLeg(MmCashMessageContext principalCtx, LocalDate maturityLegValueDate, MmCashMessageContext interestCtx) {
         var principalLeg = principalCtx.foCashMessage();
 
         // Build the INTEREST leg
@@ -126,8 +126,7 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
             bdr.rate(cyclicRateProvider.get());
         }
 
-        interestCtx.setFoCashMessage(bdr.build());
-        return interestCtx;
+        return bdr;
     }
 
     /// NOTE: The amount returned is not a result of a proper calculation based on rate.
@@ -186,12 +185,12 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
         };
     }
 
-    private MmCashMessageContext buildMaturityLeg(MmCashMessageContext principalCtx, MmCashMessageContext maturityCtx) {
+    private FoCashMessageBuilder buildMaturityLeg(MmCashMessageContext principalCtx, MmCashMessageContext maturityCtx) {
         LocalDate maturityLegValueDate = msgTemplateHelper.getRndmFutureValueDateRelativeTo(principalCtx.foCashMessage().valueDate(), false, 10);
         return buildMaturityLeg(principalCtx, maturityLegValueDate, maturityCtx);
     }
 
-    private MmCashMessageContext buildMaturityLeg(MmCashMessageContext principalCtx, LocalDate valueDate, MmCashMessageContext maturityCtx) {
+    private FoCashMessageBuilder buildMaturityLeg(MmCashMessageContext principalCtx, LocalDate valueDate, MmCashMessageContext maturityCtx) {
         var principalMsg = principalCtx.foCashMessage();
 
         // Build the MATURITY leg
@@ -212,8 +211,7 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
             bdr.rate(cyclicRateProvider.get());
         }
 
-        maturityCtx.setFoCashMessage(bdr.build());
-        return maturityCtx;
+        return bdr;
     }
 
     private TradeLink buildTradeLink(MmLeg mmLeg, CashflowIds cashflowIds) {

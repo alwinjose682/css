@@ -23,7 +23,7 @@ import java.util.random.RandomGenerator;
 /// [CashMessageTemplate] instances are both a trade type template and a supplier of the build output of the template
 /// Each instance of this class is supposed to be exclusive for a single thread
 sealed abstract class CashMessageTemplate<M extends MessageContext>
-        extends AggregateTemplateBuilder<M>
+        extends AggregateTemplateBuilder<M, FoCashMessageBuilder, FoCashMessage>
         implements Supplier<List<FoCashMessage>>
         permits CashMessageTemplateWithDataStore {
 
@@ -66,6 +66,15 @@ sealed abstract class CashMessageTemplate<M extends MessageContext>
     }
 
     protected abstract TradeEventActionPair getNextEventActionPair(TradeEventType amendMsgEvt, TradeEventAction amendMsgAct);
+
+    @Override
+    protected FoCashMessage buildRelatedObject(FoCashMessageBuilder relatedObjectBuilder) {
+        if (relatedObjectBuilder.tradeLinks() == null || relatedObjectBuilder.tradeLinks().isEmpty()) {
+            relatedObjectBuilder.tradeLinks(msgCtx.getAllTradeLinks());
+        }
+
+        //TODO: Add other steps here
+    }
 
     /// This method ensures that the same day is used at all points of building the template.
     /// This method is the starting point to build a template

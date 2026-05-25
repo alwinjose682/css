@@ -71,13 +71,13 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxCashMes
                 .amount(BigDecimal.valueOf(rndm.nextDouble(2, 95036)))
         ;
 
-        this.withRelatedObjectBuilder((fxSide1CtxParam) -> buildCounterSide(fxSide1CtxParam, counterSideIds));
+        this.withRelatedObjectBuilder(() -> buildCounterSide(fxSide1Ctx, counterSideIds));
 
         return this;
     }
 
     /// Builds the counter side(side 2) of the fx message
-    private FxCashMessageContext buildCounterSide(FxCashMessageContext fxSide1Ctx, CashflowIds ids) {
+    private FoCashMessageBuilder buildCounterSide(FxCashMessageContext fxSide1Ctx, CashflowIds ids) {
         var fxSide1Msg = fxSide1Ctx.foCashMessage();
         String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(fxSide1Msg.counterpartyCode());
         Entity entity = refDataService.entityOtherThan(rndm, fxSide1Msg.entityCode());
@@ -107,10 +107,7 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxCashMes
                 .amount(BigDecimal.valueOf(rndm.nextDouble(2, 95036))); // TODO and NOTE: The amount of the other side of FX trade is not calculated based on rate. It is just a random number which is incorrect.
         // bookCode and counterBookCode are not changed as they are dummy values as of now
 
-        // Create context for fx-side-2
-        var fxSide2Ctx = new FxCashMessageContext();
-        fxSide2Ctx.setFoCashMessage(fx2Bdr.build());
-        return fxSide2Ctx;
+        return fx2Bdr;
     }
 
     @Override

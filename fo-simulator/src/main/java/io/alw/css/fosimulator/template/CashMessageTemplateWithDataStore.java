@@ -69,42 +69,30 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
         for (M msgContext : msgContextsForAmendment) {
 //            var msg = msgContext.foCashMessage();
             switch (cyclicAmendableFieldsProvider.next()) {
-                case VALUE_DATE -> this.withRelatedObjectBuilder(this::buildAmendedMessageForValueDate, msgContext);
-                case AMOUNT -> this.withRelatedObjectBuilder(this::buildAmendedMessageForAmount, msgContext);
-                case COUNTERPARTY_CODE -> this.withRelatedObjectBuilder(this::buildAmendedMessageForCounterparty, msgContext);
+                case VALUE_DATE -> this.withRelatedObjectBuilder(() -> buildAmendedMessageForValueDate(msgContext));
+                case AMOUNT -> this.withRelatedObjectBuilder(() -> buildAmendedMessageForAmount(msgContext));
+                case COUNTERPARTY_CODE -> this.withRelatedObjectBuilder(() -> buildAmendedMessageForCounterparty(msgContext));
             }
         }
         return this;
     }
 
-    private M buildAmendedMessageForCounterparty(M msgCtx) {
+    private FoCashMessageBuilder buildAmendedMessageForCounterparty(M msgCtx) {
         // NOTE: Here, it is required to get a counterpartyCode that is not used by 1) the current cashMessage being amended and 2) the counter side cashMessage of the current cashMessage
         // But, counterpartyCode of point 2 above is not available handy and hence there is a risk that the counterpartyCode used by counter side cashMessage may be re-used.
         String newCounterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(msgCtx.foCashMessage().counterpartyCode());
-        FoCashMessage amendedMsg = getBuilderWithDefaultAmdntBaseFrom(msgCtx)
-                .counterpartyCode(newCounterpartyCode)
-                .build();
-
-        // return new messageContext with amended message
-        return msgCtx.with(amendedMsg);
+        return getBuilderWithDefaultAmdntBaseFrom(msgCtx)
+                .counterpartyCode(newCounterpartyCode);
     }
 
-    private M buildAmendedMessageForAmount(M msgCtx) {
-        var amendedMsg = getBuilderWithDefaultAmdntBaseFrom(msgCtx)
-                .amount(BigDecimal.valueOf(rndm.nextDouble(2, 75036)))
-                .build();
-
-        // return new messageContext with amended message
-        return msgCtx.with(amendedMsg);
+    private FoCashMessageBuilder buildAmendedMessageForAmount(M msgCtx) {
+        return getBuilderWithDefaultAmdntBaseFrom(msgCtx)
+                .amount(BigDecimal.valueOf(rndm.nextDouble(2, 75036)));
     }
 
-    private M buildAmendedMessageForValueDate(M msgCtx) {
-        var amendedMsg = getBuilderWithDefaultAmdntBaseFrom(msgCtx)
-                .valueDate(msgTemplateHelper.getRndmValueDate())
-                .build();
-
-        // return new messageContext with amended message
-        return msgCtx.with(amendedMsg);
+    private FoCashMessageBuilder buildAmendedMessageForValueDate(M msgCtx) {
+        return getBuilderWithDefaultAmdntBaseFrom(msgCtx)
+                .valueDate(msgTemplateHelper.getRndmValueDate());
     }
 
     /// If NOT rebooked, then, increments the cashflow version and randomly chooses to increment the trade version
@@ -150,17 +138,16 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
                         .relatedTradeID(rebookedTradeID)
                         .relatedTradeVersion(rebookedTradeVersion)
                         .build());
-                var cancelMsg = createBuilderFrom(msg)
+
+                // Create builder for cashflow cancellation
+                return createBuilderFrom(msg)
                         // Id Version
                         .tradeVersion(cancelledTradeVersion)
                         .cashflowVersion(cancelledCashflowVersion)
                         // Trade Event and Action
                         .tradeEventType(TradeEventType.CANCEL)
                         .tradeEventAction(TradeEventAction.ADD)
-                        .tradeLinks(Collections.unmodifiableList(newTradeLinks))
-                        .build();
-
-                return msgCtx.with(cancelMsg);
+                        .tradeLinks(Collections.unmodifiableList(newTradeLinks));
             });
 
             // 3. Create the new trade and cashflow (because of trade rebook)
