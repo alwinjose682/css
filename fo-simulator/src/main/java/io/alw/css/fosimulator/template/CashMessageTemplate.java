@@ -6,7 +6,7 @@ import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
-import io.alw.css.fosimulator.template.common.CashflowIds;
+import io.alw.css.fosimulator.template.common.Ids;
 import io.alw.css.fosimulator.template.common.MessageContext;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
 import io.alw.datagen.template.AggregateTemplateBuilder;
@@ -14,7 +14,9 @@ import io.alw.datagen.template.AggregateTemplateBuilder;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 
@@ -67,13 +69,17 @@ sealed abstract class CashMessageTemplate<M extends MessageContext>
 
     protected abstract TradeEventActionPair getNextEventActionPair(TradeEventType amendMsgEvt, TradeEventAction amendMsgAct);
 
+    protected abstract List<TradeLink> createAllTradeLinks(Collection<Ids> ids);
+
     @Override
     protected FoCashMessage buildGroupedOrRelatedItem(FoCashMessageBuilder relatedObjectBuilder) {
+        // Add 'allTradeLinks' only if tradeLinks were not added previously
+        // This ensures that explicit and intentional addition of tradeLinks prior to invocation of this method will not be overwritten or modified
         if (relatedObjectBuilder.tradeLinks() == null || relatedObjectBuilder.tradeLinks().isEmpty()) {
-            relatedObjectBuilder.tradeLinks(msgCtx.getAllTradeLinks());
+            relatedObjectBuilder.tradeLinks(msgCtx.allTradeLinks());
         }
 
-        //TODO: Add other steps here
+        return relatedObjectBuilder.build();
     }
 
     /// This method ensures that the same day is used at all points of building the template.
@@ -85,10 +91,11 @@ sealed abstract class CashMessageTemplate<M extends MessageContext>
 
     /// NOTE: New [CashMessageTemplate] instances are not created by this method.
     /// Instead, the existing [FoCashMessageBuilder] (`bdr`) is just replaced with a new one and then new values are assigned.
-    protected FoCashMessageBuilder getNewCashMsgBuilder(CashflowIds ids, M msgCtx) {
+    protected FoCashMessageBuilder getNewCashMsgBuilder(Ids ids, M msgCtx, List<TradeLink> allTradeLinks) {
         msgTemplateHelper.incrementCounter();
         this.bdr = FoCashMessageBuilder.builder();
         this.msgCtx = msgCtx;
+        this.msgCtx.setAllTradeLinks(allTradeLinks);
 
         final String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionType();
         bdr
@@ -124,8 +131,8 @@ sealed abstract class CashMessageTemplate<M extends MessageContext>
 
     @Override
     public M finalBuildInstruction() {
-        FoCashMessage msg = bdr.build();
-        msgCtx.setFoCashMessage(msg);
+        FoCashMessage rootMsg = bdr.build();
+        msgCtx.setRootFoCashMessage(rootMsg);
         return msgCtx;
     }
 

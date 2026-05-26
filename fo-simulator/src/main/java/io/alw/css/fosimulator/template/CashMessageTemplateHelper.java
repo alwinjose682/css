@@ -1,9 +1,11 @@
 package io.alw.css.fosimulator.template;
 
+import io.alw.css.domain.cashflow.TradeLink;
+import io.alw.css.domain.cashflow.TradeLinkBuilder;
 import io.alw.css.domain.cashflow.TransactionType;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
-import io.alw.css.fosimulator.template.common.CashflowIds;
+import io.alw.css.fosimulator.template.common.Ids;
 import io.alw.datagen.template.CountAware;
 
 import java.time.LocalDate;
@@ -37,14 +39,24 @@ final class CashMessageTemplateHelper implements CountAware {
         this.counter = 0L;
     }
 
-    static CashflowIds getIdsForVersionOneCashflowAndVersionOneTrade() {
+    static Ids getIdsForVersionOneCashflowAndVersionOneTrade(String linkType) {
         var idProvider = IdProvider.singleton();
-        return new CashflowIds(idProvider.nextCashflowId(), VERSION_ONE, idProvider.nextTradeId(), VERSION_ONE);
+        return new Ids(linkType, idProvider.nextCashflowId(), VERSION_ONE, idProvider.nextTradeId(), VERSION_ONE);
     }
 
-    static CashflowIds getIdsForVersionOneCashflowFromExistingTrade(CashflowIds ids) {
+    static Ids getIdsForVersionOneCashflowFromExistingTrade(String linkType, Ids ids) {
         var idProvider = IdProvider.singleton();
-        return new CashflowIds(idProvider.nextCashflowId(), VERSION_ONE, ids.tradeID(), ids.tradeVersion());
+        return new Ids(linkType, idProvider.nextCashflowId(), VERSION_ONE, ids.tradeID(), ids.tradeVersion());
+    }
+
+    public static TradeLink mapToTradeLink(Ids ids) {
+        return TradeLinkBuilder.builder()
+                .linkType(ids.linkType())
+                .relatedFoCashflowID(ids.cashflowID())
+                .relatedFoCashflowVersion(ids.cashflowVersion())
+                .relatedTradeID(ids.tradeID())
+                .relatedTradeVersion(ids.tradeVersion())
+                .build();
     }
 
     /// Check the documentation for [CashMessageTemplate#getRndmValueDate()]
@@ -91,7 +103,7 @@ final class CashMessageTemplateHelper implements CountAware {
     /// If the resultant value date after adding `daysToAdd` is after `dateRangeEnd`, then `dateRangeEnd` is returned as the result, because the value date returned must be within the given date range
     public LocalDate getFutureValueDate(long daysToAdd, LocalDate dateRangeStart, LocalDate dateRangeEnd) {
         LocalDate resultVD = dateRangeStart.plusDays(dayForMsgTemplate + daysToAdd);
-        if (dateRangeStart.isAfter(dateRangeEnd)) {
+        if (resultVD.isAfter(dateRangeEnd)) {
             return dateRangeEnd;
         } else {
             return resultVD;

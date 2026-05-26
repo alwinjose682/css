@@ -8,6 +8,7 @@ import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.template.common.MessageContext;
 import io.alw.datagen.provider.CyclicStringDataProvider;
+import io.alw.datagen.template.AggregateTemplateBuilderResult;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -19,7 +20,7 @@ import java.util.random.RandomGenerator;
 
 import static io.alw.css.fosimulator.model.AmendableFoCashMessageFields.*;
 import static io.alw.css.fosimulator.model.TradeLinkConstants.*;
-import static io.alw.css.fosimulator.model.TradeLinkConstants.tradeLink_parentCashflow;
+import static io.alw.css.fosimulator.model.TradeLinkConstants.parentCashflow;
 
 /// The type parameter M stands for MessageContext which is a combination of [FoCashMessage] and its metadata created by the implementations of this class.
 /// Some implementations choose to store MessageContext instead of just FoCashMessage in [io.alw.css.fosimulator.store.CashMessageStore]
@@ -44,16 +45,16 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
     @Override
     public List<FoCashMessage> get() {
         // Build the cash messages(newly created + amendments)
-        List<M> msgCtxs = this
+        AggregateTemplateBuilderResult<M, FoCashMessage> buildResult = this
                 .templateBuildSteps()
                 .build();
 
         // Select new cash messages for future amendments and add to the message store
-        List<M> amendableCashMsgs = msgCtxs.stream().filter(amendableMsgSelectionCriteria()).toList();
+        List<M> amendableCashMsgs = buildResult.stream().filter(amendableMsgSelectionCriteria()).toList();
         msgStoreHelper().storeMessageDataForAmendment(amendableCashMsgs);
 
         // Return messages(new+amends) which can be consumed by the CashflowGenerators
-        return msgCtx.mapToCashMessage(msgCtxs);
+        return msgCtx.mapToCashMessage(buildResult);
     }
 
     protected CashMessageTemplateWithDataStore<M> withMessageAmendments() {
@@ -80,7 +81,7 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
     private FoCashMessageBuilder buildAmendedMessageForCounterparty(M msgCtx) {
         // NOTE: Here, it is required to get a counterpartyCode that is not used by 1) the current cashMessage being amended and 2) the counter side cashMessage of the current cashMessage
         // But, counterpartyCode of point 2 above is not available handy and hence there is a risk that the counterpartyCode used by counter side cashMessage may be re-used.
-        String newCounterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(msgCtx.foCashMessage().counterpartyCode());
+        String newCounterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(msgCtx.rootFoCashMessage().counterpartyCode());
         return getBuilderWithDefaultAmdntBaseFrom(msgCtx)
                 .counterpartyCode(newCounterpartyCode);
     }
@@ -102,7 +103,7 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
     /// 1) create a new trade with a new cashflow. The trade event is 'TradeEventType.REBOOK' and not 'TradeEventType.NEW_TRADE'
     /// 2) create cashflow to cancel the original cashflow. The trade event is 'TradeEventType.REBOOK'
     private FoCashMessageBuilder getBuilderWithDefaultAmdntBaseFrom(M msgCtx) {
-        var msg = msgCtx.foCashMessage();
+        var msg = msgCtx.rootFoCashMessage();
         TradeEventActionPair nextEventAndAction = getNextEventActionPair(msg.tradeEventType(), msg.tradeEventAction());
         FoCashMessageBuilder amndBdr = createBuilderFrom(msg);
 
@@ -131,7 +132,7 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
                 // Add trade link that corresponds to rebooked cashflow to the existing list of trade links
                 List<TradeLink> newTradeLinks = msg.tradeLinks() != null && !msg.tradeLinks().isEmpty() ? new ArrayList<>(msg.tradeLinks()) : new ArrayList<>();
                 newTradeLinks.add(TradeLinkBuilder.builder()
-                        .linkType(tradeLink_childCashflow)
+                        .linkType(childCashflow)
                         .relatedReference(null)
                         .relatedFoCashflowID(rebookedCashflowID)
                         .relatedFoCashflowVersion(rebookedCashflowVersion)
@@ -154,7 +155,7 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
             List<TradeLink> newTradeLinks = msg.tradeLinks() != null && !msg.tradeLinks().isEmpty() ? new ArrayList<>(msg.tradeLinks()) : new ArrayList<>();
             // Add trade link of cancelled cashflow to the existing list of trade links
             newTradeLinks.add(TradeLinkBuilder.builder()
-                    .linkType(tradeLink_parentCashflow)
+                    .linkType(parentCashflow)
                     .relatedReference(null)
                     .relatedFoCashflowID(msg.cashflowID())
                     .relatedFoCashflowVersion(cancelledCashflowVersion)

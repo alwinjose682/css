@@ -8,19 +8,20 @@ import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.store.CashMessageStore;
 import io.alw.css.fosimulator.store.InMemoryCashMessageStore;
-import io.alw.css.fosimulator.template.common.CashflowIds;
+import io.alw.css.fosimulator.template.common.Ids;
 import io.alw.css.fosimulator.template.common.FxCashMessageContext;
 import io.alw.datagen.template.TemplateBuilder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 
 import static io.alw.css.domain.cashflow.TradeEventAction.*;
 import static io.alw.css.domain.cashflow.TradeEventType.*;
-import static io.alw.css.fosimulator.model.TradeLinkConstants.tradeLink_counterSide;
+import static io.alw.css.fosimulator.model.TradeLinkConstants.*;
 
 public final class FxTemplate extends CashMessageTemplateWithDataStore<FxCashMessageContext> {
     // Message Store and Related
@@ -47,45 +48,36 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxCashMes
 
     /// Build side 1 of the fx message
     @Override
-    public TemplateBuilder<FxCashMessageContext> withTemplateValues() {
-        // Create Ids and MessageContext for FX-Side-1
-        var fxSide1Ids = CashMessageTemplateHelper.getIdsForVersionOneCashflowAndVersionOneTrade();
+    public FxTemplate withTemplateValues() {
+        // Create Ids for FX-Side-1 and Fx-Side-2
+        var fxSide1Ids = CashMessageTemplateHelper.getIdsForVersionOneCashflowAndVersionOneTrade(FX_SIDE1);
+        var fxSide2Ids = CashMessageTemplateHelper.getIdsForVersionOneCashflowFromExistingTrade(FX_SIDE2, fxSide1Ids);
+        // Create message context and all tradeLinks
         var fxSide1Ctx = new FxCashMessageContext();
         // Create FoCashMessage builder for new template with default base values
-        FoCashMessageBuilder bdr = getNewCashMsgBuilder(fxSide1Ids, fxSide1Ctx);
-        // Generate trade IDs for the counter side of the FX deal
-        var counterSideIds = CashMessageTemplateHelper.getIdsForVersionOneCashflowFromExistingTrade(fxSide1Ids);
+        FoCashMessageBuilder bdr = getNewCashMsgBuilder(fxSide1Ids, fxSide1Ctx, createAllTradeLinks(List.of(fxSide1Ids, fxSide2Ids)));
         // Set the values specific to the FX trade being built
         bdr
                 .valueDate(msgTemplateHelper.getRndmValueDate(50))
-                .tradeLinks(List.of(
-                        TradeLinkBuilder.builder()
-                                .linkType(tradeLink_counterSide)
-                                .relatedReference(null)
-                                .relatedFoCashflowID(counterSideIds.cashflowID())
-                                .relatedFoCashflowVersion(counterSideIds.cashflowVersion())
-                                .relatedTradeID(counterSideIds.tradeID())
-                                .relatedTradeVersion(counterSideIds.tradeVersion())
-                                .build()))
                 .payOrReceive(rndm.nextBoolean() ? PayOrReceive.PAY : PayOrReceive.RECEIVE)
                 .amount(BigDecimal.valueOf(rndm.nextDouble(2, 95036)))
         ;
 
-        this.withRelatedItem(() -> buildCounterSide(fxSide1Ctx, counterSideIds));
+        this.withGroupedItem(() -> buildFxSide2(fxSide1Ctx, fxSide2Ids));
 
         return this;
     }
 
     /// Builds the counter side(side 2) of the fx message
-    private FoCashMessageBuilder buildCounterSide(FxCashMessageContext fxSide1Ctx, CashflowIds ids) {
-        var fxSide1Msg = fxSide1Ctx.foCashMessage();
+    private FoCashMessageBuilder buildFxSide2(FxCashMessageContext fxSide1Ctx, Ids ids) {
+        var fxSide1Msg = fxSide1Ctx.rootFoCashMessage();
         String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(fxSide1Msg.counterpartyCode());
         Entity entity = refDataService.entityOtherThan(rndm, fxSide1Msg.entityCode());
         String entityCode = entity.entityCode();
         String currCode = entity.currCode();
 
-        FoCashMessageBuilder fx2Bdr = createBuilderFrom(fxSide1Msg)
-                // Id and version of fxSide2 already determined when fxSide1 was created
+        return createBuilderFrom(fxSide1Msg)
+                // Id and version of fxSide2 was already determined when fxSide1 was created
                 .cashflowID(ids.cashflowID())
                 .cashflowVersion(ids.cashflowVersion())
                 .tradeID(ids.tradeID())
@@ -94,20 +86,9 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxCashMes
                 .counterpartyCode(counterpartyCode)
                 .entityCode(entityCode)
                 .currCode(currCode)
-                .tradeLinks(List.of(
-                        TradeLinkBuilder.builder()
-                                .linkType(tradeLink_counterSide)
-                                .relatedReference(null)
-                                .relatedFoCashflowID(fxSide1Msg.cashflowID())
-                                .relatedFoCashflowVersion(fxSide1Msg.cashflowVersion())
-                                .relatedTradeID(fxSide1Msg.tradeID())
-                                .relatedTradeVersion(fxSide1Msg.tradeVersion())
-                                .build()))
                 .payOrReceive(fxSide1Msg.payOrReceive() == PayOrReceive.RECEIVE ? PayOrReceive.PAY : PayOrReceive.RECEIVE)
-                .amount(BigDecimal.valueOf(rndm.nextDouble(2, 95036))); // TODO and NOTE: The amount of the other side of FX trade is not calculated based on rate. It is just a random number which is incorrect.
+                .amount(BigDecimal.valueOf(rndm.nextDouble(2, 95036))); // NOTE: The amount of the other side of FX trade is not calculated based on rate. It is just a random number
         // bookCode and counterBookCode are not changed as they are dummy values as of now
-
-        return fx2Bdr;
     }
 
     @Override
@@ -138,6 +119,11 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxCashMes
 
             default -> throw new IllegalStateException("Unexpected value: " + amendMsgEvt);
         };
+    }
+
+    @Override
+    protected List<TradeLink> createAllTradeLinks(Collection<Ids> ids) {
+        return ids.stream().map(CashMessageTemplateHelper::mapToTradeLink).toList();
     }
 
     @Override

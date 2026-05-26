@@ -45,18 +45,6 @@ public final class TemporaryGenericTemplate extends CashMessageTemplateWithDataS
         return this;
     }
 
-    /// Returns the same value that is passed to this method because, unlike other templates like [MmTemplate], this template does not need to store a MessageContext instead of just a list of FoCashMessage
-    @Override
-    protected List<FoCashMessage> mapToMessageContext(List<FoCashMessage> cashMessages) {
-        return cashMessages;
-    }
-
-    /// Returns the same value that is passed to this method because, unlike other templates like [MmTemplate], this template does not need to store a MessageContext instead of just a list of FoCashMessage
-    @Override
-    protected List<FoCashMessage> mapToCashMessage(List<FoCashMessage> messageContext) {
-        return messageContext;
-    }
-
     @Override
     protected CashMessageStoreHelper<FoCashMessage> msgStoreHelper() {
         return msgStoreHelper;
@@ -68,7 +56,7 @@ public final class TemporaryGenericTemplate extends CashMessageTemplateWithDataS
     }
 
     @Override
-    public TemplateBuilder<FoCashMessage> withTemplateValues() {
+    public TemporaryGenericTemplate withTemplateValues() {
         // Create the builder with base values
         FoCashMessageBuilder bdr = getNewCashMsgBuilder();
         bdr
