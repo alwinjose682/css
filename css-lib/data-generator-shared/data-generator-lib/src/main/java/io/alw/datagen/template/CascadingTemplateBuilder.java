@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public abstract class CascadingTemplateBuilder<T extends TestDataGeneratable> extends TemplateBuilder<T> {
+public abstract class CascadingTemplateBuilder<T extends TestDataGeneratable> extends TemplateBuilder<T, List<T>> {
     private int numOfChildTemplates;
 
     protected CascadingTemplateBuilder(T parent) {
@@ -14,10 +14,10 @@ public abstract class CascadingTemplateBuilder<T extends TestDataGeneratable> ex
         this.numOfChildTemplates = 0;
     }
 
-    protected abstract TemplateBuilder<T> childTemplate(T parent);
+    protected abstract CascadingTemplateBuilder<T> childTemplate(T parent);
 
     /// Note: Invoking this method is optional. If not invoked ZERO related templates will be created
-    public TemplateBuilder<T> childTemplate(int count) {
+    public CascadingTemplateBuilder<T> childTemplate(int count) {
         this.numOfChildTemplates = count;
         return this;
     }

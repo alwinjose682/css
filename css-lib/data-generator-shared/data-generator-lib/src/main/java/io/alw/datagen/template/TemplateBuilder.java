@@ -12,7 +12,7 @@ import java.util.function.UnaryOperator;
 /// To avoid this, the elements are simply popped/removed while recursively(not concurrently) being modified till its size becomes zero.
 /// - An element when retrieved is popped/removed. The elements must be removed because the TemplateBuilder instance is sometimes re-used(ex: by CashMessageTemplate) and therefore the old elements should not remain in the list
 /// - Check the usage of [TemplateBuilder#withRelatedTemplate(UnaryOperator)] and [TemplateBuilder#withRelatedType(UnaryOperator, TestDataGeneratable)] to understand how this is used
-public abstract class TemplateBuilder<T extends TestDataGeneratable> {
+public abstract class TemplateBuilder<T extends TestDataGeneratable, R> {
     protected final T parent;
 
     /// Set the parentType obtained by building this template so that it becomes available to the related templates during their build
@@ -21,9 +21,9 @@ public abstract class TemplateBuilder<T extends TestDataGeneratable> {
         this.parent = parent;
     }
 
-    public abstract TemplateBuilder<T> withTemplateValues();
+    public abstract TemplateBuilder<T, R> withTemplateValues();
 
-    public abstract List<T> build();
+    public abstract R build();
 
     protected abstract T finalBuildInstruction();
 
