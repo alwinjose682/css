@@ -102,7 +102,7 @@ final class CashMessageTemplateHelper implements CountAware {
 
     /// If the resultant value date after adding `daysToAdd` is after `dateRangeEnd`, then `dateRangeEnd` is returned as the result, because the value date returned must be within the given date range
     public LocalDate getFutureValueDate(long daysToAdd, LocalDate dateRangeStart, LocalDate dateRangeEnd) {
-        LocalDate resultVD = dateRangeStart.plusDays(dayForMsgTemplate + daysToAdd);
+        LocalDate resultVD = dateRangeStart.plusDays(daysToAdd);
         if (resultVD.isAfter(dateRangeEnd)) {
             return dateRangeEnd;
         } else {

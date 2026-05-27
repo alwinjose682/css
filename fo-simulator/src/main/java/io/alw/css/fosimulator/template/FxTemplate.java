@@ -8,6 +8,7 @@ import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.store.CashMessageStore;
 import io.alw.css.fosimulator.store.InMemoryCashMessageStore;
+import io.alw.css.fosimulator.template.common.CashMessageAmendmentContext;
 import io.alw.css.fosimulator.template.common.Ids;
 import io.alw.css.fosimulator.template.common.FxCashMessageContext;
 import io.alw.datagen.template.TemplateBuilder;
@@ -16,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 
@@ -34,16 +36,6 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxCashMes
 
         CashMessageStore<FxCashMessageContext> msgStore = new InMemoryCashMessageStore<>();
         this.msgStoreHelper = new CashMessageStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
-    }
-
-    @Override
-    protected FxTemplate templateBuildSteps() {
-        // Build amended cashMessages and cashMessages for a new FX trade. There are 2 cashMessages for a single FX trade
-        ((FxTemplate) newTemplateBuilder())
-                .withMessageAmendments()
-                .withTemplateValues();
-
-        return this;
     }
 
     /// Build side 1 of the fx message
@@ -124,6 +116,21 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxCashMes
     @Override
     protected List<TradeLink> createAllTradeLinks(Collection<Ids> ids) {
         return ids.stream().map(CashMessageTemplateHelper::mapToTradeLink).toList();
+    }
+
+    @Override
+    protected void buildAmendedMessage(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, List<FxCashMessageContext> msgCtxsForAmendment) {
+
+        //New VD
+        msgTemplateHelper.getRndmValueDate();
+
+        //New Amount
+        BigDecimal.valueOf(rndm.nextDouble(2, 75036));
+
+        // NOTE: Here, it is required to get a counterpartyCode that is not used by 1) the current cashMessage being amended and 2) the counter side cashMessage of the current cashMessage
+        // But, counterpartyCode of point 2 above is not available handy and hence there is a risk that the counterpartyCode used by counter side cashMessage may be re-used.
+        String newCounterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(bdr.counterpartyCode());
+
     }
 
     @Override

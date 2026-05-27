@@ -1,6 +1,5 @@
 package io.alw.css.fosimulator.template;
 
-import io.alw.css.domain.cashflow.FoCashMessage;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
 import io.alw.css.fosimulator.store.CashMessageStore;
 
@@ -25,7 +24,7 @@ final class CashMessageStoreHelper<T> {
         this.msgTemplateHelper = msgTemplateHelper;
     }
 
-    List<T> retrieveMessageDataForAmendment() {
+    List<T> retrieveMessagesForCurrentDay() {
         final long currentDay = msgTemplateHelper.dayForMsgTemplate();
         List<T> msgsToBeAmended = new ArrayList<>();
         for (; lastMessageRetrievalDay <= currentDay; ++lastMessageRetrievalDay) {
@@ -38,7 +37,7 @@ final class CashMessageStoreHelper<T> {
     }
 
     /// Store message data in [CashMessageStore] with a random retrieval day that ranges from `lastMessageRetrievalDay` upto `maxAmendmentGenerationDelayInDays` into the future
-    void storeMessageDataForAmendment(List<T> msgs) {
+    void storeMessagesForFutureRndmRetrievalDay(List<T> msgs) {
         long futureAmendmentDay = rndm.nextLong(lastMessageRetrievalDay, lastMessageRetrievalDay + maxAmendmentGenerationDelayInDays);
         msgs.forEach(msg -> msgStore.add(futureAmendmentDay, msg));
     }
