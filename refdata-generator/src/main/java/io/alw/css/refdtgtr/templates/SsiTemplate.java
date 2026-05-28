@@ -81,7 +81,7 @@ public final class SsiTemplate extends CascadingTemplateBuilder<Ssi> {
     }
 
     @Override
-    public Ssi finalBuildInstruction() {
+    public Ssi buildRootTemplate() {
         return ssiBuilder.build();
     }
 

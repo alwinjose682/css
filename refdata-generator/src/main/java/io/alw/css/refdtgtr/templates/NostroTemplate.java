@@ -83,7 +83,7 @@ public class NostroTemplate extends CascadingTemplateBuilder<Nostro> {
     }
 
     @Override
-    public Nostro finalBuildInstruction() {
+    public Nostro buildRootTemplate() {
         return nsBdr.build();
     }
 

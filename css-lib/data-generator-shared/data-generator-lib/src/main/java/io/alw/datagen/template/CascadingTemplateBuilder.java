@@ -33,7 +33,7 @@ public abstract class CascadingTemplateBuilder<T extends TestDataGeneratable> ex
     @Override
     public List<T> build() {
         // 1. Build the template
-        final T parent = finalBuildInstruction();
+        final T parent = buildRootTemplate();
         List<T> result = new ArrayList<>();
         result.add(parent);
 

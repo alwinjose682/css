@@ -40,7 +40,7 @@ public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, B,
     @Override
     public AggregateTemplateBuilderResult<T,R> build() {
         // 1. Build the template
-        final T root = finalBuildInstruction();
+        final T root = buildRootTemplate();
 
         // 2. Build items that need to be grouped together with parent/root item
         final List<R> groupedItems = new ArrayList<>();

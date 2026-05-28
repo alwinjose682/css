@@ -80,6 +80,7 @@ sealed abstract class CashMessageTemplate<M extends MessageContext>
         }
 
         return relatedObjectBuilder.build();
+    public M buildRootTemplate() {
     }
 
     /// This method ensures that the same day is used at all points of building the template.

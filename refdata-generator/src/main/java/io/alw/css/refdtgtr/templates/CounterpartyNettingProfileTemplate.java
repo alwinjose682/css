@@ -72,7 +72,7 @@ public final class CounterpartyNettingProfileTemplate extends CascadingTemplateB
     }
 
     @Override
-    public CounterpartyNettingProfile finalBuildInstruction() {
+    public CounterpartyNettingProfile buildRootTemplate() {
         return bdr.build();
     }
 

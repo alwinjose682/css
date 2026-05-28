@@ -47,7 +47,7 @@ public class CounterpartySlaMappingTemplate extends CascadingTemplateBuilder<Cou
     }
 
     @Override
-    public CounterpartySlaMapping finalBuildInstruction() {
+    public CounterpartySlaMapping buildRootTemplate() {
         return bdr.build();
     }
 

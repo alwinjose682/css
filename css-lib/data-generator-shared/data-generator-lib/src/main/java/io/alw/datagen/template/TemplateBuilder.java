@@ -2,7 +2,6 @@ package io.alw.datagen.template;
 
 import io.alw.datagen.TestDataGeneratable;
 
-import java.util.*;
 import java.util.function.UnaryOperator;
 
 ///  Note about `relatedTypeBuilders` and `relatedTypeBuildersWithInputVal`. Both are:
@@ -25,7 +24,7 @@ public abstract class TemplateBuilder<T extends TestDataGeneratable, R> {
 
     public abstract R build();
 
-    protected abstract T finalBuildInstruction();
+    protected abstract T buildRootTemplate();
 
     protected T parent() {
         return parent;

@@ -141,7 +141,7 @@ public final class CounterpartyTemplate extends CascadingTemplateBuilder<Counter
     }
 
     @Override
-    public Counterparty finalBuildInstruction() {
+    public Counterparty buildRootTemplate() {
         return cptyBdr.build();
     }
 
