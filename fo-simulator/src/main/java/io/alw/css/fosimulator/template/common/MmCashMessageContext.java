@@ -2,14 +2,15 @@ package io.alw.css.fosimulator.template.common;
 
 import io.alw.css.domain.cashflow.*;
 
-import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class MmCashMessageContext implements MessageContext {
     private final MmCashLeg principal;
     private MmCashLeg maturity;
     private final List<InterestCashLeg> interests;
-    private List<TradeLink> allTradeLinks;
+    private final Map<String, List<TradeLink>> allTradeLinks;
 
     public MmCashMessageContext(MmCashLeg principal, List<InterestCashLeg> interests) {
         this(principal, interests, null);
@@ -18,6 +19,7 @@ public final class MmCashMessageContext implements MessageContext {
     public MmCashMessageContext(MmCashLeg principal, List<InterestCashLeg> interests, MmCashLeg maturity) {
         this.principal = principal;
         this.interests = interests;
+        this.allTradeLinks = new HashMap<>();
     }
 
     @Override
@@ -36,13 +38,8 @@ public final class MmCashMessageContext implements MessageContext {
     }
 
     @Override
-    public List<TradeLink> allTradeLinks() {
+    public Map<String, List<TradeLink>> allTradeLinks() {
         return allTradeLinks;
-    }
-
-    @Override
-    public void setAllTradeLinks(List<TradeLink> allTradeLinks) {
-        this.allTradeLinks = allTradeLinks;
     }
 
     public MmCashLeg principal() {

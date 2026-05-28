@@ -14,9 +14,9 @@ import io.alw.datagen.template.AggregateTemplateBuilder;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 
@@ -71,16 +71,43 @@ sealed abstract class CashMessageTemplate<M extends MessageContext>
 
     protected abstract List<TradeLink> createAllTradeLinks(Collection<Ids> ids);
 
+    /// Build the grouped or related cash message associated with the cashMessage template being built
+    ///
+    /// **About setting tradeLinks**:
+    /// Sets TradeLink for rootMessage and TradeLink for the cash message being built(bdr) only if tradeLinks were not set in a previously executed step
+    /// This ensures that explicit and intentional addition of tradeLinks prior to invocation of this method will not be overwritten or modified.
+    ///
+    /// *NOTE*: tradeLinks are not implicitly set in any steps such as when creating a cashMessage builder with the default values([CashMessageTemplate#getNewCashMsgBuilder(Ids, MessageContext, List)])
+    /// or when creating a builder from an FoCashMessage([CashMessageTemplate#createBuilderFrom(FoCashMessage)])
     @Override
-    protected FoCashMessage buildGroupedOrRelatedItem(FoCashMessageBuilder relatedObjectBuilder) {
-        // Add 'allTradeLinks' only if tradeLinks were not added previously
-        // This ensures that explicit and intentional addition of tradeLinks prior to invocation of this method will not be overwritten or modified
-        if (relatedObjectBuilder.tradeLinks() == null || relatedObjectBuilder.tradeLinks().isEmpty()) {
-            relatedObjectBuilder.tradeLinks(msgCtx.allTradeLinks());
+    protected FoCashMessage buildGroupedOrRelatedItem(FoCashMessageBuilder bdr) {
+        if (bdr.tradeLinks() == null || bdr.tradeLinks().isEmpty()) {
+            bdr.tradeLinks(msgCtx.getTradeLinksForRootAnd(bdr));
         }
 
-        return relatedObjectBuilder.build();
+        return bdr.build();
+    }
+
+    /// Builds the cashMessage template
+    ///
+    /// **About setting tradeLinks**:
+    /// Sets all tradeLinks only if tradeLinks were not set in a previously executed step
+    /// This ensures that explicit and intentional addition of tradeLinks prior to invocation of this method will not be overwritten or modified.
+    ///
+    /// *NOTE*: tradeLinks are not implicitly set in any steps such as when creating a cashMessage builder with the default values([CashMessageTemplate#getNewCashMsgBuilder(Ids, MessageContext, List)])
+    /// or when creating a builder from an FoCashMessage([CashMessageTemplate#createBuilderFrom(FoCashMessage)])
+    @Override
     public M buildRootTemplate() {
+        if (bdr.tradeLinks() == null || bdr.tradeLinks().isEmpty()) {
+            var allTradeLinks = new ArrayList<TradeLink>();
+            msgCtx.allTradeLinks().values().forEach(allTradeLinks::addAll);
+            bdr.tradeLinks(allTradeLinks);
+        }
+
+        FoCashMessage rootMsg = bdr.build();
+
+        msgCtx.setRootFoCashMessage(rootMsg);
+        return msgCtx;
     }
 
     /// This method ensures that the same day is used at all points of building the template.
@@ -92,11 +119,15 @@ sealed abstract class CashMessageTemplate<M extends MessageContext>
 
     /// NOTE: New [CashMessageTemplate] instances are not created by this method.
     /// Instead, the existing [FoCashMessageBuilder] (`bdr`) is just replaced with a new one and then new values are assigned.
+    ///
+    /// IMPORTANT: [FoCashMessageBuilder#tradeLinks] is not set in this method,
+    /// instead `allTradeLinks` are stored in the messageContext which will be used to set the tradeLinks implicitly before building the FoCashMessageBuilder.
+    /// Also, tradeLinks stored in messageContext are updated for a cashflow(and only for that cashflow) when the cashflow is amended when a [io.alw.css.fosimulator.template.common.TradeEvent] happens
     protected FoCashMessageBuilder getNewCashMsgBuilder(Ids ids, M msgCtx, List<TradeLink> allTradeLinks) {
         msgTemplateHelper.incrementCounter();
         this.bdr = FoCashMessageBuilder.builder();
         this.msgCtx = msgCtx;
-        this.msgCtx.setAllTradeLinks(allTradeLinks);
+        this.msgCtx.addTradeLinks(allTradeLinks);
 
         final String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionType();
         bdr
@@ -126,15 +157,10 @@ sealed abstract class CashMessageTemplate<M extends MessageContext>
     }
 
     /// NOTE: The [CashMessageTemplate#counter] is not incremented by this method
+    ///
+    /// IMPORTANT: TradeLink of the builder created is explicitly set to null, see related code in [CashMessageTemplate#buildGroupedOrRelatedItem(FoCashMessageBuilder)]
     protected FoCashMessageBuilder createBuilderFrom(FoCashMessage cashMsg) {
-        return FoCashMessageBuilder.builder(cashMsg);
-    }
-
-    @Override
-    public M finalBuildInstruction() {
-        FoCashMessage rootMsg = bdr.build();
-        msgCtx.setRootFoCashMessage(rootMsg);
-        return msgCtx;
+        return FoCashMessageBuilder.builder(cashMsg).tradeLinks(null);
     }
 
     private static List<BigDecimal> getRateList() {

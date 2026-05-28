@@ -11,5 +11,6 @@ public record CashMessageAmendmentContext(
         List<AmendableFoCashMessageField> amendableFields,
         FoCashMessage msg,
         Consumer<FoCashMessage> callback,
-        TradeEventActionPair tradeEventActionPair) {
+        TradeEventActionPair tradeEventActionPair,
+        Ids ids) {
 }
