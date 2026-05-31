@@ -52,20 +52,15 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
         this.msgStoreHelper = new CashMessageStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
     }
 
-    @Override
-    protected List<TradeLink> createAllTradeLinks(Collection<Ids> ids) {
-        return ids.stream().map(CashMessageTemplateHelper::mapToTradeLink).toList();
-    }
-
     /// Build new template for MM cashflow. A new MM trade can have 1 to 3 cashflows depending on whether its a TERM or CALL and depending on the interest cashflow
     @Override
-    public MmTemplate withTemplateValues() {
+    public MmTemplate withRootTemplateValues() {
         // Create MessageContext
         MmCashMessageContext msgCtx = createMessageContext();
         // Create Ids for PRINCIPAL, INTEREST and if applicable for MATURITY as well
         Map<MmLeg, Ids> idsMap = createFirstVersionIds(msgCtx);
         // Build PRINCIPAL leg of the MoneyMarket trade with base values
-        FoCashMessageBuilder bdr = getNewCashMsgBuilder(idsMap.get(PRINCIPAL), msgCtx, createAllTradeLinks(idsMap.values()));
+        FoCashMessageBuilder bdr = getNewCashMsgBuilder(idsMap.get(PRINCIPAL), msgCtx);
         // Set values specific to the PRINCIPAL leg
         bdr
                 .valueDate(msgTemplateHelper.getRndmValueDate(30))
@@ -95,7 +90,7 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
         switch (fieldForAmendment) {
             case AmendableFoCashMessageField.Amount _, AmendableFoCashMessageField.CounterpartyCode _, AmendableFoCashMessageField.ValueDate _ -> {
                 // Amendment for PRINCIPAL and MATURITY are possible for all these three fields
-                switch (cyclicAmendableMmLegProvider.get()){
+                switch (cyclicAmendableMmLegProvider.get()) {
                     case PRINCIPAL, MATURITY -> {
                         // TODO
                     }
@@ -132,7 +127,7 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
         }
 
         // Build the INTEREST leg
-        var bdr = createBuilderFrom(principalLeg)
+        var bdr = createBuilderFrom(principalLeg, MM_INTEREST)
                 // Id and version of INTEREST leg was already determined when the PRINCIPAL was created
                 .cashflowID(interestLegIds.cashflowID())
                 .cashflowVersion(interestLegIds.cashflowVersion())
@@ -224,7 +219,7 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
         var principalMsg = msgCtx.rootFoCashMessage();
 
         // Build the MATURITY leg
-        var bdr = createBuilderFrom(principalMsg)
+        var bdr = createBuilderFrom(principalMsg, MM_MATURITY)
                 // Id and version of MATURITY leg was already determined when the PRINCIPAL was created
                 .cashflowID(maturityLegIds.cashflowID())
                 .cashflowVersion(maturityLegIds.cashflowVersion())

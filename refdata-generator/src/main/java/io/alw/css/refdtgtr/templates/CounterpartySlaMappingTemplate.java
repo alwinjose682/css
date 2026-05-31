@@ -29,7 +29,7 @@ public class CounterpartySlaMappingTemplate extends CascadingTemplateBuilder<Cou
     }
 
     @Override
-    public CounterpartySlaMappingTemplate withTemplateValues() {
+    public CounterpartySlaMappingTemplate withRootTemplateValues() {
         LongTokenGenerator idGntr = utilities.idGntr;
 
         bdr

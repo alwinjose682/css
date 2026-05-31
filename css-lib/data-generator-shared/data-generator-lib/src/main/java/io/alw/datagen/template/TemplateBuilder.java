@@ -20,7 +20,7 @@ public abstract class TemplateBuilder<T extends TestDataGeneratable, R> {
         this.parent = parent;
     }
 
-    public abstract TemplateBuilder<T, R> withTemplateValues();
+    public abstract TemplateBuilder<T, R> withRootTemplateValues();
 
     public abstract R build();
 

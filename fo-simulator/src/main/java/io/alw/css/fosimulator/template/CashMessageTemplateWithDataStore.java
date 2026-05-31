@@ -7,7 +7,9 @@ import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.template.common.CashMessageAmendmentContext;
+import io.alw.css.fosimulator.template.common.Ids;
 import io.alw.css.fosimulator.template.common.MessageContext;
+import io.alw.css.fosimulator.template.common.RootAmendedCashMessageContext;
 import io.alw.datagen.template.AggregateTemplateBuilderResult;
 
 import java.time.LocalDate;
@@ -45,7 +47,7 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
         AggregateTemplateBuilderResult<M, FoCashMessage> buildResult =
                 ((CashMessageTemplateWithDataStore<M>) newTemplateBuilder())
                         .withMessageAmendments()
-                        .withTemplateValues()
+                        .withRootTemplateValues()
                         .build();
 
         // Select cash messages from the build result which includes new+amends for future amendments
@@ -66,104 +68,118 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
         return this;
     }
 
+    /// TODO: "            // These same values used for the first message are used for the subsequent related messages being amended"
+    /// TODO: The same values should be used for the messages that belong to the same group, ie; to the same [MessageContext].
+    /// So a method in [CashMessageTemplateWithDataStore] should make sure that instead of just trusting the extending class to do the same.
+    /// How to do it? once way is to let this class to provide provide the [CashMessageAmendmentContext] object when the child class provide the necessary params
+    /// ex: change the parameter accepted by this method to Supplier<CashMessageAmendmentContext>
     protected void buildAmendedMessage(CashMessageAmendmentContext amndCtx) {
-        this.withRelatedItem(() -> {
-                    var amendableFields = amndCtx.amendableFields();
-                    var msg = amndCtx.msg();
-                    var callback = amndCtx.callback();
-                    var nextEventAndAction = amndCtx.tradeEventActionPair();
-                    var ids = amndCtx.ids();
+        var callback = amndCtx.callback();
+        this.withRelatedItem(callback, () -> {
+            var rootAmendedMsgCtx = amndCtx.rootAmendedMsgCtx();
+            var amendableFields = rootAmendedMsgCtx.amendableFields();
+            var nextEventAndAction = rootAmendedMsgCtx.tradeEventActionPair();
+            var amendmentSubject = amndCtx.amendmentSubject();
+            var amendmentSubjectLinkType = amndCtx.amendmentSubjectLinkType();
 
-                    FoCashMessageBuilder amndBdr = createBuilderFrom(msg);
-                    // If NOT rebooked, increments the cashflow version and randomly chooses to increment the trade version
-                    if (nextEventAndAction.event() != TradeEventType.REBOOK) {
-                        boolean incrementTradeVersion = rndm.nextInt(0, 100) > 70;
-                        amndBdr
-                                .tradeVersion(incrementTradeVersion ? msg.tradeVersion() + 1 : msg.tradeVersion())
-                                .cashflowVersion(msg.cashflowVersion() + 1);
-                    }
-                    // If trade is rebooked, create a cancellation of the msg in addition to the rebook even specific steps
-                    else {
-                        handleTradeRebookEvent(msg, amndBdr, callback);
-                    }
+            // Create builder for amending cashMessage from the cashMessage being amended
+            FoCashMessageBuilder amndBdr = createBuilderFrom(amendmentSubject, amendmentSubjectLinkType);
 
-                    // Set new trade event and action
-                    amndBdr
-                            .tradeEventType(nextEventAndAction.event())
-                            .tradeEventAction(nextEventAndAction.action());
+            // If NOT rebooked, increments the cashflow version and randomly chooses to increment the trade version.
+            // These same values used for the first message are used for the subsequent messages being amended that belong to the same MessageContext
+            // The TradeEventType of the root and the related cashMessages being amended will be same. If not same, then Ids assigned to the amended cashflow will go wrong
+            // (Ex: amending PRINCIPAL of an MM trade for TradeEventType#REBOOK, may result in amending MATURITY leg with the same TradeEventType as REBOOK)
+            if (nextEventAndAction.event() != TradeEventType.REBOOK) {
+                var rootAmendedMsgIds = rootAmendedMsgCtx.computeFirstAmendedCashMessageIdsIfAbsent(amendmentSubject, (amndSubject) -> {
+                    boolean incrementTradeVersion = rndm.nextInt(0, 100) > 70;
+                    var amendedCashflowId = amndSubject.cashflowID();
+                    var amendedCashflowVersion = amndSubject.cashflowVersion() + 1;
+                    var amendedTradeId = amndSubject.tradeID();
+                    var amendedTradeVersion = incrementTradeVersion ? amndSubject.tradeVersion() + 1 : amndSubject.tradeVersion();
 
-                    for (AmendableFoCashMessageField amendableField : amendableFields) {
-                        switch (amendableField) {
-                            case ValueDate(var newValueDate) -> amndBdr.valueDate(newValueDate);
-                            case Amount(var newAmount) -> amndBdr.amount(newAmount);
-                            case CounterpartyCode(var newCounterpartyCode) -> amndBdr.counterpartyCode(newCounterpartyCode);
-                            default -> throw new RuntimeException("Unknown amendable field");
-                        }
-                    }
+                    return new Ids(null, amendedCashflowId, amendedCashflowVersion, amendedTradeId, amendedTradeVersion);
+                });
 
-                    return amndBdr;
-                },
-                callback);
+                amndBdr
+                        .tradeVersion(rootAmendedMsgIds.tradeVersion())
+                        .cashflowVersion(amendmentSubject.cashflowVersion() + 1);
+            }
+            // If trade is rebooked, create a cancellation of the amendmentSubject in addition to the steps specific for rebook event
+            else {
+                handleTradeRebookEvent(rootAmendedMsgCtx, amendmentSubject, amendmentSubjectLinkType, amndBdr, callback);
+            }
+
+            // Set new trade event and action
+            amndBdr
+                    .tradeEventType(nextEventAndAction.event())
+                    .tradeEventAction(nextEventAndAction.action());
+
+            for (AmendableFoCashMessageField amendableField : amendableFields) {
+                switch (amendableField) {
+                    case ValueDate(var newValueDate) -> amndBdr.valueDate(newValueDate);
+                    case Amount(var newAmount) -> amndBdr.amount(newAmount);
+                    case CounterpartyCode(var newCounterpartyCode) -> amndBdr.counterpartyCode(newCounterpartyCode);
+                    default -> throw new RuntimeException("Unknown amendable field");
+                }
+            }
+
+            return amndBdr;
+        });
     }
 
-    /// If rebooked, then:
-    ///
-    /// 1) create a new trade with a new cashflow. The trade event is 'TradeEventType.REBOOK' and not 'TradeEventType.NEW_TRADE'
-    /// 2) create cashflow to cancel the original cashflow. The trade event is 'TradeEventType.REBOOK'
-    private void handleTradeRebookEvent(FoCashMessage origMsg, FoCashMessageBuilder amndBdr, Consumer<FoCashMessage> callback) {
-        // If rebooked
+    /// 1) creates a new trade with a new cashMessage.
+    /// 2) creates cashflow to cancel the original cashMessage.
+    private void handleTradeRebookEvent(RootAmendedCashMessageContext rootAmendedMsgCtx, FoCashMessage amendmentSubject, String amendmentSubjectLinkType, FoCashMessageBuilder amndBdr, Consumer<FoCashMessage> callback) {
         // 1. Create new trade ID and cashflow ID
-        IdProvider idProvider = IdProvider.singleton();
-        final long rebookedTradeID = idProvider.nextTradeId();
-        final int rebookedTradeVersion = VERSION_ONE;
-        final long rebookedCashflowID = idProvider.nextCashflowId();
-        final int rebookedCashflowVersion = VERSION_ONE;
-        final int cancelledCashflowVersion = origMsg.cashflowVersion() + 1;
-        final int cancelledTradeVersion = origMsg.tradeVersion();
+        // These same values used for the first message are used for the subsequent messages being amended that belong to the same MessageContext
+        var rebookedTradeIds = rootAmendedMsgCtx.computeFirstAmendedCashMessageIdsIfAbsent(amendmentSubject, (_) -> {
+            IdProvider idProvider = IdProvider.singleton();
+            final long rebookedCashflowID = idProvider.nextCashflowId();
+            final long rebookedTradeID = idProvider.nextTradeId();
+            return new Ids(null, rebookedCashflowID, VERSION_ONE, rebookedTradeID, VERSION_ONE);
+        });
+
+        final int cancelledCashflowVersion = amendmentSubject.cashflowVersion() + 1;
+        final int cancelledTradeVersion = amendmentSubject.tradeVersion();
 
         // 2. Create cancellation for the original cashflow and register in the TemplateBuilder
-        this.withRelatedItem(() -> {
+        this.withRelatedItem(callback, () -> {
+            // Add trade link that corresponds to rebooked cashflow to the existing list of trade links
+            List<TradeLink> newTradeLinks = amendmentSubject.tradeLinks() != null && !amendmentSubject.tradeLinks().isEmpty() ? new ArrayList<>(amendmentSubject.tradeLinks()) : new ArrayList<>();
+            newTradeLinks.add(TradeLinkBuilder.TradeLink(
+                    childCashflow, null,
+                    rebookedTradeIds.cashflowID(), rebookedTradeIds.cashflowVersion(),
+                    rebookedTradeIds.tradeID(), rebookedTradeIds.tradeVersion()));
 
-                    // Add trade link that corresponds to rebooked cashflow to the existing list of trade links
-                    List<TradeLink> newTradeLinks = origMsg.tradeLinks() != null && !origMsg.tradeLinks().isEmpty() ? new ArrayList<>(origMsg.tradeLinks()) : new ArrayList<>();
-                    newTradeLinks.add(TradeLinkBuilder.builder()
-                            .linkType(childCashflow)
-                            .relatedReference(null)
-                            .relatedFoCashflowID(rebookedCashflowID)
-                            .relatedFoCashflowVersion(rebookedCashflowVersion)
-                            .relatedTradeID(rebookedTradeID)
-                            .relatedTradeVersion(rebookedTradeVersion)
-                            .build());
-
-                    // Create builder for cashflow cancellation
-                    return createBuilderFrom(origMsg)
-                            // Id Version
-                            .tradeVersion(cancelledTradeVersion)
-                            .cashflowVersion(cancelledCashflowVersion)
-                            // Trade Event and Action
-                            .tradeEventType(TradeEventType.CANCEL)
-                            .tradeEventAction(TradeEventAction.ADD)
-                            .tradeLinks(Collections.unmodifiableList(newTradeLinks));
-                },
-                callback);
+            // Create builder for cashflow cancellation
+            return createBuilderFrom(amendmentSubject, amendmentSubjectLinkType)
+                    // Id Version
+                    .tradeVersion(cancelledTradeVersion)
+                    .cashflowVersion(cancelledCashflowVersion)
+                    // Trade Event and Action
+                    .tradeEventType(TradeEventType.CANCEL)
+                    .tradeEventAction(TradeEventAction.ADD)
+                    .tradeLinks(Collections.unmodifiableList(newTradeLinks));
+        });
 
         // 3. Create the new trade and cashflow (because of trade rebook)
-        List<TradeLink> newTradeLinks = origMsg.tradeLinks() != null && !origMsg.tradeLinks().isEmpty() ? new ArrayList<>(origMsg.tradeLinks()) : new ArrayList<>();
-        // Add trade link of cancelled cashflow to the existing list of trade links
-        newTradeLinks.add(TradeLinkBuilder.builder()
-                .linkType(parentCashflow)
-                .relatedReference(null)
-                .relatedFoCashflowID(origMsg.cashflowID())
-                .relatedFoCashflowVersion(cancelledCashflowVersion)
-                .relatedTradeID(origMsg.tradeID())
-                .relatedTradeVersion(cancelledTradeVersion)
-                .build());
+        List<TradeLink> newTradeLinks = new ArrayList<>();
+        // Add trade link of cancelled cashflow
+        newTradeLinks.add(TradeLinkBuilder.TradeLink(
+                parentCashflow, null,
+                amendmentSubject.cashflowID(), cancelledCashflowVersion,
+                amendmentSubject.tradeID(), cancelledTradeVersion));
+        // Add trade link of this new cashflow
+        newTradeLinks.add(TradeLinkBuilder.TradeLink(
+                amendmentSubjectLinkType, null,
+                rebookedTradeIds.cashflowID(), rebookedTradeIds.cashflowVersion(),
+                rebookedTradeIds.tradeID(), rebookedTradeIds.tradeVersion()));
         amndBdr
                 // Id Version
-                .tradeID(rebookedTradeID)
-                .tradeVersion(rebookedTradeVersion)
-                .cashflowID(rebookedCashflowID)
-                .cashflowVersion(rebookedCashflowVersion)
+                .tradeID(rebookedTradeIds.tradeID())
+                .tradeVersion(rebookedTradeIds.tradeVersion())
+                .cashflowID(rebookedTradeIds.cashflowID())
+                .cashflowVersion(rebookedTradeIds.cashflowVersion())
                 .tradeLinks(Collections.unmodifiableList(newTradeLinks));
 
     }

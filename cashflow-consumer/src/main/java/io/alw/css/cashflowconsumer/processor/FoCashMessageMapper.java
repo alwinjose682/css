@@ -69,15 +69,11 @@ public final class FoCashMessageMapper {
     private static List<TradeLink> mapTradeLinks(FoCashMessageAvro foMsg) {
         List<TradeLinkAvro> tradeLinks = foMsg.getTradeLinks();
         if (tradeLinks != null) {
-            return tradeLinks.stream().map(tla -> TradeLinkBuilder.builder()
-                    .linkType(tla.getLinkType())
-                    .relatedReference(tla.getRelatedReference())
-                    .relatedFoCashflowID(tla.getRelatedFoCashflowID())
-                    .relatedFoCashflowVersion(tla.getRelatedFoCashflowVersion())
-                    .relatedTradeID(tla.getRelatedTradeID())
-                    .relatedTradeVersion(tla.getRelatedTradeVersion())
-                    .build()
-            ).toList();
+            return tradeLinks.stream().map(tla -> TradeLinkBuilder.TradeLink(
+                    tla.getLinkType(), tla.getRelatedReference(),
+                    tla.getRelatedFoCashflowID(), tla.getRelatedFoCashflowVersion(),
+                    tla.getRelatedTradeID(), tla.getRelatedTradeVersion()
+            )).toList();
         } else {
             return null;
         }

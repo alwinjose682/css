@@ -15,7 +15,7 @@ import static io.alw.css.fosimulator.template.CashMessageTemplate.VERSION_ONE;
 
 
 /// NOTE: This helper class has variable state
-final class CashMessageTemplateHelper implements CountAware {
+public final class CashMessageTemplateHelper implements CountAware {
     // Variable values for each template build. Also, these remain un-modified for each template build.
     private long dayForMsgTemplate;
 
@@ -50,13 +50,10 @@ final class CashMessageTemplateHelper implements CountAware {
     }
 
     public static TradeLink mapToTradeLink(Ids ids) {
-        return TradeLinkBuilder.builder()
-                .linkType(ids.linkType())
-                .relatedFoCashflowID(ids.cashflowID())
-                .relatedFoCashflowVersion(ids.cashflowVersion())
-                .relatedTradeID(ids.tradeID())
-                .relatedTradeVersion(ids.tradeVersion())
-                .build();
+        return TradeLinkBuilder.TradeLink(
+                ids.linkType(), null,
+                ids.cashflowID(), ids.cashflowVersion(),
+                ids.tradeID(), ids.tradeVersion());
     }
 
     /// Check the documentation for [CashMessageTemplate#getRndmValueDate()]

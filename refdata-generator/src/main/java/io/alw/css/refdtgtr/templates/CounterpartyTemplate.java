@@ -53,7 +53,7 @@ public final class CounterpartyTemplate extends CascadingTemplateBuilder<Counter
     }
 
     @Override
-    public CounterpartyTemplate withTemplateValues() {
+    public CounterpartyTemplate withRootTemplateValues() {
         BinaryStringTokenGenerator<String, Long> idProvider = utilities.idProvider();
         TokenFormattingTemplate<String, String> simpleConcatenatingTemplate = utilities.simpleConcatenatingTemplate();
         List<String> idValues = idProvider.next();
@@ -148,7 +148,7 @@ public final class CounterpartyTemplate extends CascadingTemplateBuilder<Counter
     @Override
     protected CounterpartyTemplate childTemplate(Counterparty parent) {
         return new CounterpartyTemplate(this.countryStateCurrency, parent)
-                .withTemplateValues()
+                .withRootTemplateValues()
                 .internal(cptyBdr.internal());
     }
 }

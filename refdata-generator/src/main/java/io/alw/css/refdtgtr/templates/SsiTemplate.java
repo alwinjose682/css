@@ -40,7 +40,7 @@ public final class SsiTemplate extends CascadingTemplateBuilder<Ssi> {
     }
 
     @Override
-    public SsiTemplate withTemplateValues() {
+    public SsiTemplate withRootTemplateValues() {
         AlphaNumericTokenGenerator idGenerator = utilities.idGenerator;
         StringRefDataProvider stringRefDataProvider = utilities.stringRefDataProvider;
         LongTokenGenerator bnkAccNumGntr = utilities.bankAccountNumberGenerator;
@@ -87,6 +87,6 @@ public final class SsiTemplate extends CascadingTemplateBuilder<Ssi> {
 
     @Override
     protected SsiTemplate childTemplate(Ssi parent) {
-        return new SsiTemplate(parent, this.counterparty, this.currency, this.product).withTemplateValues();
+        return new SsiTemplate(parent, this.counterparty, this.currency, this.product).withRootTemplateValues();
     }
 }

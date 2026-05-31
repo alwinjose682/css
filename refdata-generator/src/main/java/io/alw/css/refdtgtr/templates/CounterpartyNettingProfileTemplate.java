@@ -32,7 +32,7 @@ public final class CounterpartyNettingProfileTemplate extends CascadingTemplateB
     }
 
     @Override
-    public CounterpartyNettingProfileTemplate withTemplateValues() {
+    public CounterpartyNettingProfileTemplate withRootTemplateValues() {
         LongTokenGenerator idGntr = utilities.idGntr;
         StringRefDataProvider stringRefDataProvider = utilities.stringRefDataProvider;
 

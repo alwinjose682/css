@@ -8,11 +8,9 @@ import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.store.CashMessageStore;
 import io.alw.css.fosimulator.store.InMemoryCashMessageStore;
-import io.alw.datagen.template.TemplateBuilder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 
@@ -40,7 +38,7 @@ public final class TemporaryGenericTemplate extends CashMessageTemplateWithDataS
     protected TemporaryGenericTemplate templateBuildSteps() {
         ((TemporaryGenericTemplate) newTemplateBuilder())
                 .withMessageAmendments()
-                .withTemplateValues();
+                .withRootTemplateValues();
 
         return this;
     }
@@ -56,7 +54,7 @@ public final class TemporaryGenericTemplate extends CashMessageTemplateWithDataS
     }
 
     @Override
-    public TemporaryGenericTemplate withTemplateValues() {
+    public TemporaryGenericTemplate withRootTemplateValues() {
         // Create the builder with base values
         FoCashMessageBuilder bdr = getNewCashMsgBuilder();
         bdr

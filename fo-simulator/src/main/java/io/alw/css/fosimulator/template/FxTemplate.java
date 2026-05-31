@@ -40,14 +40,14 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxCashMes
 
     /// Build side 1 of the fx message
     @Override
-    public FxTemplate withTemplateValues() {
+    public FxTemplate withRootTemplateValues() {
         // Create Ids for FX-Side-1 and Fx-Side-2
         var fxSide1Ids = CashMessageTemplateHelper.getIdsForVersionOneCashflowAndVersionOneTrade(FX_SIDE1);
         var fxSide2Ids = CashMessageTemplateHelper.getIdsForVersionOneCashflowFromExistingTrade(FX_SIDE2, fxSide1Ids);
         // Create message context and all tradeLinks
         var fxSide1Ctx = new FxCashMessageContext();
         // Create FoCashMessage builder for new template with default base values
-        FoCashMessageBuilder bdr = getNewCashMsgBuilder(fxSide1Ids, fxSide1Ctx, createAllTradeLinks(List.of(fxSide1Ids, fxSide2Ids)));
+        FoCashMessageBuilder bdr = getNewCashMsgBuilder(fxSide1Ids, fxSide1Ctx);
         // Set the values specific to the FX trade being built
         bdr
                 .valueDate(msgTemplateHelper.getRndmValueDate(50))
@@ -68,7 +68,7 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxCashMes
         String entityCode = entity.entityCode();
         String currCode = entity.currCode();
 
-        return createBuilderFrom(fxSide1Msg)
+        return createBuilderFrom(fxSide1Msg, FX_SIDE2)
                 // Id and version of fxSide2 was already determined when fxSide1 was created
                 .cashflowID(ids.cashflowID())
                 .cashflowVersion(ids.cashflowVersion())
@@ -111,11 +111,6 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxCashMes
 
             default -> throw new IllegalStateException("Unexpected value: " + amendMsgEvt);
         };
-    }
-
-    @Override
-    protected List<TradeLink> createAllTradeLinks(Collection<Ids> ids) {
-        return ids.stream().map(CashMessageTemplateHelper::mapToTradeLink).toList();
     }
 
     @Override
