@@ -3,6 +3,7 @@ package io.alw.css.fosimulator.template;
 import io.alw.css.domain.cashflow.TradeLink;
 import io.alw.css.domain.cashflow.TradeLinkBuilder;
 import io.alw.css.domain.cashflow.TransactionType;
+import io.alw.css.fosimulator.model.CashLegType;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.template.common.Ids;
@@ -39,19 +40,19 @@ public final class CashMessageTemplateHelper implements CountAware {
         this.counter = 0L;
     }
 
-    static Ids getIdsForVersionOneCashflowAndVersionOneTrade(String linkType) {
+    static Ids getIdsForVersionOneCashflowAndVersionOneTrade(CashLegType cashLegType) {
         var idProvider = IdProvider.singleton();
-        return new Ids(linkType, idProvider.nextCashflowId(), VERSION_ONE, idProvider.nextTradeId(), VERSION_ONE);
+        return new Ids(cashLegType, idProvider.nextCashflowId(), VERSION_ONE, idProvider.nextTradeId(), VERSION_ONE);
     }
 
-    static Ids getIdsForVersionOneCashflowFromExistingTrade(String linkType, Ids ids) {
+    static Ids getIdsForVersionOneCashflowFromExistingTrade(CashLegType cashLegType, Ids ids) {
         var idProvider = IdProvider.singleton();
-        return new Ids(linkType, idProvider.nextCashflowId(), VERSION_ONE, ids.tradeID(), ids.tradeVersion());
+        return new Ids(cashLegType, idProvider.nextCashflowId(), VERSION_ONE, ids.tradeID(), ids.tradeVersion());
     }
 
     public static TradeLink mapToTradeLink(Ids ids) {
         return TradeLinkBuilder.TradeLink(
-                ids.linkType(), null,
+                ids.linkType().name, null,
                 ids.cashflowID(), ids.cashflowVersion(),
                 ids.tradeID(), ids.tradeVersion());
     }

@@ -2,6 +2,7 @@ package io.alw.css.fosimulator.template;
 
 import io.alw.css.domain.cashflow.*;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
+import io.alw.css.fosimulator.model.CashLegType;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
@@ -71,6 +72,7 @@ sealed abstract class CashMessageTemplate<M extends MessageContext>
 
     /// Build the grouped or related cash message associated with the cashMessage template being built
     /// tradeLinks of grouped and related items are set when creating a cashMessage builder via [CashMessageTemplate#createBuilderFrom(FoCashMessage, String)]
+    /// The resultant [FoCashMessage] is already associated with the [MessageContext] in prior steps(using callbacks when creating new trade, amendments and new grouped cashMessages)
     @Override
     protected FoCashMessage buildGroupedOrRelatedItem(FoCashMessageBuilder bdr) {
         return bdr.build();
@@ -134,10 +136,10 @@ sealed abstract class CashMessageTemplate<M extends MessageContext>
     /// TradeLink is also set in this method using the linkType parameter. Further build steps can add more tradeLinks to the list if needed
     ///
     /// NOTE: The [CashMessageTemplate#counter] is not incremented by this method
-    protected FoCashMessageBuilder createBuilderFrom(FoCashMessage cashMsg, String linkType) {
+    protected FoCashMessageBuilder createBuilderFrom(FoCashMessage cashMsg, CashLegType linkType) {
         FoCashMessage rootFoCashMessage = msgCtx.rootFoCashMessage();
         TradeLink tradeLink = TradeLinkBuilder.TradeLink(
-                linkType, null,
+                linkType.name, null,
                 rootFoCashMessage.cashflowID(), rootFoCashMessage.cashflowVersion(),
                 rootFoCashMessage.tradeID(), rootFoCashMessage.tradeVersion());
 

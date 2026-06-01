@@ -2,7 +2,6 @@ package io.alw.css.fosimulator.template.common;
 
 import io.alw.css.domain.cashflow.*;
 
-import java.util.HashMap;
 import java.util.List;
 
 public final class MmCashMessageContext implements MessageContext {

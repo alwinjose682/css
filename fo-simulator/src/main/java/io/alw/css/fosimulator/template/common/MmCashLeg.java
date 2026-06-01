@@ -1,34 +1,29 @@
 package io.alw.css.fosimulator.template.common;
 
 import io.alw.css.domain.cashflow.FoCashMessage;
-import io.alw.css.domain.cashflow.MmLeg;
-import io.alw.css.domain.cashflow.MmType;
+import io.alw.css.domain.cashflow.MmTradeType;
 import io.alw.css.domain.cashflow.RateType;
+import io.alw.css.fosimulator.model.CashLegType;
 
-public sealed class MmCashLeg implements MmMetadata permits InterestCashLeg {
-    private final MmType mmType;
-    private final MmLeg mmLeg;
+public sealed class MmCashLeg implements CashLeg, MmMetadata permits InterestCashLeg {
+    private final MmTradeType mmTradeType;
+    private final CashLegType mmLegType;
     private final RateType rateType;
     private final InterestPayoutFrequency ipFrequency;
     private final InterestBasis interestBasis;
     private FoCashMessage cashMessage;
 
-    public MmCashLeg(MmType mmType, MmLeg mmLeg, RateType rateType, InterestPayoutFrequency ipFrequency, InterestBasis interestBasis) {
-        this.mmType = mmType;
-        this.mmLeg = mmLeg;
+    public MmCashLeg(MmTradeType mmTradeType, CashLegType mmLegType, RateType rateType, InterestPayoutFrequency ipFrequency, InterestBasis interestBasis) {
+        this.mmTradeType = mmTradeType;
+        this.mmLegType = mmLegType;
         this.rateType = rateType;
         this.ipFrequency = ipFrequency;
         this.interestBasis = interestBasis;
     }
 
     @Override
-    public MmType mmType() {
-        return mmType;
-    }
-
-    @Override
-    public MmLeg mmLeg() {
-        return mmLeg;
+    public MmTradeType mmType() {
+        return mmTradeType;
     }
 
     @Override
@@ -46,10 +41,17 @@ public sealed class MmCashLeg implements MmMetadata permits InterestCashLeg {
         return interestBasis;
     }
 
+    @Override
+    public CashLegType cashLegType() {
+        return mmLegType;
+    }
+
+    @Override
     public FoCashMessage cashMessage() {
         return cashMessage;
     }
 
+    @Override
     public void setCashMessage(FoCashMessage cashMessage) {
         this.cashMessage = cashMessage;
     }

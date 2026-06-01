@@ -1,5 +1,5 @@
 package io.alw.css.domain.cashflow;
 
-public enum MmType {
+public enum MmTradeType {
     TERM, CALL
 }
