@@ -8,9 +8,9 @@ import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.store.CashMessageStore;
 import io.alw.css.fosimulator.store.InMemoryCashMessageStore;
-import io.alw.css.fosimulator.template.common.CashMessageAmendmentContext;
-import io.alw.css.fosimulator.template.common.Ids;
-import io.alw.css.fosimulator.template.common.FxCashMessageContext;
+import io.alw.css.fosimulator.template.model.CashMessageAmendmentContext;
+import io.alw.css.fosimulator.template.model.Ids;
+import io.alw.css.fosimulator.template.model.FxCashMessageContext;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -21,7 +21,7 @@ import java.util.random.RandomGenerator;
 
 import static io.alw.css.domain.cashflow.TradeEventAction.*;
 import static io.alw.css.domain.cashflow.TradeEventType.*;
-import static io.alw.css.fosimulator.model.CashLegType.*;
+import static io.alw.css.fosimulator.template.model.CashLegType.*;
 
 public final class FxTemplate extends CashMessageTemplateWithDataStore<FxCashMessageContext> {
     // Message Store and Related

@@ -1,4 +1,4 @@
-package io.alw.css.fosimulator.model;
+package io.alw.css.fosimulator.template.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

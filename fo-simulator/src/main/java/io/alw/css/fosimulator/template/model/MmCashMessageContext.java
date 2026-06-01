@@ -1,4 +1,4 @@
-package io.alw.css.fosimulator.template.common;
+package io.alw.css.fosimulator.template.model;
 
 import io.alw.css.domain.cashflow.*;
 

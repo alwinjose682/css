@@ -1,9 +1,8 @@
-package io.alw.css.fosimulator.template.common;
+package io.alw.css.fosimulator.template.model;
 
 import io.alw.css.domain.cashflow.FoCashMessage;
 import io.alw.css.domain.cashflow.TradeLink;
 import io.alw.css.domain.cashflow.TradeLinkBuilder;
-import io.alw.css.fosimulator.template.CashMessageTemplateHelper;
 import io.alw.datagen.TestDataGeneratable;
 
 import java.util.List;

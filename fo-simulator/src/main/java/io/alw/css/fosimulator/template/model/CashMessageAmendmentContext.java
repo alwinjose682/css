@@ -1,12 +1,9 @@
-package io.alw.css.fosimulator.template.common;
+package io.alw.css.fosimulator.template.model;
 
 import io.alw.css.domain.cashflow.FoCashMessage;
-import io.alw.css.fosimulator.model.AmendableFoCashMessageField;
-import io.alw.css.fosimulator.model.CashLegType;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /// Note: The `primaryAmendmentSubject` is the cashMessage selected for amendment that has caused amendment for other dependent cashMessages

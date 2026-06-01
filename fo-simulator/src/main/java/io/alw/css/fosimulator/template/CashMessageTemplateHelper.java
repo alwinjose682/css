@@ -3,10 +3,10 @@ package io.alw.css.fosimulator.template;
 import io.alw.css.domain.cashflow.TradeLink;
 import io.alw.css.domain.cashflow.TradeLinkBuilder;
 import io.alw.css.domain.cashflow.TransactionType;
-import io.alw.css.fosimulator.model.CashLegType;
+import io.alw.css.fosimulator.template.model.CashLegType;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
-import io.alw.css.fosimulator.template.common.Ids;
+import io.alw.css.fosimulator.template.model.Ids;
 import io.alw.datagen.template.CountAware;
 
 import java.time.LocalDate;

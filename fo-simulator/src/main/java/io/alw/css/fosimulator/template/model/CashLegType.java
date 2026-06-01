@@ -1,4 +1,4 @@
-package io.alw.css.fosimulator.model;
+package io.alw.css.fosimulator.template.model;
 
 public enum CashLegType {
     FX_SIDE1("FX_Side1"),

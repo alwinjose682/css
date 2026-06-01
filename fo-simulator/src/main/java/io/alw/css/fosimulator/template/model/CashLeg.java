@@ -1,7 +1,6 @@
-package io.alw.css.fosimulator.template.common;
+package io.alw.css.fosimulator.template.model;
 
 import io.alw.css.domain.cashflow.FoCashMessage;
-import io.alw.css.fosimulator.model.CashLegType;
 
 public sealed interface CashLeg permits MmCashLeg {
     CashLegType cashLegType();

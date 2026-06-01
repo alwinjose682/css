@@ -1,9 +1,6 @@
-package io.alw.css.fosimulator.template.common;
+package io.alw.css.fosimulator.template.model;
 
 import io.alw.css.domain.cashflow.TradeEventType;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /// The name of Trade Events specified in this file corresponds with [TradeEventType] except haircut event
 public sealed interface MmTradeEvent extends TradeEvent {

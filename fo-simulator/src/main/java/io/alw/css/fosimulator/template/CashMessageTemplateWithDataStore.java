@@ -2,12 +2,12 @@ package io.alw.css.fosimulator.template;
 
 import io.alw.css.domain.cashflow.*;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
-import io.alw.css.fosimulator.model.AmendableFoCashMessageField;
-import io.alw.css.fosimulator.model.CashLegType;
+import io.alw.css.fosimulator.template.model.AmendableFoCashMessageField;
+import io.alw.css.fosimulator.template.model.CashLegType;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
-import io.alw.css.fosimulator.template.common.*;
+import io.alw.css.fosimulator.template.model.*;
 import io.alw.datagen.template.AggregateTemplateBuilderResult;
 
 import java.time.LocalDate;
@@ -19,8 +19,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 
-import static io.alw.css.fosimulator.model.AmendableFoCashMessageField.*;
-import static io.alw.css.fosimulator.model.CashLegType.*;
+import static io.alw.css.fosimulator.template.model.AmendableFoCashMessageField.*;
+import static io.alw.css.fosimulator.template.model.CashLegType.*;
 
 /// The type parameter M stands for MessageContext which is a combination of [FoCashMessage] and its metadata created by the implementations of this class.
 /// Some implementations choose to store MessageContext instead of just FoCashMessage in [io.alw.css.fosimulator.store.CashMessageStore]

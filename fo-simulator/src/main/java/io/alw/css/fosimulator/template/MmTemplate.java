@@ -2,15 +2,15 @@ package io.alw.css.fosimulator.template;
 
 import io.alw.css.domain.cashflow.*;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
-import io.alw.css.fosimulator.model.AmendableFoCashMessageField;
-import io.alw.css.fosimulator.model.CashLegType;
+import io.alw.css.fosimulator.template.model.AmendableFoCashMessageField;
+import io.alw.css.fosimulator.template.model.CashLegType;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.store.CashMessageStore;
 import io.alw.css.fosimulator.store.InMemoryCashMessageStore;
-import io.alw.css.fosimulator.template.common.*;
+import io.alw.css.fosimulator.template.model.*;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
 
 import java.math.BigDecimal;
@@ -29,8 +29,8 @@ import static io.alw.css.domain.cashflow.PayOrReceive.PAY;
 import static io.alw.css.domain.cashflow.PayOrReceive.RECEIVE;
 import static io.alw.css.domain.cashflow.RateType.FIXED;
 import static io.alw.css.domain.cashflow.RateType.FLOAT;
-import static io.alw.css.fosimulator.model.CashLegType.*;
-import static io.alw.css.fosimulator.template.common.InterestPayoutFrequency.*;
+import static io.alw.css.fosimulator.template.model.CashLegType.*;
+import static io.alw.css.fosimulator.template.model.InterestPayoutFrequency.*;
 
 public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMessageContext> {
     // Message Store and Related
