@@ -32,7 +32,7 @@ sealed abstract class CashMessageTemplate<M extends MessageContext>
     /// Variable values for each template build. These values remain un-modified for each template build.
     /// After each build of the template, the [MessageContext] (msgCtx) and [FoCashMessageBuilder] (`bdr`) references are just assigned with new instances
     // Message Context and FoCashMessage builder
-    protected M msgCtx;
+    private M msgCtx;
     private FoCashMessageBuilder bdr;
 
     // Constant values for each instance of CashMessageTemplate

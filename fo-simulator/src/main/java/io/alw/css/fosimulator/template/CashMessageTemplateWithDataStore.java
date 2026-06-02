@@ -8,13 +8,14 @@ import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.template.model.*;
+import io.alw.css.fosimulator.template.model.amendmenttype.AmendableFoCashMessageFieldType;
+import io.alw.css.fosimulator.template.model.amendmenttype.Amount;
+import io.alw.css.fosimulator.template.model.amendmenttype.CounterpartyCode;
+import io.alw.css.fosimulator.template.model.amendmenttype.ValueDate;
 import io.alw.datagen.template.AggregateTemplateBuilderResult;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
@@ -33,8 +34,6 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
     }
 
     protected abstract void buildAmendedMessage(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, M msgCtxForAmendment);
-
-    protected abstract PrimaryAndSecondaryAmendmentSubjectContexts determineCashMsgsForAmendment(MmCashMessageContext msgCtxForAmendment, Set<AmendableFoCashMessageField> fieldsForAmendment, CashLegType primaryAmendmentSubjectCashLegType)
 
     protected abstract CashMessageStoreHelper<M> msgStoreHelper();
 
@@ -69,6 +68,12 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
         return this;
     }
 
+    protected AmendmentSubjectContext buildAmendmentSubjectContext(CashLeg subjectCashLeg, Set<AmendableFoCashMessageFieldType> fieldTypesForAmendment, Consumer<FoCashMessage> callback) {
+        Set<AmendableFoCashMessageField> amendableFields = new HashSet<>();
+        fieldTypesForAmendment.forEach(ft -> ft.action().accept(amendableFields));
+        return new AmendmentSubjectContext(subjectCashLeg, callback, Collections.unmodifiableSet(amendableFields));
+    }
+
     protected void buildAmendedMessage(CashMessageAmendmentContext amndCtx) {
         // 1. Build amendment of the primary amendment subject - primary amendment subject should be done first
         var primaryAmndSubCtx = amndCtx.primaryAmendmentSubjectContext();
@@ -82,10 +87,10 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
     }
 
     private FoCashMessageBuilder buildAmendedMessageOf(CashMessageAmendmentContext amndCtx, AmendmentSubjectContext amndSubjectCtx) {
-        var amendableFields = amndCtx.amendableFields();
         var nextEventAndAction = amndCtx.tradeEventActionPair();
         var amendmentSubject = amndSubjectCtx.amendmentSubject().cashMessage();
         var amendmentSubjectLinkType = amndSubjectCtx.amendmentSubject().cashLegType();
+        var amendableFields = amndSubjectCtx.amendableFields();
 
         // Create builder for amending cashMessage from the cashMessage being amended
         FoCashMessageBuilder amndBdr = createBuilderFrom(amendmentSubject, amendmentSubjectLinkType);
