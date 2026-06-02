@@ -128,8 +128,12 @@ public final class CashMessageTemplateHelper implements CountAware {
         return transactionType == TransactionType.INTER_BOOK || transactionType == TransactionType.INTER_BRANCH || transactionType == TransactionType.INTER_COMPANY;
     }
 
-    long dayForMsgTemplate() {
+    long currentDayForMsgTemplate() {
         return dayForMsgTemplate;
+    }
+
+    LocalDate currentDateForMsgTemplate() {
+        return initialValueDate.plusDays(dayForMsgTemplate);
     }
 
     void setDayForMsgTemplate(long day) {

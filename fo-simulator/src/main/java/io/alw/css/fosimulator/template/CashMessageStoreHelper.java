@@ -25,7 +25,7 @@ final class CashMessageStoreHelper<T> {
     }
 
     List<T> retrieveMessagesForCurrentDay() {
-        final long currentDay = msgTemplateHelper.dayForMsgTemplate();
+        final long currentDay = msgTemplateHelper.currentDayForMsgTemplate();
         List<T> msgsToBeAmended = new ArrayList<>();
         for (; lastMessageRetrievalDay <= currentDay; ++lastMessageRetrievalDay) {
             List<T> msgs = msgStore.remove(lastMessageRetrievalDay);

@@ -10,16 +10,7 @@ import java.util.List;
 public sealed interface MessageContext extends TestDataGeneratable permits FxCashMessageContext, MmCashMessageContext {
     FoCashMessage rootFoCashMessage();
 
-    String rootFoCashMessageType();
-
     void setRootFoCashMessage(FoCashMessage rootFoCashMessage);
 
     <M extends MessageContext> List<FoCashMessage> mapToCashMessage(List<M> msgCtxs);
-
-    default TradeLink rootFoCashMessageTradeLink() {
-        return TradeLinkBuilder.TradeLink(
-                rootFoCashMessageType(), null,
-                rootFoCashMessage().cashflowID(), rootFoCashMessage().cashflowVersion(),
-                rootFoCashMessage().tradeID(), rootFoCashMessage().tradeVersion());
-    }
 }

@@ -11,15 +11,11 @@ import io.alw.css.fosimulator.template.model.*;
 import io.alw.datagen.template.AggregateTemplateBuilderResult;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 
-import static io.alw.css.fosimulator.template.model.AmendableFoCashMessageField.*;
 import static io.alw.css.fosimulator.template.model.CashLegType.*;
 
 /// The type parameter M stands for MessageContext which is a combination of [FoCashMessage] and its metadata created by the implementations of this class.
@@ -33,8 +29,6 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
     }
 
     protected abstract void buildAmendedMessage(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, M msgCtxForAmendment);
-
-    protected abstract PrimaryAndSecondaryAmendmentSubjectContexts determineCashMsgsForAmendment(MmCashMessageContext msgCtxForAmendment, Set<AmendableFoCashMessageField> fieldsForAmendment, CashLegType primaryAmendmentSubjectCashLegType)
 
     protected abstract CashMessageStoreHelper<M> msgStoreHelper();
 
@@ -82,10 +76,10 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
     }
 
     private FoCashMessageBuilder buildAmendedMessageOf(CashMessageAmendmentContext amndCtx, AmendmentSubjectContext amndSubjectCtx) {
-        var amendableFields = amndCtx.amendableFields();
         var nextEventAndAction = amndCtx.tradeEventActionPair();
         var amendmentSubject = amndSubjectCtx.amendmentSubject().cashMessage();
         var amendmentSubjectLinkType = amndSubjectCtx.amendmentSubject().cashLegType();
+        var amendableFields = amndSubjectCtx.amendableFields();
 
         // Create builder for amending cashMessage from the cashMessage being amended
         FoCashMessageBuilder amndBdr = createBuilderFrom(amendmentSubject, amendmentSubjectLinkType);
