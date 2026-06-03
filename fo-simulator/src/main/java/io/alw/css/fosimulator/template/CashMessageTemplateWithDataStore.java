@@ -67,15 +67,17 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
         // 1. Build amendment of the primary amendment subject - primary amendment subject should be done first
         var primaryAmndSubCtx = amndCtx.primaryAmendmentSubjectContext();
         var primaryAmndSubCallback = primaryAmndSubCtx.callback();
-        this.withRelatedItem(primaryAmndSubCallback, () -> buildAmendedMessageOf(amndCtx, primaryAmndSubCtx));
+        this.withRelatedItem(primaryAmndSubCallback, () -> buildAmendedMessageFor(amndCtx, primaryAmndSubCtx));
         // 2. Build amendment of the secondary amendment subjects
-        for (var secAmndSubCtx : amndCtx.secondaryAmendmentSubjectContexts()) {
-            var secAmndSubCallback = secAmndSubCtx.callback();
-            this.withRelatedItem(secAmndSubCallback, () -> buildAmendedMessageOf(amndCtx, secAmndSubCtx));
+        if (amndCtx.secondaryAmendmentSubjectContexts() != null) {
+            for (var secAmndSubCtx : amndCtx.secondaryAmendmentSubjectContexts()) {
+                var secAmndSubCallback = secAmndSubCtx.callback();
+                this.withRelatedItem(secAmndSubCallback, () -> buildAmendedMessageFor(amndCtx, secAmndSubCtx));
+            }
         }
     }
 
-    private FoCashMessageBuilder buildAmendedMessageOf(CashMessageAmendmentContext amndCtx, AmendmentSubjectContext amndSubjectCtx) {
+    private FoCashMessageBuilder buildAmendedMessageFor(CashMessageAmendmentContext amndCtx, AmendmentSubjectContext amndSubjectCtx) {
         var nextEventAndAction = amndCtx.tradeEventActionPair();
         var amendmentSubject = amndSubjectCtx.amendmentSubject().cashMessage();
         var amendmentSubjectLinkType = amndSubjectCtx.amendmentSubject().cashLegType();

@@ -5,27 +5,27 @@ import io.alw.css.domain.cashflow.*;
 import java.util.List;
 
 public final class MmCashMessageContext implements MessageContext {
-    private final MmCashLeg principal;
-    private MmCashLeg maturity;
-    private final List<InterestCashLeg> interests;
+    private final MmCashLeg principalLeg;
+    private MmCashLeg maturityLeg;
+    private final List<InterestCashLeg> interestLegs;
 
-    public MmCashMessageContext(MmCashLeg principal, List<InterestCashLeg> interests) {
-        this(principal, interests, null);
+    public MmCashMessageContext(MmCashLeg principalLeg, List<InterestCashLeg> interestLegs) {
+        this(principalLeg, interestLegs, null);
     }
 
-    public MmCashMessageContext(MmCashLeg principal, List<InterestCashLeg> interests, MmCashLeg maturity) {
-        this.principal = principal;
-        this.interests = interests;
+    public MmCashMessageContext(MmCashLeg principalLeg, List<InterestCashLeg> interestLegs, MmCashLeg maturityLeg) {
+        this.principalLeg = principalLeg;
+        this.interestLegs = interestLegs;
     }
 
     @Override
     public FoCashMessage rootFoCashMessage() {
-        return principal.cashMessage();
+        return principalLeg.cashMessage();
     }
 
     @Override
     public void setRootFoCashMessage(FoCashMessage rootFoCashMessage) {
-        principal.setCashMessage(rootFoCashMessage);
+        principalLeg.setCashMessage(rootFoCashMessage);
     }
 
     @Override
@@ -33,19 +33,19 @@ public final class MmCashMessageContext implements MessageContext {
 
     }
 
-    public MmCashLeg principal() {
-        return principal;
+    public MmCashLeg principalLeg() {
+        return principalLeg;
     }
 
-    public MmCashLeg maturity() {
-        return maturity;
+    public MmCashLeg maturityLeg() {
+        return maturityLeg;
     }
 
-    public void setMaturity(MmCashLeg maturity) {
-        this.maturity = maturity;
+    public void setMaturityLeg(MmCashLeg maturityLeg) {
+        this.maturityLeg = maturityLeg;
     }
 
-    public List<InterestCashLeg> interests() {
-        return interests;
+    public List<InterestCashLeg> interestLegs() {
+        return interestLegs;
     }
 }

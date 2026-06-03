@@ -1,27 +1,21 @@
 package io.alw.css.fosimulator.template.model;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public final class AmendableFieldContext {
-    private final Map<CashLegType, Set<AmendableFoCashMessageFieldAndValueApplier>> amendableFields;
+    private final Map<CashLegType, Set<AmendableFoCashMessageField>> amendableFields;
 
     public AmendableFieldContext() {
         amendableFields = new HashMap<>();
     }
 
     public AmendableFieldContext add(CashLegType cashLegType, AmendableFoCashMessageField field) {
-        var applier = new AmendableFieldValueApplier.DirectApplier();
-        var fieldAndApplier = new AmendableFoCashMessageFieldAndValueApplier(field, applier);
-        amendableFields.computeIfAbsent(cashLegType, _ -> new HashSet<>()).add(fieldAndApplier);
+        amendableFields.computeIfAbsent(cashLegType, _ -> new HashSet<>()).add(field);
         return this;
     }
 
-    public AmendableFieldContext add(CashLegType cashLegType, AmendableFoCashMessageField field, AmendableFieldValueApplier applier) {
-        var fieldAndApplier = new AmendableFoCashMessageFieldAndValueApplier(field, applier);
-        amendableFields.computeIfAbsent(cashLegType, _ -> new HashSet<>()).add(fieldAndApplier);
+    public AmendableFieldContext add(CashLegType cashLegType, AmendableFoCashMessageFieldSupplier supplier) {
+        amendableFields.computeIfAbsent(cashLegType, _ -> new HashSet<>()).add(supplier);
         return this;
     }
 }
