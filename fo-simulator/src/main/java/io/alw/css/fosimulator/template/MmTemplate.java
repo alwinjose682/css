@@ -88,18 +88,35 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
 
     private CashMessageAmendmentContext buildAmendmentContextForPrimarySubjectPrincipal(MmCashMessageContext msgCtxForAmendment) {
         // Build context for Primary Amendment Subject
+        CashLegType primaryCashLegType = MM_PRINCIPAL;
         MmCashLeg principal = msgCtxForAmendment.principal();
-        Set<AmendableFoCashMessageFieldType> fieldsTypesForAmendment = cyclicAmendableFoCashMessageFieldTypeProvider.get();
-        Set<AmendableFoCashMessageField> amendableFields = new HashSet<>();
-        for (var ft : fieldsTypesForAmendment) {
+        Set<AmendableFoCashMessageFieldType> amendableFieldTypes = cyclicAmendableFoCashMessageFieldTypeProvider.get();
+        Map<CashLegType, Set<AmendableFoCashMessageField>> amendableFields = new HashMap<>();
+        for (var ft : amendableFieldTypes) {
             switch (ft) {
-                case AMOUNT -> amendableFields.add(AmendmentFieldBuilder.PrimarySubject.PrincipalLeg.forAmount(rndm));
-                case COUNTERPARTY_CODE -> amendableFields.add(AmendmentFieldBuilder.PrimarySubject.PrincipalLeg.forCounterpartyCode(principal, msgTemplateHelper));
-                case VALUE_DATE -> amendableFields.add(AmendmentFieldBuilder.PrimarySubject.PrincipalLeg.forValueDate(principal, msgTemplateHelper, msgCtxForAmendment));
+                case AMOUNT -> {
+                    var amount = AmendmentFieldBuilder.PrimarySubject.PrincipalLeg.forAmount(rndm);
+                    amendableFields.computeIfAbsent(primaryCashLegType, _ -> new HashSet<>()).add(amount);
+                    amendableFields.computeIfAbsent(MM_MATURITY, _ -> new HashSet<>()).add(amount);
+                    amendableFields.computeIfAbsent(MM_INTEREST, _ -> new HashSet<>()).add(amount);
+                }
+                case COUNTERPARTY_CODE -> {
+                    var cpCode = AmendmentFieldBuilder.PrimarySubject.PrincipalLeg.forCounterpartyCode(principal, msgTemplateHelper);
+                    amendableFields.computeIfAbsent(primaryCashLegType, _ -> new HashSet<>()).add(cpCode);
+                    amendableFields.computeIfAbsent(MM_MATURITY, _ -> new HashSet<>()).add(cpCode);
+                    amendableFields.computeIfAbsent(MM_INTEREST, _ -> new HashSet<>()).add(cpCode);
+                }
+                case VALUE_DATE -> {
+                    var valueDate = AmendmentFieldBuilder.PrimarySubject.PrincipalLeg.forValueDate(principal, msgTemplateHelper, msgCtxForAmendment);
+                    amendableFields.computeIfAbsent(primaryCashLegType, _ -> new HashSet<>()).add(valueDate);
+                }
             }
         }
 
-        var primaryAmndSubCtx = new AmendmentSubjectContext(principal, principal::setCashMessage, Collections.unmodifiableSet(amendableFields));
+        var primaryAmndSubCtx = new AmendmentSubjectContext(principal, principal::setCashMessage, Collections.unmodifiableSet(amendableFieldsForPrimarySubject));
+
+        // Build context for Secondary Amendment Subjects -> MaturityLeg
+
     }
 
     @Override
