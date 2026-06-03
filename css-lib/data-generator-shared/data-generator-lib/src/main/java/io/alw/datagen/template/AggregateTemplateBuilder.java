@@ -5,7 +5,7 @@ import io.alw.datagen.TestDataGeneratable;
 import java.util.*;
 import java.util.function.Supplier;
 
-public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, B, R> extends TemplateBuilder<T, AggregateTemplateBuilderResult<T,R>> {
+public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, B, R> extends TemplateBuilder<T, AggregateTemplateBuilderResult<T, R>> {
     private final Deque<Supplier<B>> groupedItemBuilders;
     private final Deque<Supplier<B>> relatedItemBuilders;
 
@@ -21,8 +21,10 @@ public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, B,
     /// The association is made by the implementation of the abstract method [AggregateTemplateBuilder#buildGroupedOrRelatedItem(B)].
     ///
     /// This method can be called recursively
-    public AggregateTemplateBuilder<T,B,R> withGroupedItem(Supplier<B> firstBuildStep) {
-        groupedItemBuilders.push(firstBuildStep);
+    ///
+    /// NOTE: The items inserted in the queue will be removed in the same order as they are inserted
+    public AggregateTemplateBuilder<T, B, R> withGroupedItem(Supplier<B> firstBuildStep) {
+        groupedItemBuilders.addFirst(firstBuildStep);
         return this;
     }
 
@@ -30,22 +32,26 @@ public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, B,
     /// The association is made by the implementation of the abstract method [AggregateTemplateBuilder#buildGroupedOrRelatedItem(B)].
     ///
     /// This method can be called recursively
-    public AggregateTemplateBuilder<T,B,R> withRelatedItem(Supplier<B> firstBuildStep) {
-        relatedItemBuilders.push(firstBuildStep);
+    ///
+    /// NOTE: The items inserted in the queue will be removed in the same order as they are inserted
+    public AggregateTemplateBuilder<T, B, R> withRelatedItem(Supplier<B> firstBuildStep) {
+        relatedItemBuilders.addFirst(firstBuildStep);
         return this;
     }
 
     /// Builds the parent template and then its related objects, if any.
     /// The related objects can access the build output, T, during their builds.
+    ///
+    /// NOTE: The grouped and related items will be removed(retrieved for build) in the same order as they were inserted
     @Override
-    public AggregateTemplateBuilderResult<T,R> build() {
+    public AggregateTemplateBuilderResult<T, R> build() {
         // 1. Build the template
         final T root = buildRootTemplate();
 
         // 2. Build items that need to be grouped together with parent/root item
         final List<R> groupedItems = new ArrayList<>();
         while (!groupedItemBuilders.isEmpty()) {
-            Supplier<B> firstBuildStep = groupedItemBuilders.pop();
+            Supplier<B> firstBuildStep = groupedItemBuilders.removeLast();
             B resultBuilder = firstBuildStep.get();
             R related = buildGroupedOrRelatedItem(resultBuilder);
             groupedItems.add(related);
@@ -54,7 +60,7 @@ public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, B,
         final List<R> relatedItems = new ArrayList<>();
         // 3. Build items that do NOT need to be grouped together with parent/root item
         while (!relatedItemBuilders.isEmpty()) {
-            Supplier<B> firstBuildStep = relatedItemBuilders.pop();
+            Supplier<B> firstBuildStep = relatedItemBuilders.removeLast();
             B resultBuilder = firstBuildStep.get();
             R related = buildGroupedOrRelatedItem(resultBuilder);
             relatedItems.add(related);
