@@ -15,6 +15,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
+import java.util.stream.Collectors;
 
 import static io.alw.css.fosimulator.template.model.CashLegType.*;
 
@@ -68,16 +69,54 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
         var primaryAmndSubCtx = amndCtx.primaryAmendmentSubjectContext();
         var primaryAmndSubCallback = primaryAmndSubCtx.callback();
         this.withRelatedItem(primaryAmndSubCallback, () -> buildAmendedMessageFor(amndCtx, primaryAmndSubCtx));
-        // 2. Build amendment of the secondary amendment subjects
-        if (amndCtx.secondaryAmendmentSubjectContexts() != null) {
-            for (var secAmndSubCtx : amndCtx.secondaryAmendmentSubjectContexts()) {
-                var secAmndSubCallback = secAmndSubCtx.callback();
-                this.withRelatedItem(secAmndSubCallback, () -> buildAmendedMessageFor(amndCtx, secAmndSubCtx));
+
+
+        var amndSubCtxs = amndCtx.secondaryAmendmentSubjectContexts();
+        if (amndSubCtxs != null) {
+            for (AmendmentSubjectContext amndSubCtx : amndSubCtxs) {
+                switch (amndSubCtx) {
+                    case AmendmentSubjectContextEager subCtx -> this.withRelatedItem(subCtx.callback(), () -> buildAmendedMessageFor(amndCtx, subCtx));
+                    case AmendmentSubjectContextLazy subCtx -> buildAmendedMessageFor(amndCtx, subCtx);
+                }
+            }
+        }
+
+    }
+
+    private void buildAmendedMessageFor(CashMessageAmendmentContext amndCtx, AmendmentSubjectContextLazy subCtxLazy) {
+        for (AmendableFoCashMessageField amendableFieldSupplier : subCtxLazy.amendableFields()) {
+            switch (amendableFieldSupplier) {
+                case AmendableFoCashMessageFieldSupplier fieldSupplier -> {
+                    switch (fieldSupplier) {
+                        case AmendableFoCashMessageFieldSupplier.ConditionalSupplier conditionalSupplier -> {
+                            //TODO
+                        }
+                        case AmendableFoCashMessageFieldSupplier.ConditionalSupplierWithMessageSelector conditionalSupplierWithMessageSelector -> {
+                            //TODO
+                        }
+                        case AmendableFoCashMessageFieldSupplier.SupplierWithMessageSelector supplier -> {
+                            List<? extends CashLeg> cashLegs = supplier.amendmentSubjectSelector().apply(supplier.msgCtx());
+                            for (CashLeg cashLeg : cashLegs) {
+                                Set<AmendableFoCashMessageField> amendableFields = supplier
+                                        .amendableFieldSupplierFunctions()
+                                        .stream()
+                                        .map(func -> func.apply(cashLeg))
+                                        .collect(Collectors.toSet());
+
+                                var amndSubCtxEager = new AmendmentSubjectContextEager(cashLeg, subCtxLazy.callbackProvider().apply(cashLeg), amendableFields);
+                                this.withRelatedItem(amndSubCtxEager.callback(), () -> buildAmendedMessageFor(amndCtx, amndSubCtxEager));
+                            }
+                        }
+                    }
+                }
+                case AmendableFoCashMessageField.Amount _, AmendableFoCashMessageField.CounterpartyCode _, AmendableFoCashMessageField.ValueDate _ -> {
+                    throw new RuntimeException("Incorrect use of `AmendableFoCashMessageField` type. Only `AmendableFoCashMessageFieldSupplier` type is expected when the values are known at the time of constructing the object");
+                }
             }
         }
     }
 
-    private FoCashMessageBuilder buildAmendedMessageFor(CashMessageAmendmentContext amndCtx, AmendmentSubjectContext amndSubjectCtx) {
+    private FoCashMessageBuilder buildAmendedMessageFor(CashMessageAmendmentContext amndCtx, AmendmentSubjectContextEager amndSubjectCtx) {
         var nextEventAndAction = amndCtx.tradeEventActionPair();
         var amendmentSubject = amndSubjectCtx.amendmentSubject().cashMessage();
         var amendmentSubjectLinkType = amndSubjectCtx.amendmentSubject().cashLegType();
@@ -129,7 +168,7 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
 
     /// 1) creates a new trade with a new cashMessage.
     /// 2) creates cashflow to cancel the original cashMessage.
-    private void handleTradeRebookEvent(CashMessageAmendmentContext rootAmendedMsgCtx, FoCashMessageBuilder amndBdr, AmendmentSubjectContext amndSubjectCtx) {
+    private void handleTradeRebookEvent(CashMessageAmendmentContext rootAmendedMsgCtx, FoCashMessageBuilder amndBdr, AmendmentSubjectContextEager amndSubjectCtx) {
         FoCashMessage amendmentSubject = amndSubjectCtx.amendmentSubject().cashMessage();
         CashLegType amendmentSubjectLinkType = amndSubjectCtx.amendmentSubject().cashLegType();
         Consumer<FoCashMessage> callback = amndSubjectCtx.callback();

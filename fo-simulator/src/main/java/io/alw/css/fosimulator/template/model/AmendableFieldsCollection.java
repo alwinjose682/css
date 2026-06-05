@@ -2,20 +2,24 @@ package io.alw.css.fosimulator.template.model;
 
 import java.util.*;
 
-public final class AmendableFieldContext {
+public final class AmendableFieldsCollection {
     private final Map<CashLegType, Set<AmendableFoCashMessageField>> amendableFields;
 
-    public AmendableFieldContext() {
+    public AmendableFieldsCollection() {
         amendableFields = new HashMap<>();
     }
 
-    public AmendableFieldContext add(CashLegType cashLegType, AmendableFoCashMessageField field) {
+    public AmendableFieldsCollection add(CashLegType cashLegType, AmendableFoCashMessageField field) {
         amendableFields.computeIfAbsent(cashLegType, _ -> new HashSet<>()).add(field);
         return this;
     }
 
-    public AmendableFieldContext add(CashLegType cashLegType, AmendableFoCashMessageFieldSupplier supplier) {
+    public AmendableFieldsCollection add(CashLegType cashLegType, AmendableFoCashMessageFieldSupplier supplier) {
         amendableFields.computeIfAbsent(cashLegType, _ -> new HashSet<>()).add(supplier);
         return this;
+    }
+
+    public Set<AmendableFoCashMessageField> get(CashLegType type) {
+        return amendableFields.get(type);
     }
 }

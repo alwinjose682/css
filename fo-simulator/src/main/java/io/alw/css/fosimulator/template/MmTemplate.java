@@ -76,7 +76,6 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
 
     @Override
     protected void buildAmendedMessage(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, MmCashMessageContext msgCtxForAmendment) {
-        var nextEventAndAction = getNextEventActionPair(msg.tradeEventType(), msg.tradeEventAction());
         switch (cyclicAmendableMmLegProvider.get()) {
             case MM_PRINCIPAL -> {
                 var msgAmendCtx = buildAmendmentContextForPrimarySubjectPrincipal(msgCtxForAmendment);
@@ -96,40 +95,50 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
         MmCashLeg maturityLeg = msgCtx.maturityLeg(); // NOTE: MaturityLeg could be null for MM CALL trades
 
         Set<AmendableFoCashMessageFieldType> amendableFieldTypes = cyclicAmendableFoCashMessageFieldTypeProvider.get();
-        var amendableFieldCtx = new AmendableFieldContext();
+        var amendableFields = new AmendableFieldsCollection();
         // NOTE: To determine new amount for InterestLeg, the amended amount and amended valueDate of both *principalLeg* and *maturityLeg* are needed, although they may not be computed yet during execution
         // One of the `AmendableFoCashMessageFieldSupplier` type is used to lazily obtain the amendable fields after the amended principalLeg and maturityLeg are built.
-        var intLegAmndFieldSupplier = new AmendableFoCashMessageFieldSupplier.SupplierWithMessageSelector(givenMsgCtx -> ((MmCashMessageContext) givenMsgCtx).interestLegs().stream().filter(cl -> cl.cashMessage().valueDate().isAfter(msgTemplateHelper.currentDateForMsgTemplate())).toList());
+        var intLegAmndFieldSupplier = new AmendableFoCashMessageFieldSupplier.SupplierWithMessageSelector(msgCtx, givenMsgCtx -> ((MmCashMessageContext) givenMsgCtx).interestLegs().stream().filter(cl -> cl.cashMessage().valueDate().isAfter(msgTemplateHelper.currentDateForMsgTemplate())).toList());
         for (var ft : amendableFieldTypes) {
             switch (ft) {
                 case AMOUNT -> {
                     var amount = MmAmendmentFieldValue.PrimarySubject.PrincipalLeg.forAmount(rndm);
-                    amendableFieldCtx.add(MM_PRINCIPAL, amount);
-                    amendableFieldCtx.add(MM_MATURITY, amount); // The Pay/Receive direction remains the same
                     intLegAmndFieldSupplier.add(cl -> new AmendableFoCashMessageField.Amount(determineInterestLegAmount(principalLeg, maturityLeg, (InterestCashLeg) cl)));
-                    amendableFieldCtx.add(MM_INTEREST, intLegAmndFieldSupplier);
+                    amendableFields
+                            .add(MM_PRINCIPAL, amount)
+                            .add(MM_MATURITY, amount) // The Pay/Receive direction remains the same
+                            .add(MM_INTEREST, intLegAmndFieldSupplier);
                 }
                 case COUNTERPARTY_CODE -> {
                     var cpCode = MmAmendmentFieldValue.PrimarySubject.PrincipalLeg.forCounterpartyCode(principalLeg, msgTemplateHelper);
-                    amendableFieldCtx.add(MM_PRINCIPAL, cpCode);
-                    amendableFieldCtx.add(MM_MATURITY, cpCode);
-                    amendableFieldCtx.add(MM_INTEREST, intLegAmndFieldSupplier.add(_ -> cpCode));
+                    amendableFields
+                            .add(MM_PRINCIPAL, cpCode)
+                            .add(MM_MATURITY, cpCode)
+                            .add(MM_INTEREST, intLegAmndFieldSupplier.add(_ -> cpCode));
                 }
                 case VALUE_DATE -> {
                     var valueDate = MmAmendmentFieldValue.PrimarySubject.PrincipalLeg.forValueDate(principalLeg, msgTemplateHelper, msgCtx);
-                    amendableFieldCtx.add(MM_PRINCIPAL, valueDate);
                     Predicate<CashLeg> matLegVdAmendmentCondition = ml -> ml != null && ml.cashMessage() != null && principalLeg.cashMessage().valueDate().until(ml.cashMessage().valueDate(), ChronoUnit.DAYS) < 10;
                     var matLegVdConditionalSupplier = new AmendableFoCashMessageFieldSupplier.ConditionalSupplier(maturityLeg, matLegVdAmendmentCondition, _ -> valueDate);
-                    amendableFieldCtx.add(MM_MATURITY, matLegVdConditionalSupplier);
+                    amendableFields
+                            .add(MM_PRINCIPAL, valueDate)
+                            .add(MM_MATURITY, matLegVdConditionalSupplier);
+                    // No adjustments not needed for MM_INTEREST with respect to valueDate change of principalLeg
                 }
             }
         }
 
-        var primaryAmndSubCtx = new AmendmentSubjectContext(principalLeg, principalLeg::setCashMessage, Collections.unmodifiableSet(amendableFieldsForPrimarySubject));
+        var primaryAmndSubCtx = new AmendmentSubjectContextEager(principalLeg, principalLeg::setCashMessage, Collections.unmodifiableSet(amendableFields.get(MM_PRINCIPAL)));
+        // 2. Build context for MaturityLeg
+        //TODO:    Use sequenced collection. No need to distinguish primary and secondary amendment subjects.
+        // PrincipalLeg and MaturityLeg must be queued for building before InterestLegs because InterestLeg's amount and valueDate are determined based on PrincipalLeg and MaturityLeg
+        var maturityAmndSubCtx = new AmendmentSubjectContextLazy(cl -> cl::setCashMessage, amendableFields.get(MM_MATURITY));
+        // 3. Build context for MaturityLeg
+        var interestAmndCtx = new AmendmentSubjectContextLazy(cl -> cl::setCashMessage, amendableFields.get(MM_INTEREST));
 
-        // 2. Build context for Secondary Amendment Subjects -> MaturityLeg
-        //    MaturityLeg must be queued for building before InterestLegs because InterestLeg's amount and valueDate are determined based on PrincipalLeg and MaturityLeg
-
+        var primaryAmndSubCashMsg = principalLeg.cashMessage();
+        var nextTradeEventAction = getNextEventActionPair(primaryAmndSubCashMsg.tradeEventType(), primaryAmndSubCashMsg.tradeEventAction());
+        return new CashMessageAmendmentContext(nextTradeEventAction, primaryAmndSubCtx, List.of(maturityAmndSubCtx, interestAmndCtx));
     }
 
     @Override
@@ -359,14 +368,6 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
                     // New valueDate for principal leg
                     LocalDate newValueDate = msgTemplateHelper.getFutureValueDate(1, currentDate, maturityLegValueDate);
                     return new AmendableFoCashMessageField.ValueDate(newValueDate);
-                }
-            }
-        }
-
-        private static final class SecondarySubject {
-            private static final class MaturityLeg {
-                private static AmendableFoCashMessageField forAmount(MmCashLeg subjectCashLeg) {
-
                 }
             }
         }

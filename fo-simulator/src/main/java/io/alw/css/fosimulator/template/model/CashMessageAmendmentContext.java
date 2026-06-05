@@ -4,7 +4,6 @@ import io.alw.css.domain.cashflow.FoCashMessage;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 
 /// Note: The `primaryAmendmentSubject` is the cashMessage selected for amendment that has caused amendment for other dependent cashMessages
