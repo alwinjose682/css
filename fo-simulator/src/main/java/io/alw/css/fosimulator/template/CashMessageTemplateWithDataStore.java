@@ -64,23 +64,16 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
         return this;
     }
 
+    /// Adds the step to lazily build amended messages in the [io.alw.datagen.template.AggregateTemplateBuilder].
+    /// The steps to lazily build(functions) and the actual build done by [io.alw.datagen.template.AggregateTemplateBuilder] are performed in FIFO order
     protected void buildAmendedMessage(CashMessageAmendmentContext amndCtx) {
-        // 1. Build amendment of the primary amendment subject - primary amendment subject should be done first
-        var primaryAmndSubCtx = amndCtx.primaryAmendmentSubjectContext();
-        var primaryAmndSubCallback = primaryAmndSubCtx.callback();
-        this.withRelatedItem(primaryAmndSubCallback, () -> buildAmendedMessageFor(amndCtx, primaryAmndSubCtx));
-
-
-        var amndSubCtxs = amndCtx.secondaryAmendmentSubjectContexts();
-        if (amndSubCtxs != null) {
-            for (AmendmentSubjectContext amndSubCtx : amndSubCtxs) {
-                switch (amndSubCtx) {
-                    case AmendmentSubjectContextEager subCtx -> this.withRelatedItem(subCtx.callback(), () -> buildAmendedMessageFor(amndCtx, subCtx));
-                    case AmendmentSubjectContextLazy subCtx -> buildAmendedMessageFor(amndCtx, subCtx);
-                }
+        var amndSubCtxs = amndCtx.amendmentSubjectContexts();
+        for (AmendmentSubjectContext amndSubCtx : amndSubCtxs) {
+            switch (amndSubCtx) {
+                case AmendmentSubjectContextEager subCtxEager -> this.withRelatedItem(subCtxEager.callback(), () -> buildAmendedMessageFor(amndCtx, subCtxEager));
+                case AmendmentSubjectContextLazy subCtxLazy -> this.withRelatedItem(() -> buildAmendedMessageFor(amndCtx, subCtxLazy));
             }
         }
-
     }
 
     private void buildAmendedMessageFor(CashMessageAmendmentContext amndCtx, AmendmentSubjectContextLazy subCtxLazy) {
@@ -88,14 +81,27 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
             switch (amendableFieldSupplier) {
                 case AmendableFoCashMessageFieldSupplier fieldSupplier -> {
                     switch (fieldSupplier) {
-                        case AmendableFoCashMessageFieldSupplier.ConditionalSupplier conditionalSupplier -> {
-                            //TODO
-                        }
-                        case AmendableFoCashMessageFieldSupplier.ConditionalSupplierWithMessageSelector conditionalSupplierWithMessageSelector -> {
-                            //TODO
+                        case AmendableFoCashMessageFieldSupplier.ConditionalSupplier supplier -> {
+                            // 1. Evaluate the condition and if applicable proceed with generating the build step
+                            var cashLeg = supplier.conditionSubject();
+                            var condition = supplier.condition();
+                            if (condition.test(cashLeg)) {
+                                Set<AmendableFoCashMessageField> amendableFields = supplier
+                                        .amendableFieldSupplierFunctions()
+                                        .stream()
+                                        .map(func -> func.apply(cashLeg))
+                                        .collect(Collectors.toSet());
+
+                                // 2. Create the amendment subject context with the above derived values
+                                var amndSubCtxEager = new AmendmentSubjectContextEager(cashLeg, subCtxLazy.callbackProvider().apply(cashLeg), amendableFields);
+                                // 4. Register the build step with the templateBuilder
+                                this.withRelatedItem(amndSubCtxEager.callback(), () -> buildAmendedMessageFor(amndCtx, amndSubCtxEager));
+                            }
                         }
                         case AmendableFoCashMessageFieldSupplier.SupplierWithMessageSelector supplier -> {
+                            // 1. Get the amendment subjects, here the relevant cashLegs
                             List<? extends CashLeg> cashLegs = supplier.amendmentSubjectSelector().apply(supplier.msgCtx());
+                            // 2. Get the fields for amendment for each amendment subject
                             for (CashLeg cashLeg : cashLegs) {
                                 Set<AmendableFoCashMessageField> amendableFields = supplier
                                         .amendableFieldSupplierFunctions()
@@ -103,14 +109,17 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
                                         .map(func -> func.apply(cashLeg))
                                         .collect(Collectors.toSet());
 
+                                // 3. Create the amendment subject context with the above derived values
                                 var amndSubCtxEager = new AmendmentSubjectContextEager(cashLeg, subCtxLazy.callbackProvider().apply(cashLeg), amendableFields);
+                                // 4. Register the build step with the templateBuilder
                                 this.withRelatedItem(amndSubCtxEager.callback(), () -> buildAmendedMessageFor(amndCtx, amndSubCtxEager));
                             }
                         }
                     }
                 }
                 case AmendableFoCashMessageField.Amount _, AmendableFoCashMessageField.CounterpartyCode _, AmendableFoCashMessageField.ValueDate _ -> {
-                    throw new RuntimeException("Incorrect use of `AmendableFoCashMessageField` type. Only `AmendableFoCashMessageFieldSupplier` type is expected when the values are known at the time of constructing the object");
+                    // NOTE: This type of usage as mentioned in the RuntimeException message is not possible to occur in any case due to the structure of AmendmentSubjectContextEager and AmendmentSubjectContextLazy
+                    throw new RuntimeException("Incorrect use of `AmendableFoCashMessageField` type. Instead, `AmendableFoCashMessageFieldSupplier` type is expected to be used when the values are NOT known at the time of constructing the object");
                 }
             }
         }
@@ -156,10 +165,13 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
 
         for (AmendableFoCashMessageField amendableField : amendableFields) {
             switch (amendableField) {
-                case ValueDate(var newValueDate) -> amndBdr.valueDate(newValueDate);
-                case Amount(var newAmount) -> amndBdr.amount(newAmount);
-                case CounterpartyCode(var newCounterpartyCode) -> amndBdr.counterpartyCode(newCounterpartyCode);
-                default -> throw new RuntimeException("Unknown amendable field");
+                case AmendableFoCashMessageField.ValueDate(var newValueDate) -> amndBdr.valueDate(newValueDate);
+                case AmendableFoCashMessageField.Amount(var newAmount) -> amndBdr.amount(newAmount);
+                case AmendableFoCashMessageField.CounterpartyCode(var newCounterpartyCode) -> amndBdr.counterpartyCode(newCounterpartyCode);
+                case AmendableFoCashMessageFieldSupplier _ -> {
+                    // NOTE: This type of usage as mentioned in the RuntimeException message is not possible to occur in any case due to the structure of AmendmentSubjectContextEager and AmendmentSubjectContextLazy
+                    throw new RuntimeException("Incorrect use of `AmendableFoCashMessageFieldSupplier` type. `AmendableFoCashMessageFieldSupplier` type should be used only when the values are NOT known at the time of constructing the object");
+                }
             }
         }
 

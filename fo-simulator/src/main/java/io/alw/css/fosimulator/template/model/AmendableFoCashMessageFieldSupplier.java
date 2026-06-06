@@ -1,28 +1,47 @@
 package io.alw.css.fosimulator.template.model;
 
+import io.alw.css.fosimulator.template.MmTemplate;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+/// NOTE: These amendable field supplier classes contain both:
+/// !) the functions that compute the value and
+/// 2) the parameters(object references, not the actual parameter value) necessary for the function to compute the value
+/// Normally, this is not the case where functions need to be used. It is used only to facilitate lazy build of the amendment messages.
+/// Check the use site of this class for context(example: [MmTemplate#buildAmendmentContextForPrimarySubjectPrincipal])
 public sealed interface AmendableFoCashMessageFieldSupplier extends AmendableFoCashMessageField {
-    final class ConditionalSupplier implements AmendableFoCashMessageFieldSupplier {
-        private final CashLeg conditionSubject;
-        private final Predicate<? extends CashLeg> condition;
-        private final Function<? extends CashLeg, AmendableFoCashMessageField> amendableFieldSupplier;
 
-        public ConditionalSupplier(CashLeg conditionSubject, Predicate<? extends CashLeg> condition, Function<? extends CashLeg, AmendableFoCashMessageField> amendableFieldSupplier) {
+    sealed abstract class AmendableFoCashMessageFieldSupplierBase implements AmendableFoCashMessageFieldSupplier {
+        private final List<Function<CashLeg, AmendableFoCashMessageField>> amendableFieldSuppliers;
+
+        private AmendableFoCashMessageFieldSupplierBase() {
+            this.amendableFieldSuppliers = new ArrayList<>();
+        }
+
+        public AmendableFoCashMessageFieldSupplier add(Function<CashLeg, AmendableFoCashMessageField> amendableFieldSupplier) {
+            amendableFieldSuppliers.add(amendableFieldSupplier);
+            return this;
+        }
+
+        public List<Function<CashLeg, AmendableFoCashMessageField>> amendableFieldSupplierFunctions() {
+            return amendableFieldSuppliers;
+        }
+    }
+
+    final class ConditionalSupplier extends AmendableFoCashMessageFieldSupplierBase {
+        private final CashLeg conditionSubject;
+        private final Predicate<CashLeg> condition;
+
+        public ConditionalSupplier(CashLeg conditionSubject, Predicate<CashLeg> condition) {
             this.conditionSubject = conditionSubject;
             this.condition = condition;
-            this.amendableFieldSupplier = amendableFieldSupplier;
         }
 
-        public Predicate<? extends CashLeg> condition() {
+        public Predicate<CashLeg> condition() {
             return condition;
-        }
-
-        public Function<? extends CashLeg, AmendableFoCashMessageField> amendableFieldSupplier() {
-            return amendableFieldSupplier;
         }
 
         public CashLeg conditionSubject() {
@@ -30,28 +49,18 @@ public sealed interface AmendableFoCashMessageFieldSupplier extends AmendableFoC
         }
     }
 
-    final class SupplierWithMessageSelector implements AmendableFoCashMessageFieldSupplier {
+    final class SupplierWithMessageSelector extends AmendableFoCashMessageFieldSupplierBase {
         private final MessageContext msgCtx;
         private final Function<MessageContext, List<? extends CashLeg>> amendmentSubjectSelector;
-        private final List<Function<CashLeg, AmendableFoCashMessageField>> amendableFieldSuppliers;
+
 
         public SupplierWithMessageSelector(MessageContext msgCtx, Function<MessageContext, List<? extends CashLeg>> amendmentSubjectSelector) {
             this.msgCtx = msgCtx;
             this.amendmentSubjectSelector = amendmentSubjectSelector;
-            this.amendableFieldSuppliers = new ArrayList<>();
-        }
-
-        public AmendableFoCashMessageFieldSupplier add(Function<CashLeg, AmendableFoCashMessageField> amendableFieldSupplier) {
-            amendableFieldSuppliers.add(amendableFieldSupplier);
-            return this;
         }
 
         public Function<MessageContext, List<? extends CashLeg>> amendmentSubjectSelector() {
             return amendmentSubjectSelector;
-        }
-
-        public List<Function<CashLeg, AmendableFoCashMessageField>> amendableFieldSupplierFunctions() {
-            return amendableFieldSuppliers;
         }
 
         public MessageContext msgCtx() {
@@ -59,23 +68,16 @@ public sealed interface AmendableFoCashMessageFieldSupplier extends AmendableFoC
         }
     }
 
-    final class ConditionalSupplierWithMessageSelector implements AmendableFoCashMessageFieldSupplier {
+    final class ConditionalSupplierWithMessageSelector extends AmendableFoCashMessageFieldSupplierBase {
         private final MessageContext msgCtx;
         private final Function<MessageContext, List<? extends CashLeg>> amendmentSubjectSelector;
         private final Predicate<? extends CashLeg> condition;
-        private final List<Function<CashLeg, AmendableFoCashMessageField>> amendableFieldSuppliers;
 
         public ConditionalSupplierWithMessageSelector(MessageContext msgCtx, Function<MessageContext, List<? extends CashLeg>> amendmentSubjectSelector,
                                                       Predicate<? extends CashLeg> condition) {
             this.msgCtx = msgCtx;
             this.amendmentSubjectSelector = amendmentSubjectSelector;
             this.condition = condition;
-            this.amendableFieldSuppliers = new ArrayList<>();
-        }
-
-        public AmendableFoCashMessageFieldSupplier add(Function<CashLeg, AmendableFoCashMessageField> amendableFieldSupplier) {
-            amendableFieldSuppliers.add(amendableFieldSupplier);
-            return this;
         }
 
         public Function<MessageContext, List<? extends CashLeg>> amendmentSubjectSelector() {
@@ -84,10 +86,6 @@ public sealed interface AmendableFoCashMessageFieldSupplier extends AmendableFoC
 
         public Predicate<? extends CashLeg> condition() {
             return condition;
-        }
-
-        public List<Function<CashLeg, AmendableFoCashMessageField>> amendableFieldSupplierFunctions() {
-            return amendableFieldSuppliers;
         }
 
         public MessageContext msgCtx() {

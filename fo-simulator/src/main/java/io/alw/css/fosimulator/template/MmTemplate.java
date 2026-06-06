@@ -17,7 +17,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 
 import static io.alw.css.domain.cashflow.MmTradeType.CALL;
@@ -64,11 +63,11 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
         // MaturityLeg must be built before InterestLeg because building InterestLeg requires maturityLegValueDate.
         // The lambdas added via [io.alw.datagen.template.AggregateTemplateBuilder#withGroupedItem(Supplier)] method will be executed strictly in the same order as they are inserted in the queue
         if (maturityLeg != null && interestLeg != null) {
-            buildMaturityAndInterestLeg(msgCtx, idsMap.get(MM_MATURITY), idsMap.get(MM_INTEREST));
+            buildMaturityAndInterestLeg(msgCtx, maturityLeg, idsMap.get(MM_MATURITY), interestLeg, idsMap.get(MM_INTEREST));
         } else if (maturityLeg != null) {
-            this.withGroupedItem(callback, () -> buildMaturityLeg(msgCtx, idsMap.get(MM_MATURITY)));
+            this.withGroupedItem(maturityLeg::setCashMessage, () -> buildMaturityLeg(msgCtx, idsMap.get(MM_MATURITY)));
         } else if (interestLeg != null) {
-            this.withGroupedItem(callback, () -> buildInterestLeg(msgCtx, idsMap.get(MM_INTEREST)));
+            this.withGroupedItem(interestLeg::setCashMessage, () -> buildInterestLeg(msgCtx, idsMap.get(MM_INTEREST)));
         }
 
         return this;
@@ -85,12 +84,9 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
             case MM_INTEREST -> throw new RuntimeException("Amending interest leg is not allowed");
             default -> throw new RuntimeException("Invalid cash leg type for MM Trade");
         }
-
-
     }
 
     private CashMessageAmendmentContext buildAmendmentContextForPrimarySubjectPrincipal(MmCashMessageContext msgCtx) {
-        // 1. Build context for Primary Amendment Subject
         MmCashLeg principalLeg = msgCtx.principalLeg();
         MmCashLeg maturityLeg = msgCtx.maturityLeg(); // NOTE: MaturityLeg could be null for MM CALL trades
 
@@ -119,7 +115,7 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
                 case VALUE_DATE -> {
                     var valueDate = MmAmendmentFieldValue.PrimarySubject.PrincipalLeg.forValueDate(principalLeg, msgTemplateHelper, msgCtx);
                     Predicate<CashLeg> matLegVdAmendmentCondition = ml -> ml != null && ml.cashMessage() != null && principalLeg.cashMessage().valueDate().until(ml.cashMessage().valueDate(), ChronoUnit.DAYS) < 10;
-                    var matLegVdConditionalSupplier = new AmendableFoCashMessageFieldSupplier.ConditionalSupplier(maturityLeg, matLegVdAmendmentCondition, _ -> valueDate);
+                    var matLegVdConditionalSupplier = new AmendableFoCashMessageFieldSupplier.ConditionalSupplier(maturityLeg, matLegVdAmendmentCondition).add(_ -> valueDate);
                     amendableFields
                             .add(MM_PRINCIPAL, valueDate)
                             .add(MM_MATURITY, matLegVdConditionalSupplier);
@@ -128,17 +124,20 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
             }
         }
 
-        var primaryAmndSubCtx = new AmendmentSubjectContextEager(principalLeg, principalLeg::setCashMessage, Collections.unmodifiableSet(amendableFields.get(MM_PRINCIPAL)));
-        // 2. Build context for MaturityLeg
-        //TODO:    Use sequenced collection. No need to distinguish primary and secondary amendment subjects.
-        // PrincipalLeg and MaturityLeg must be queued for building before InterestLegs because InterestLeg's amount and valueDate are determined based on PrincipalLeg and MaturityLeg
-        var maturityAmndSubCtx = new AmendmentSubjectContextLazy(cl -> cl::setCashMessage, amendableFields.get(MM_MATURITY));
-        // 3. Build context for MaturityLeg
-        var interestAmndCtx = new AmendmentSubjectContextLazy(cl -> cl::setCashMessage, amendableFields.get(MM_INTEREST));
-
         var primaryAmndSubCashMsg = principalLeg.cashMessage();
         var nextTradeEventAction = getNextEventActionPair(primaryAmndSubCashMsg.tradeEventType(), primaryAmndSubCashMsg.tradeEventAction());
-        return new CashMessageAmendmentContext(nextTradeEventAction, primaryAmndSubCtx, List.of(maturityAmndSubCtx, interestAmndCtx));
+
+        // 1. Amendment context for PrincipalLeg(primary amendment subject)
+        var primaryAmndSubCtx = new AmendmentSubjectContextEager(principalLeg, principalLeg::setCashMessage, Collections.unmodifiableSet(amendableFields.get(MM_PRINCIPAL)));
+        // 2. Amendment context for MaturityLeg
+        var maturityAmndSubCtx = new AmendmentSubjectContextLazy(cl -> cl::setCashMessage, amendableFields.get(MM_MATURITY));
+        // 3. Amendment context for InterestLegs
+        var interestAmndCtx = new AmendmentSubjectContextLazy(cl -> cl::setCashMessage, amendableFields.get(MM_INTEREST));
+
+        return new CashMessageAmendmentContext(nextTradeEventAction)
+                .addNextAmndSubCtx(primaryAmndSubCtx)
+                .addNextAmndSubCtx(maturityAmndSubCtx)
+                .addNextAmndSubCtx(interestAmndCtx);
     }
 
     @Override
@@ -148,12 +147,12 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
 
     /// IMPORTANT NOTE: The order here is important.
     /// MaturityLeg must be built before InterestLeg because building InterestLeg requires maturityLegValueDate.
-    /// The lambdas added via [io.alw.datagen.template.AggregateTemplateBuilder#withGroupedItem(Supplier)] method will be executed strictly in the same order as they are inserted in the queue
-    private void buildMaturityAndInterestLeg(MmCashMessageContext msgCtx, Ids maturityLegIds, Ids interestLegIds) {
+    /// The lambdas added via [io.alw.datagen.template.AggregateTemplateBuilder#withGroupedItem] method will be executed strictly in the same order as they are inserted in the queue
+    private void buildMaturityAndInterestLeg(MmCashMessageContext msgCtx, MmCashLeg maturityLeg, Ids maturityLegIds, InterestCashLeg interestLeg, Ids interestLegIds) {
         // 1. Add building function of MATURITY leg
-        this.withGroupedItem(callback, () -> buildMaturityLeg(msgCtx, maturityLegIds));
+        this.withGroupedItem(maturityLeg::setCashMessage, () -> buildMaturityLeg(msgCtx, maturityLegIds));
         // 2. Add building function of INTEREST leg
-        this.withGroupedItem(callback, () -> buildInterestLeg(msgCtx, interestLegIds));
+        this.withGroupedItem(interestLeg::setCashMessage, () -> buildInterestLeg(msgCtx, interestLegIds));
     }
 
     /// NOTE: The 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
