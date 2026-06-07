@@ -67,29 +67,4 @@ public sealed interface AmendableFoCashMessageFieldSupplier extends AmendableFoC
             return msgCtx;
         }
     }
-
-    final class ConditionalSupplierWithMessageSelector extends AmendableFoCashMessageFieldSupplierBase {
-        private final MessageContext msgCtx;
-        private final Function<MessageContext, List<? extends CashLeg>> amendmentSubjectSelector;
-        private final Predicate<? extends CashLeg> condition;
-
-        public ConditionalSupplierWithMessageSelector(MessageContext msgCtx, Function<MessageContext, List<? extends CashLeg>> amendmentSubjectSelector,
-                                                      Predicate<? extends CashLeg> condition) {
-            this.msgCtx = msgCtx;
-            this.amendmentSubjectSelector = amendmentSubjectSelector;
-            this.condition = condition;
-        }
-
-        public Function<MessageContext, List<? extends CashLeg>> amendmentSubjectSelector() {
-            return amendmentSubjectSelector;
-        }
-
-        public Predicate<? extends CashLeg> condition() {
-            return condition;
-        }
-
-        public MessageContext msgCtx() {
-            return msgCtx;
-        }
-    }
 }

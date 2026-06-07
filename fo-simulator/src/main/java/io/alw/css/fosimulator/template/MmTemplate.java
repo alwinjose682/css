@@ -77,16 +77,22 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
     protected void buildAmendedMessage(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, MmCashMessageContext msgCtxForAmendment) {
         switch (cyclicAmendableMmLegProvider.get()) {
             case MM_PRINCIPAL -> {
-                var msgAmendCtx = buildAmendmentContextForPrimarySubjectPrincipal(msgCtxForAmendment);
+                var msgAmendCtx = buildAmendmentContextFor(MM_PRINCIPAL, msgCtxForAmendment);
+                buildAmendedMessageFunc.accept(msgAmendCtx);
             }
             case MM_MATURITY -> {
+                MmCashLeg maturityLeg = msgCtxForAmendment.maturityLeg();
+                if (maturityLeg != null && maturityLeg.cashMessage() != null) {
+                    var msgAmendCtx = buildAmendmentContextFor(MM_MATURITY, msgCtxForAmendment);
+                    buildAmendedMessageFunc.accept(msgAmendCtx);
+                }
             }
             case MM_INTEREST -> throw new RuntimeException("Amending interest leg is not allowed");
             default -> throw new RuntimeException("Invalid cash leg type for MM Trade");
         }
     }
 
-    private CashMessageAmendmentContext buildAmendmentContextForPrimarySubjectPrincipal(MmCashMessageContext msgCtx) {
+    private CashMessageAmendmentContext buildAmendmentContextFor(CashLegType primaryAmendmentSubjectCashLegType, MmCashMessageContext msgCtx) {
         MmCashLeg principalLeg = msgCtx.principalLeg();
         MmCashLeg maturityLeg = msgCtx.maturityLeg(); // NOTE: MaturityLeg could be null for MM CALL trades
 
@@ -98,7 +104,7 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
         for (var ft : amendableFieldTypes) {
             switch (ft) {
                 case AMOUNT -> {
-                    var amount = MmAmendmentFieldValue.PrimarySubject.PrincipalLeg.forAmount(rndm);
+                    var amount = MmAmendmentFieldValue.PrimarySubject.forAmount(rndm);
                     intLegAmndFieldSupplier.add(cl -> new AmendableFoCashMessageField.Amount(determineInterestLegAmount(principalLeg, maturityLeg, (InterestCashLeg) cl)));
                     amendableFields
                             .add(MM_PRINCIPAL, amount)
@@ -106,20 +112,46 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
                             .add(MM_INTEREST, intLegAmndFieldSupplier);
                 }
                 case COUNTERPARTY_CODE -> {
-                    var cpCode = MmAmendmentFieldValue.PrimarySubject.PrincipalLeg.forCounterpartyCode(principalLeg, msgTemplateHelper);
+                    var cpCode = MmAmendmentFieldValue.PrimarySubject.forCounterpartyCode(principalLeg, msgTemplateHelper);
                     amendableFields
                             .add(MM_PRINCIPAL, cpCode)
                             .add(MM_MATURITY, cpCode)
                             .add(MM_INTEREST, intLegAmndFieldSupplier.add(_ -> cpCode));
                 }
                 case VALUE_DATE -> {
-                    var valueDate = MmAmendmentFieldValue.PrimarySubject.PrincipalLeg.forValueDate(principalLeg, msgTemplateHelper, msgCtx);
-                    Predicate<CashLeg> matLegVdAmendmentCondition = ml -> ml != null && ml.cashMessage() != null && principalLeg.cashMessage().valueDate().until(ml.cashMessage().valueDate(), ChronoUnit.DAYS) < 10;
-                    var matLegVdConditionalSupplier = new AmendableFoCashMessageFieldSupplier.ConditionalSupplier(maturityLeg, matLegVdAmendmentCondition).add(_ -> valueDate);
-                    amendableFields
-                            .add(MM_PRINCIPAL, valueDate)
-                            .add(MM_MATURITY, matLegVdConditionalSupplier);
-                    // No adjustments not needed for MM_INTEREST with respect to valueDate change of principalLeg
+                    if (primaryAmendmentSubjectCashLegType == MM_PRINCIPAL) {
+                        // No adjustments not needed for MM_INTEREST with respect to valueDate change of principalLeg
+
+                        // Get new valueDate for principalLeg and add to the collection
+                        var principalLegNewVd = MmAmendmentFieldValue.PrimarySubject.PrincipalLeg.forValueDate(principalLeg, msgTemplateHelper, msgCtx);
+                        amendableFields.add(MM_PRINCIPAL, principalLegNewVd);
+
+                        // Conditionally apply new valueDate for maturityLeg
+                        if (maturityLeg != null) {
+                            // Condition
+                            Predicate<CashLeg> matLegVdAmendmentCondition = ml ->
+                                    ml != null && ml.cashMessage() != null
+                                            && principalLeg.cashMessage().valueDate().until(ml.cashMessage().valueDate(), ChronoUnit.DAYS) < 10;
+
+                            // Create conditional valueDate supplier for maturityLeg and add to the collection
+                            var matLegVdConditionalSupplier = new AmendableFoCashMessageFieldSupplier
+                                    .ConditionalSupplier(maturityLeg, matLegVdAmendmentCondition)
+                                    .add(givenMatCashLeg -> {
+                                        // Determine new valueDate for maturityLeg
+                                        var principalLegOldVd = principalLeg.cashMessage().valueDate();
+                                        long daysDiff = principalLegOldVd.until(principalLegNewVd.date(), ChronoUnit.DAYS);
+                                        LocalDate newMatValueDate = givenMatCashLeg.cashMessage().valueDate().plusDays(daysDiff);
+                                        return new AmendableFoCashMessageField.ValueDate(newMatValueDate);
+                                    });
+
+                            amendableFields.add(MM_MATURITY, matLegVdConditionalSupplier);
+                        }
+                    } else if (primaryAmendmentSubjectCashLegType == MM_MATURITY && maturityLeg != null) {
+                        // Determine new valueDate for maturityLeg and add to the collection
+                        LocalDate newValueDate = determineMaturityLegValueDate(maturityLeg);
+                        amendableFields.add(MM_MATURITY, new AmendableFoCashMessageField.ValueDate(newValueDate));
+                        // NOTE: No adjustments to any other cash legs are required when valueDate of maturityLeg is amended
+                    }
                 }
             }
         }
@@ -286,8 +318,8 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
         return bdr;
     }
 
-    private LocalDate determineMaturityLegValueDate(MmCashLeg principalLeg) {
-        return msgTemplateHelper.getRndmFutureValueDateRelativeTo(principalLeg.cashMessage().valueDate(), false, 10);
+    private LocalDate determineMaturityLegValueDate(MmCashLeg relativeCashLeg) {
+        return msgTemplateHelper.getRndmFutureValueDateRelativeTo(relativeCashLeg.cashMessage().valueDate(), false, 10);
     }
 
     private Map<CashLegType, Ids> createFirstVersionIds(MmCashMessageContext msgCtx) {
@@ -342,25 +374,26 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
 
     private static final class MmAmendmentFieldValue {
         private static final class PrimarySubject {
+            // Common methods for every PrimarySubject
+            private static AmendableFoCashMessageField forAmount(RandomGenerator rndm) {
+                var newAmount = BigDecimal.valueOf(rndm.nextDouble(principalLegAmountOrigin, principalLegAmountBound));
+                return new AmendableFoCashMessageField.Amount(newAmount);
+            }
+
+            private static AmendableFoCashMessageField forCounterpartyCode(CashLeg subjectCashLeg, CashMessageTemplateHelper msgTemplateHelper) {
+                FoCashMessage cashMsg = subjectCashLeg.cashMessage();
+                String newCounterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(cashMsg.counterpartyCode());
+                return new AmendableFoCashMessageField.CounterpartyCode(newCounterpartyCode);
+            }
+
             private static final class PrincipalLeg {
-                private static AmendableFoCashMessageField forAmount(RandomGenerator rndm) {
-                    var newAmount = BigDecimal.valueOf(rndm.nextDouble(principalLegAmountOrigin, principalLegAmountBound));
-                    return new AmendableFoCashMessageField.Amount(newAmount);
-                }
-
-                private static AmendableFoCashMessageField forCounterpartyCode(CashLeg subjectCashLeg, CashMessageTemplateHelper msgTemplateHelper) {
-                    FoCashMessage cashMsg = subjectCashLeg.cashMessage();
-                    String newCounterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(cashMsg.counterpartyCode());
-                    return new AmendableFoCashMessageField.CounterpartyCode(newCounterpartyCode);
-                }
-
-                private static AmendableFoCashMessageField forValueDate(CashLeg subjectCashLeg, CashMessageTemplateHelper msgTemplateHelper, MmCashMessageContext msgCtx) {
-                    var cashMsg = subjectCashLeg.cashMessage();
+                private static AmendableFoCashMessageField.ValueDate forValueDate(CashLeg principalCashLeg, CashMessageTemplateHelper msgTemplateHelper, MmCashMessageContext msgCtx) {
+                    var principalCashMsg = principalCashLeg.cashMessage();
                     var currentDate = msgTemplateHelper.currentDateForMsgTemplate();
                     var maturityLeg = msgCtx.maturityLeg();
                     final LocalDate maturityLegValueDate;
                     if (maturityLeg == null || maturityLeg.cashMessage() == null) {
-                        maturityLegValueDate = cashMsg.valueDate().plusDays(msgTemplateHelper.currentDayForMsgTemplate() + 360);
+                        maturityLegValueDate = principalCashMsg.valueDate().plusDays(msgTemplateHelper.currentDayForMsgTemplate() + 360);
                     } else {
                         maturityLegValueDate = maturityLeg.cashMessage().valueDate();
                     }

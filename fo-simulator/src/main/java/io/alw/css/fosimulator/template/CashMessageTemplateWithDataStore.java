@@ -99,9 +99,9 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
                             }
                         }
                         case AmendableFoCashMessageFieldSupplier.SupplierWithMessageSelector supplier -> {
-                            // 1. Get the amendment subjects, here the relevant cashLegs
+                            // 1. Get the amendment subjects
                             List<? extends CashLeg> cashLegs = supplier.amendmentSubjectSelector().apply(supplier.msgCtx());
-                            // 2. Get the fields for amendment for each amendment subject
+                            // 2. Get the fields for amendment for each amendment subject. If there are no amendment subject, nothing is there to build
                             for (CashLeg cashLeg : cashLegs) {
                                 Set<AmendableFoCashMessageField> amendableFields = supplier
                                         .amendableFieldSupplierFunctions()
