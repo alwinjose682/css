@@ -2,8 +2,10 @@ package io.alw.css.fosimulator.template;
 
 import io.alw.css.domain.cashflow.*;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
+import io.alw.css.fosimulator.template.domain.CashLeg;
+import io.alw.css.fosimulator.template.domain.TradeContext;
 import io.alw.css.fosimulator.template.model.AmendableFoCashMessageField;
-import io.alw.css.fosimulator.template.model.CashLegType;
+import io.alw.css.fosimulator.template.domain.CashLegType;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
@@ -17,11 +19,11 @@ import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 
-import static io.alw.css.fosimulator.template.model.CashLegType.*;
+import static io.alw.css.fosimulator.template.domain.CashLegType.*;
 
 /// The type parameter M stands for MessageContext which is a combination of [FoCashMessage] and its metadata created by the implementations of this class.
 /// Some implementations choose to store MessageContext instead of just FoCashMessage in [io.alw.css.fosimulator.store.CashMessageStore]
-sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
+sealed abstract class CashMessageTemplateWithDataStore<M extends TradeContext>
         extends CashMessageTemplate<M>
         permits FxTemplate, MmTemplate, TemporaryGenericTemplate {
 
@@ -29,7 +31,7 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
         super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMsgTemplateProps);
     }
 
-    protected abstract void buildAmendedMessage(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, M msgCtxForAmendment);
+    protected abstract void buildAmendedMessage(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, M trdCtxForAmendment);
 
     protected abstract CashMessageStoreHelper<M> msgStoreHelper();
 
@@ -51,15 +53,15 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
         msgStoreHelper().storeMessagesForFutureRndmRetrievalDay(amendableCashMsgs);
 
         // Return messages(new+amends) which can be consumed by the CashflowGenerators
-        return msgCtx.mapToCashMessage(buildResult);
+        return trdCtx.mapToCashMessage(buildResult);
     }
 
     protected CashMessageTemplateWithDataStore<M> withMessageAmendments() {
         // Get cash message data that need to be amended
-        final List<M> msgCtxsForAmendment = msgStoreHelper().retrieveMessagesForCurrentDay();
+        final List<M> trdCtxsForAmendment = msgStoreHelper().retrieveMessagesForCurrentDay();
         // Add the list of foCashMessages for amendment to the template build step
-        for (M msgCtx : msgCtxsForAmendment) {
-            buildAmendedMessage(this::buildAmendedMessage, msgCtx);
+        for (M trdCtx : trdCtxsForAmendment) {
+            buildAmendedMessage(this::buildAmendedMessage, trdCtx);
         }
         return this;
     }
@@ -100,7 +102,7 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends MessageContext>
                         }
                         case AmendableFoCashMessageFieldSupplier.SupplierWithMessageSelector supplier -> {
                             // 1. Get the amendment subjects
-                            List<? extends CashLeg> cashLegs = supplier.amendmentSubjectSelector().apply(supplier.msgCtx());
+                            List<? extends CashLeg> cashLegs = supplier.amendmentSubjectSelector().apply(supplier.trdCtx());
                             // 2. Get the fields for amendment for each amendment subject. If there are no amendment subject, nothing is there to build
                             for (CashLeg cashLeg : cashLegs) {
                                 Set<AmendableFoCashMessageField> amendableFields = supplier

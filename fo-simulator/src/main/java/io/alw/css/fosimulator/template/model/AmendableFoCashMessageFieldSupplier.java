@@ -1,6 +1,8 @@
 package io.alw.css.fosimulator.template.model;
 
 import io.alw.css.fosimulator.template.MmTemplate;
+import io.alw.css.fosimulator.template.domain.CashLeg;
+import io.alw.css.fosimulator.template.domain.TradeContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,21 +52,21 @@ public sealed interface AmendableFoCashMessageFieldSupplier extends AmendableFoC
     }
 
     final class SupplierWithMessageSelector extends AmendableFoCashMessageFieldSupplierBase {
-        private final MessageContext msgCtx;
-        private final Function<MessageContext, List<? extends CashLeg>> amendmentSubjectSelector;
+        private final TradeContext trdCtx;
+        private final Function<TradeContext, List<? extends CashLeg>> amendmentSubjectSelector;
 
 
-        public SupplierWithMessageSelector(MessageContext msgCtx, Function<MessageContext, List<? extends CashLeg>> amendmentSubjectSelector) {
-            this.msgCtx = msgCtx;
+        public SupplierWithMessageSelector(TradeContext trdCtx, Function<TradeContext, List<? extends CashLeg>> amendmentSubjectSelector) {
+            this.trdCtx = trdCtx;
             this.amendmentSubjectSelector = amendmentSubjectSelector;
         }
 
-        public Function<MessageContext, List<? extends CashLeg>> amendmentSubjectSelector() {
+        public Function<TradeContext, List<? extends CashLeg>> amendmentSubjectSelector() {
             return amendmentSubjectSelector;
         }
 
-        public MessageContext msgCtx() {
-            return msgCtx;
+        public TradeContext trdCtx() {
+            return trdCtx;
         }
     }
 }

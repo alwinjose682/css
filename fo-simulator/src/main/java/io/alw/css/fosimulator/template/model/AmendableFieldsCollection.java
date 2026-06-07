@@ -1,5 +1,7 @@
 package io.alw.css.fosimulator.template.model;
 
+import io.alw.css.fosimulator.template.domain.CashLegType;
+
 import java.util.*;
 
 public final class AmendableFieldsCollection {

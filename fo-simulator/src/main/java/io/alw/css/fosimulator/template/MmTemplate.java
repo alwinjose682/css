@@ -2,7 +2,7 @@ package io.alw.css.fosimulator.template;
 
 import io.alw.css.domain.cashflow.*;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
-import io.alw.css.fosimulator.template.model.CashLegType;
+import io.alw.css.fosimulator.template.domain.*;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
@@ -25,17 +25,17 @@ import static io.alw.css.domain.cashflow.PayOrReceive.PAY;
 import static io.alw.css.domain.cashflow.PayOrReceive.RECEIVE;
 import static io.alw.css.domain.cashflow.RateType.FLOAT;
 import static io.alw.css.fosimulator.template.MmTemplateConstants.*;
-import static io.alw.css.fosimulator.template.model.CashLegType.*;
+import static io.alw.css.fosimulator.template.domain.CashLegType.*;
 
-public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMessageContext> {
+public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeContext> {
     // Message Store and Related
-    private final CashMessageStoreHelper<MmCashMessageContext> msgStoreHelper;
-    private final Predicate<MmCashMessageContext> amendableMsgSelectionCriteria = ;
+    private final CashMessageStoreHelper<MmTradeContext> msgStoreHelper;
+    private final Predicate<MmTradeContext> amendableMsgSelectionCriteria = ;
 
     public MmTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
         super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMsgTemplateProps);
 
-        CashMessageStore<MmCashMessageContext> msgStore = new InMemoryCashMessageStore<>();
+        CashMessageStore<MmTradeContext> msgStore = new InMemoryCashMessageStore<>();
         this.msgStoreHelper = new CashMessageStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
     }
 
@@ -43,11 +43,11 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
     @Override
     public MmTemplate withRootTemplateValues() {
         // Create MessageContext
-        MmCashMessageContext msgCtx = createMessageContext();
+        MmTradeContext trdCtx = createTradeContext();
         // Create Ids for PRINCIPAL, INTEREST and if applicable for MATURITY as well
-        Map<CashLegType, Ids> idsMap = createFirstVersionIds(msgCtx);
+        Map<CashLegType, Ids> idsMap = createFirstVersionIds(trdCtx);
         // Build PRINCIPAL leg of the MoneyMarket trade with base values
-        FoCashMessageBuilder bdr = getNewCashMsgBuilder(idsMap.get(MM_PRINCIPAL), msgCtx);
+        FoCashMessageBuilder bdr = getNewCashMsgBuilder(idsMap.get(MM_PRINCIPAL), trdCtx);
         // Set values specific to the PRINCIPAL leg
         bdr
                 .valueDate(msgTemplateHelper.getRndmValueDate(30))
@@ -56,34 +56,34 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
         ;
 
         // Set tradeLinks on the PRINCIPAL leg
-        MmCashLeg maturityLeg = msgCtx.maturityLeg();
-        InterestCashLeg interestLeg = msgCtx.interestLegs().getFirst();
+        MmCashLeg maturityLeg = trdCtx.maturityLeg();
+        InterestCashLeg interestLeg = trdCtx.interestLegs().getFirst();
 
         // IMPORTANT NOTE: The order here is important.
         // MaturityLeg must be built before InterestLeg because building InterestLeg requires maturityLegValueDate.
         // The lambdas added via [io.alw.datagen.template.AggregateTemplateBuilder#withGroupedItem(Supplier)] method will be executed strictly in the same order as they are inserted in the queue
         if (maturityLeg != null && interestLeg != null) {
-            buildMaturityAndInterestLeg(msgCtx, maturityLeg, idsMap.get(MM_MATURITY), interestLeg, idsMap.get(MM_INTEREST));
+            buildMaturityAndInterestLeg(trdCtx, maturityLeg, idsMap.get(MM_MATURITY), interestLeg, idsMap.get(MM_INTEREST));
         } else if (maturityLeg != null) {
-            this.withGroupedItem(maturityLeg::setCashMessage, () -> buildMaturityLeg(msgCtx, idsMap.get(MM_MATURITY)));
+            this.withGroupedItem(maturityLeg::setCashMessage, () -> buildMaturityLeg(trdCtx, idsMap.get(MM_MATURITY)));
         } else if (interestLeg != null) {
-            this.withGroupedItem(interestLeg::setCashMessage, () -> buildInterestLeg(msgCtx, idsMap.get(MM_INTEREST)));
+            this.withGroupedItem(interestLeg::setCashMessage, () -> buildInterestLeg(trdCtx, idsMap.get(MM_INTEREST)));
         }
 
         return this;
     }
 
     @Override
-    protected void buildAmendedMessage(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, MmCashMessageContext msgCtxForAmendment) {
+    protected void buildAmendedMessage(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, MmTradeContext trdCtxForAmendment) {
         switch (cyclicAmendableMmLegProvider.get()) {
             case MM_PRINCIPAL -> {
-                var msgAmendCtx = buildAmendmentContextFor(MM_PRINCIPAL, msgCtxForAmendment);
+                var msgAmendCtx = buildAmendmentContextFor(MM_PRINCIPAL, trdCtxForAmendment);
                 buildAmendedMessageFunc.accept(msgAmendCtx);
             }
             case MM_MATURITY -> {
-                MmCashLeg maturityLeg = msgCtxForAmendment.maturityLeg();
+                MmCashLeg maturityLeg = trdCtxForAmendment.maturityLeg();
                 if (maturityLeg != null && maturityLeg.cashMessage() != null) {
-                    var msgAmendCtx = buildAmendmentContextFor(MM_MATURITY, msgCtxForAmendment);
+                    var msgAmendCtx = buildAmendmentContextFor(MM_MATURITY, trdCtxForAmendment);
                     buildAmendedMessageFunc.accept(msgAmendCtx);
                 }
             }
@@ -92,15 +92,15 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
         }
     }
 
-    private CashMessageAmendmentContext buildAmendmentContextFor(CashLegType primaryAmendmentSubjectCashLegType, MmCashMessageContext msgCtx) {
-        MmCashLeg principalLeg = msgCtx.principalLeg();
-        MmCashLeg maturityLeg = msgCtx.maturityLeg(); // NOTE: MaturityLeg could be null for MM CALL trades
+    private CashMessageAmendmentContext buildAmendmentContextFor(CashLegType primaryAmendmentSubjectCashLegType, MmTradeContext trdCtx) {
+        MmCashLeg principalLeg = trdCtx.principalLeg();
+        MmCashLeg maturityLeg = trdCtx.maturityLeg(); // NOTE: MaturityLeg could be null for MM CALL trades
 
         Set<AmendableFoCashMessageFieldType> amendableFieldTypes = cyclicAmendableFoCashMessageFieldTypeProvider.get();
         var amendableFields = new AmendableFieldsCollection();
         // NOTE: To determine new amount for InterestLeg, the amended amount and amended valueDate of both *principalLeg* and *maturityLeg* are needed, although they may not be computed yet during execution
         // One of the `AmendableFoCashMessageFieldSupplier` type is used to lazily obtain the amendable fields after the amended principalLeg and maturityLeg are built.
-        var intLegAmndFieldSupplier = new AmendableFoCashMessageFieldSupplier.SupplierWithMessageSelector(msgCtx, givenMsgCtx -> ((MmCashMessageContext) givenMsgCtx).interestLegs().stream().filter(cl -> cl.cashMessage().valueDate().isAfter(msgTemplateHelper.currentDateForMsgTemplate())).toList());
+        var intLegAmndFieldSupplier = new AmendableFoCashMessageFieldSupplier.SupplierWithMessageSelector(trdCtx, givenTrdCtx -> ((MmTradeContext) givenTrdCtx).interestLegs().stream().filter(cl -> cl.cashMessage().valueDate().isAfter(msgTemplateHelper.currentDateForMsgTemplate())).toList());
         for (var ft : amendableFieldTypes) {
             switch (ft) {
                 case AMOUNT -> {
@@ -123,7 +123,7 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
                         // No adjustments not needed for MM_INTEREST with respect to valueDate change of principalLeg
 
                         // Get new valueDate for principalLeg and add to the collection
-                        var principalLegNewVd = MmAmendmentFieldValue.PrimarySubject.PrincipalLeg.forValueDate(principalLeg, msgTemplateHelper, msgCtx);
+                        var principalLegNewVd = MmAmendmentFieldValue.PrimarySubject.PrincipalLeg.forValueDate(principalLeg, msgTemplateHelper, trdCtx);
                         amendableFields.add(MM_PRINCIPAL, principalLegNewVd);
 
                         // Conditionally apply new valueDate for maturityLeg
@@ -180,19 +180,19 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
     /// IMPORTANT NOTE: The order here is important.
     /// MaturityLeg must be built before InterestLeg because building InterestLeg requires maturityLegValueDate.
     /// The lambdas added via [io.alw.datagen.template.AggregateTemplateBuilder#withGroupedItem] method will be executed strictly in the same order as they are inserted in the queue
-    private void buildMaturityAndInterestLeg(MmCashMessageContext msgCtx, MmCashLeg maturityLeg, Ids maturityLegIds, InterestCashLeg interestLeg, Ids interestLegIds) {
+    private void buildMaturityAndInterestLeg(MmTradeContext trdCtx, MmCashLeg maturityLeg, Ids maturityLegIds, InterestCashLeg interestLeg, Ids interestLegIds) {
         // 1. Add building function of MATURITY leg
-        this.withGroupedItem(maturityLeg::setCashMessage, () -> buildMaturityLeg(msgCtx, maturityLegIds));
+        this.withGroupedItem(maturityLeg::setCashMessage, () -> buildMaturityLeg(trdCtx, maturityLegIds));
         // 2. Add building function of INTEREST leg
-        this.withGroupedItem(interestLeg::setCashMessage, () -> buildInterestLeg(msgCtx, interestLegIds));
+        this.withGroupedItem(interestLeg::setCashMessage, () -> buildInterestLeg(trdCtx, interestLegIds));
     }
 
     /// NOTE: The 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
-    private FoCashMessageBuilder buildInterestLeg(MmCashMessageContext msgCtx, Ids interestLegIds) {
-        var principalLeg = msgCtx.principalLeg();
-        var maturityLeg = msgCtx.maturityLeg(); // NOTE: the 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
+    private FoCashMessageBuilder buildInterestLeg(MmTradeContext trdCtx, Ids interestLegIds) {
+        var principalLeg = trdCtx.principalLeg();
+        var maturityLeg = trdCtx.maturityLeg(); // NOTE: the 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
         var principalCashMsg = principalLeg.cashMessage();
-        InterestCashLeg interestLeg = msgCtx.interestLegs().getFirst();
+        InterestCashLeg interestLeg = trdCtx.interestLegs().getFirst();
 
         // Build the INTEREST leg
         var bdr = createBuilderFrom(principalCashMsg, MM_INTEREST)
@@ -295,9 +295,9 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
         };
     }
 
-    private FoCashMessageBuilder buildMaturityLeg(MmCashMessageContext msgCtx, Ids maturityLegIds) {
-        var principalMsg = msgCtx.principalLeg().cashMessage();
-        var maturityLegValueDate = determineMaturityLegValueDate(msgCtx.principalLeg());
+    private FoCashMessageBuilder buildMaturityLeg(MmTradeContext trdCtx, Ids maturityLegIds) {
+        var principalMsg = trdCtx.principalLeg().cashMessage();
+        var maturityLegValueDate = determineMaturityLegValueDate(trdCtx.principalLeg());
 
         // Build the MATURITY leg
         var bdr = createBuilderFrom(principalMsg, MM_MATURITY)
@@ -311,7 +311,7 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
                 .payOrReceive(principalMsg.payOrReceive() == PAY ? RECEIVE : PAY)
                 .amount(principalMsg.amount().negate());
 
-        if (msgCtx.principalLeg().rateType() == FLOAT && (VERSION_ONE != bdr.cashflowVersion() || VERSION_ONE != bdr.tradeVersion())) {
+        if (trdCtx.principalLeg().rateType() == FLOAT && (VERSION_ONE != bdr.cashflowVersion() || VERSION_ONE != bdr.tradeVersion())) {
             bdr.rate(cyclicRateProvider.get());
         }
 
@@ -322,11 +322,11 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
         return msgTemplateHelper.getRndmFutureValueDateRelativeTo(relativeCashLeg.cashMessage().valueDate(), false, 10);
     }
 
-    private Map<CashLegType, Ids> createFirstVersionIds(MmCashMessageContext msgCtx) {
+    private Map<CashLegType, Ids> createFirstVersionIds(MmTradeContext trdCtx) {
         var principalLegIds = CashMessageTemplateHelper.getIdsForVersionOneCashflowAndVersionOneTrade(MM_PRINCIPAL);
         var interestLegIds = CashMessageTemplateHelper.getIdsForVersionOneCashflowFromExistingTrade(MM_INTEREST, principalLegIds);
 
-        if (msgCtx.principalLeg().mmType() != CALL) {
+        if (trdCtx.principalLeg().mmType() != CALL) {
             var maturityLegIds = CashMessageTemplateHelper.getIdsForVersionOneCashflowFromExistingTrade(MM_MATURITY, principalLegIds);
             return Map.of(MM_PRINCIPAL, principalLegIds, MM_INTEREST, interestLegIds, MM_MATURITY, maturityLegIds);
         } else {
@@ -337,7 +337,7 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
     /// Interest Basis is always assigned a constant: InterestBasis.ThirtyBy360. Corresponding calculation for other basis types are not implemented.
     /// Interest cashflow should be generated based on [InterestPayoutFrequency]
     /// Returns message contexts for cashflow version 1. The method parameter `principalLegBuilder` must be of cashflow version 1
-    private MmCashMessageContext createMessageContext() {
+    private MmTradeContext createTradeContext() {
         var mmType = cyclicMmTypeProvider.get();
         var rateType = cyclicRateTypeProvider.get();
         var ipFrequency = cyclicIpFrequencyProvider.get();
@@ -350,25 +350,25 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
                 List<InterestCashLeg> interests = new ArrayList<>();
                 interests.add(new InterestCashLeg(TERM, MM_INTEREST, rateType, ipFrequency, basis));
 
-                yield new MmCashMessageContext(principal, interests, maturity);
+                yield new MmTradeContext(principal, interests, maturity);
             }
             case CALL -> {
                 var principal = new MmCashLeg(CALL, MM_PRINCIPAL, rateType, ipFrequency, basis);
                 List<InterestCashLeg> interests = new ArrayList<>();
                 interests.add(new InterestCashLeg(CALL, MM_INTEREST, rateType, ipFrequency, basis));
 
-                yield new MmCashMessageContext(principal, interests);
+                yield new MmTradeContext(principal, interests);
             }
         };
     }
 
     @Override
-    protected CashMessageStoreHelper<MmCashMessageContext> msgStoreHelper() {
+    protected CashMessageStoreHelper<MmTradeContext> msgStoreHelper() {
         return msgStoreHelper;
     }
 
     @Override
-    protected Predicate<MmCashMessageContext> amendableMsgSelectionCriteria() {
+    protected Predicate<MmTradeContext> amendableMsgSelectionCriteria() {
         return amendableMsgSelectionCriteria;
     }
 
@@ -387,10 +387,10 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmCashMes
             }
 
             private static final class PrincipalLeg {
-                private static AmendableFoCashMessageField.ValueDate forValueDate(CashLeg principalCashLeg, CashMessageTemplateHelper msgTemplateHelper, MmCashMessageContext msgCtx) {
+                private static AmendableFoCashMessageField.ValueDate forValueDate(CashLeg principalCashLeg, CashMessageTemplateHelper msgTemplateHelper, MmTradeContext trdCtx) {
                     var principalCashMsg = principalCashLeg.cashMessage();
                     var currentDate = msgTemplateHelper.currentDateForMsgTemplate();
-                    var maturityLeg = msgCtx.maturityLeg();
+                    var maturityLeg = trdCtx.maturityLeg();
                     final LocalDate maturityLegValueDate;
                     if (maturityLeg == null || maturityLeg.cashMessage() == null) {
                         maturityLegValueDate = principalCashMsg.valueDate().plusDays(msgTemplateHelper.currentDayForMsgTemplate() + 360);

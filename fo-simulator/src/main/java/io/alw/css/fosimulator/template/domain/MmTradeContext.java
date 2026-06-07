@@ -1,19 +1,19 @@
-package io.alw.css.fosimulator.template.model;
+package io.alw.css.fosimulator.template.domain;
 
 import io.alw.css.domain.cashflow.*;
 
 import java.util.List;
 
-public final class MmCashMessageContext implements MessageContext {
+public final class MmTradeContext implements TradeContext {
     private final MmCashLeg principalLeg;
     private MmCashLeg maturityLeg;
     private final List<InterestCashLeg> interestLegs;
 
-    public MmCashMessageContext(MmCashLeg principalLeg, List<InterestCashLeg> interestLegs) {
+    public MmTradeContext(MmCashLeg principalLeg, List<InterestCashLeg> interestLegs) {
         this(principalLeg, interestLegs, null);
     }
 
-    public MmCashMessageContext(MmCashLeg principalLeg, List<InterestCashLeg> interestLegs, MmCashLeg maturityLeg) {
+    public MmTradeContext(MmCashLeg principalLeg, List<InterestCashLeg> interestLegs, MmCashLeg maturityLeg) {
         this.principalLeg = principalLeg;
         this.interestLegs = interestLegs;
     }
@@ -29,7 +29,7 @@ public final class MmCashMessageContext implements MessageContext {
     }
 
     @Override
-    public <M extends MessageContext> List<FoCashMessage> mapToCashMessage(List<M> msgCtxs) {
+    public <M extends TradeContext> List<FoCashMessage> mapToCashMessage(List<M> trdCtxs) {
 
     }
 

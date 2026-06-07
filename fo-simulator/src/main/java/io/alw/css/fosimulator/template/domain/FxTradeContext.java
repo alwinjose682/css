@@ -1,10 +1,10 @@
-package io.alw.css.fosimulator.template.model;
+package io.alw.css.fosimulator.template.domain;
 
 import io.alw.css.domain.cashflow.FoCashMessage;
 
 import java.util.List;
 
-public final class FxCashMessageContext implements MessageContext {
+public final class FxTradeContext implements TradeContext {
     private FoCashMessage rootFoCashMessage;
 
     @Override
@@ -18,7 +18,7 @@ public final class FxCashMessageContext implements MessageContext {
     }
 
     @Override
-    public <M extends MessageContext> List<FoCashMessage> mapToCashMessage(List<M> msgCtxs) {
+    public <M extends TradeContext> List<FoCashMessage> mapToCashMessage(List<M> trdCtxs) {
 
     }
 }

@@ -3,8 +3,8 @@ package io.alw.css.fosimulator.template;
 import io.alw.css.domain.cashflow.MmTradeType;
 import io.alw.css.domain.cashflow.RateType;
 import io.alw.css.fosimulator.template.model.AmendableFoCashMessageFieldType;
-import io.alw.css.fosimulator.template.model.CashLegType;
-import io.alw.css.fosimulator.template.model.InterestPayoutFrequency;
+import io.alw.css.fosimulator.template.domain.CashLegType;
+import io.alw.css.fosimulator.template.domain.InterestPayoutFrequency;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
 
 import java.util.List;
@@ -15,9 +15,9 @@ import static io.alw.css.domain.cashflow.MmTradeType.CALL;
 import static io.alw.css.domain.cashflow.MmTradeType.TERM;
 import static io.alw.css.domain.cashflow.RateType.FIXED;
 import static io.alw.css.domain.cashflow.RateType.FLOAT;
-import static io.alw.css.fosimulator.template.model.CashLegType.MM_MATURITY;
-import static io.alw.css.fosimulator.template.model.CashLegType.MM_PRINCIPAL;
-import static io.alw.css.fosimulator.template.model.InterestPayoutFrequency.*;
+import static io.alw.css.fosimulator.template.domain.CashLegType.MM_MATURITY;
+import static io.alw.css.fosimulator.template.domain.CashLegType.MM_PRINCIPAL;
+import static io.alw.css.fosimulator.template.domain.InterestPayoutFrequency.*;
 import static io.alw.css.fosimulator.template.model.AmendableFoCashMessageFieldType.*;
 
 public final class MmTemplateConstants {

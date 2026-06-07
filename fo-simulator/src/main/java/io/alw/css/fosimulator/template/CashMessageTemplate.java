@@ -2,13 +2,13 @@ package io.alw.css.fosimulator.template;
 
 import io.alw.css.domain.cashflow.*;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
-import io.alw.css.fosimulator.template.model.CashLegType;
+import io.alw.css.fosimulator.template.domain.CashLegType;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.template.model.Ids;
-import io.alw.css.fosimulator.template.model.MessageContext;
+import io.alw.css.fosimulator.template.domain.TradeContext;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
 import io.alw.datagen.template.AggregateTemplateBuilder;
 
@@ -24,15 +24,15 @@ import java.util.random.RandomGenerator;
 ///
 /// [CashMessageTemplate] instances are both a trade type template and a supplier of the build output of the template
 /// Each instance of this class is supposed to be exclusive for a single thread
-sealed abstract class CashMessageTemplate<M extends MessageContext>
+sealed abstract class CashMessageTemplate<M extends TradeContext>
         extends AggregateTemplateBuilder<M, FoCashMessageBuilder, FoCashMessage>
         implements Supplier<List<FoCashMessage>>
         permits CashMessageTemplateWithDataStore {
 
     /// Variable values for each template build. These values remain un-modified for each template build.
-    /// After each build of the template, the [MessageContext] (msgCtx) and [FoCashMessageBuilder] (`bdr`) references are just assigned with new instances
+    /// After each build of the template, the [TradeContext] (trdCtx) and [FoCashMessageBuilder] (`bdr`) references are just assigned with new instances
     // Message Context and FoCashMessage builder
-    private M msgCtx;
+    private M trdCtx;
     private FoCashMessageBuilder bdr;
 
     // Constant values for each instance of CashMessageTemplate
@@ -71,7 +71,7 @@ sealed abstract class CashMessageTemplate<M extends MessageContext>
 
     /// Build the grouped or related cash message associated with the cashMessage template being built
     /// tradeLinks of grouped and related items are set when creating a cashMessage builder via [CashMessageTemplate#createBuilderFrom(FoCashMessage, String)]
-    /// The resultant [FoCashMessage] is already associated with the [MessageContext] in prior steps(using callbacks when creating new trade, amendments and new grouped cashMessages)
+    /// The resultant [FoCashMessage] is already associated with the [TradeContext] in prior steps(using callbacks when creating new trade, amendments and new grouped cashMessages)
     @Override
     protected FoCashMessage buildGroupedOrRelatedItem(FoCashMessageBuilder bdr) {
         return bdr.build();
@@ -80,11 +80,11 @@ sealed abstract class CashMessageTemplate<M extends MessageContext>
     /// Builds the cashMessage template
     ///
     /// **tradeLinks of root FoCashMessage**:
-    /// tradeLinks of rootFoCashMessage are set when creating a cashMessage builder with the default values via the method: [CashMessageTemplate#getNewCashMsgBuilder(Ids, MessageContext)]
+    /// tradeLinks of rootFoCashMessage are set when creating a cashMessage builder with the default values via the method: [CashMessageTemplate#getNewCashMsgBuilder(Ids, TradeContext)]
     @Override
     public M buildRootTemplate() {
-        msgCtx.setRootFoCashMessage(bdr.build());
-        return msgCtx;
+        trdCtx.setRootFoCashMessage(bdr.build());
+        return trdCtx;
     }
 
     /// This method ensures that the same day is used at all points of building the template.
@@ -97,10 +97,10 @@ sealed abstract class CashMessageTemplate<M extends MessageContext>
     /// This method is used to create root [FoCashMessageBuilder]. The builder for grouped or related items are created using [CashMessageTemplate#createBuilderFrom(FoCashMessage, String)]
     /// NOTE: New [CashMessageTemplate] instances are not created by this method.
     /// Instead, the existing [FoCashMessageBuilder] (`bdr`) is just replaced with a new one and then new values are assigned.
-    protected FoCashMessageBuilder getNewCashMsgBuilder(Ids rooCashMessageIds, M msgCtx) {
+    protected FoCashMessageBuilder getNewCashMsgBuilder(Ids rooCashMessageIds, M trdCtx) {
         msgTemplateHelper.incrementCounter();
         this.bdr = FoCashMessageBuilder.builder();
-        this.msgCtx = msgCtx;
+        this.trdCtx = trdCtx;
 
         final String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionType();
         bdr
@@ -131,12 +131,12 @@ sealed abstract class CashMessageTemplate<M extends MessageContext>
         return bdr;
     }
 
-    /// This method is used to create [FoCashMessageBuilder] for grouped or related cashMessages. The root [FoCashMessageBuilder] is created using [CashMessageTemplate#getNewCashMsgBuilder(Ids, MessageContext)]
+    /// This method is used to create [FoCashMessageBuilder] for grouped or related cashMessages. The root [FoCashMessageBuilder] is created using [CashMessageTemplate#getNewCashMsgBuilder(Ids, TradeContext)]
     /// TradeLink is also set in this method using the linkType parameter. Further build steps can add more tradeLinks to the list if needed
     ///
     /// NOTE: The [CashMessageTemplate#counter] is not incremented by this method
     protected FoCashMessageBuilder createBuilderFrom(FoCashMessage cashMsg, CashLegType linkType) {
-        FoCashMessage rootFoCashMessage = msgCtx.rootFoCashMessage();
+        FoCashMessage rootFoCashMessage = trdCtx.rootFoCashMessage();
         TradeLink tradeLink = TradeLinkBuilder.TradeLink(
                 linkType.name, null,
                 rootFoCashMessage.cashflowID(), rootFoCashMessage.cashflowVersion(),

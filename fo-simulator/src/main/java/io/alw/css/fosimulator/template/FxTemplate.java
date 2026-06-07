@@ -10,7 +10,7 @@ import io.alw.css.fosimulator.store.CashMessageStore;
 import io.alw.css.fosimulator.store.InMemoryCashMessageStore;
 import io.alw.css.fosimulator.template.model.CashMessageAmendmentContext;
 import io.alw.css.fosimulator.template.model.Ids;
-import io.alw.css.fosimulator.template.model.FxCashMessageContext;
+import io.alw.css.fosimulator.template.domain.FxTradeContext;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -21,18 +21,18 @@ import java.util.random.RandomGenerator;
 
 import static io.alw.css.domain.cashflow.TradeEventAction.*;
 import static io.alw.css.domain.cashflow.TradeEventType.*;
-import static io.alw.css.fosimulator.template.model.CashLegType.*;
+import static io.alw.css.fosimulator.template.domain.CashLegType.*;
 
-public final class FxTemplate extends CashMessageTemplateWithDataStore<FxCashMessageContext> {
+public final class FxTemplate extends CashMessageTemplateWithDataStore<FxTradeContext> {
     // Message Store and Related
-    private final CashMessageStoreHelper<FxCashMessageContext> msgStoreHelper;
-    private final Predicate<FxCashMessageContext> amendableMsgSelectionCriteria = msg -> msg.tradeEventType() != TradeEventType.CANCEL
+    private final CashMessageStoreHelper<FxTradeContext> msgStoreHelper;
+    private final Predicate<FxTradeContext> amendableMsgSelectionCriteria = msg -> msg.tradeEventType() != TradeEventType.CANCEL
             && (msg.cashflowVersion() + msg.tradeVersion() <= msgTemplateHelper.cashMsgTemplateProps.maxPermittedAmendments() && msg.cashflowID() % 10 + msg.tradeID() % 10 > 10 /* To choose random cashflows*/);
 
     public FxTemplate(Entity entity, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMessageTemplateProperties) {
         super(entity, TradeType.FX, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
 
-        CashMessageStore<FxCashMessageContext> msgStore = new InMemoryCashMessageStore<>();
+        CashMessageStore<FxTradeContext> msgStore = new InMemoryCashMessageStore<>();
         this.msgStoreHelper = new CashMessageStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
     }
 
@@ -43,7 +43,7 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxCashMes
         var fxSide1Ids = CashMessageTemplateHelper.getIdsForVersionOneCashflowAndVersionOneTrade(FX_SIDE1);
         var fxSide2Ids = CashMessageTemplateHelper.getIdsForVersionOneCashflowFromExistingTrade(FX_SIDE2, fxSide1Ids);
         // Create message context and all tradeLinks
-        var fxSide1Ctx = new FxCashMessageContext();
+        var fxSide1Ctx = new FxTradeContext();
         // Create FoCashMessage builder for new template with default base values
         FoCashMessageBuilder bdr = getNewCashMsgBuilder(fxSide1Ids, fxSide1Ctx);
         // Set the values specific to the FX trade being built
@@ -59,7 +59,7 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxCashMes
     }
 
     /// Builds the counter side(side 2) of the fx message
-    private FoCashMessageBuilder buildFxSide2(FxCashMessageContext fxSide1Ctx, Ids ids) {
+    private FoCashMessageBuilder buildFxSide2(FxTradeContext fxSide1Ctx, Ids ids) {
         var fxSide1Msg = fxSide1Ctx.rootFoCashMessage();
         String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(fxSide1Msg.counterpartyCode());
         Entity entity = refDataService.entityOtherThan(rndm, fxSide1Msg.entityCode());
@@ -112,7 +112,7 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxCashMes
     }
 
     @Override
-    protected void buildAmendedMessage(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, List<FxCashMessageContext> msgCtxsForAmendment) {
+    protected void buildAmendedMessage(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, List<FxTradeContext> trdCtxsForAmendment) {
 
         //New VD
         msgTemplateHelper.getRndmValueDate();
@@ -127,12 +127,12 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxCashMes
     }
 
     @Override
-    protected CashMessageStoreHelper<FxCashMessageContext> msgStoreHelper() {
+    protected CashMessageStoreHelper<FxTradeContext> msgStoreHelper() {
         return msgStoreHelper;
     }
 
     @Override
-    protected Predicate<FxCashMessageContext> amendableMsgSelectionCriteria() {
+    protected Predicate<FxTradeContext> amendableMsgSelectionCriteria() {
         return amendableMsgSelectionCriteria;
     }
 }
