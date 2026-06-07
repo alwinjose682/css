@@ -14,8 +14,19 @@ public final class MmTradeContext implements TradeContext {
     }
 
     public MmTradeContext(MmCashLeg principalLeg, List<InterestCashLeg> interestLegs, MmCashLeg maturityLeg) {
+        if (interestLegs == null) {
+            throw new RuntimeException("Must have at least one interest leg to construct MmTradeContext");
+        }
+        // Assign this TradeContext reference to all the cashLegs
+        principalLeg.setTradeContext(this);
+        interestLegs.forEach(il -> il.setTradeContext(this));
+        if (maturityLeg != null) {
+            maturityLeg.setTradeContext(this);
+        }
+
         this.principalLeg = principalLeg;
         this.interestLegs = interestLegs;
+        this.maturityLeg = maturityLeg;
     }
 
     @Override

@@ -39,7 +39,7 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
         this.msgStoreHelper = new CashMessageStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
     }
 
-    /// Build new template for MM cashflow. A new MM trade can have 1 to 3 cashflows depending on whether its a TERM or CALL and depending on the interest cashflow
+    /// Build new template for MM cashflow. A new MM trade can have 1 to 3 cashMessages depending on whether its a TERM or CALL and depending on the interest cashflow
     @Override
     public MmTemplate withRootTemplateValues() {
         // Create MessageContext
@@ -47,7 +47,7 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
         // Create Ids for PRINCIPAL, INTEREST and if applicable for MATURITY as well
         Map<CashLegType, Ids> idsMap = createFirstVersionIds(trdCtx);
         // Build PRINCIPAL leg of the MoneyMarket trade with base values
-        FoCashMessageBuilder bdr = getNewCashMsgBuilder(idsMap.get(MM_PRINCIPAL), trdCtx);
+        FoCashMessageBuilder bdr = getBaseCashMsgBuilder(idsMap.get(MM_PRINCIPAL), trdCtx);
         // Set values specific to the PRINCIPAL leg
         bdr
                 .valueDate(msgTemplateHelper.getRndmValueDate(30))
@@ -77,13 +77,13 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
     protected void buildAmendedMessage(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, MmTradeContext trdCtxForAmendment) {
         switch (cyclicAmendableMmLegProvider.get()) {
             case MM_PRINCIPAL -> {
-                var msgAmendCtx = buildAmendmentContextFor(MM_PRINCIPAL, trdCtxForAmendment);
+                var msgAmendCtx = buildAmendedMessageStep2(trdCtxForAmendment.principalLeg(), trdCtxForAmendment);
                 buildAmendedMessageFunc.accept(msgAmendCtx);
             }
             case MM_MATURITY -> {
                 MmCashLeg maturityLeg = trdCtxForAmendment.maturityLeg();
                 if (maturityLeg != null && maturityLeg.cashMessage() != null) {
-                    var msgAmendCtx = buildAmendmentContextFor(MM_MATURITY, trdCtxForAmendment);
+                    var msgAmendCtx = buildAmendedMessageStep2(maturityLeg, trdCtxForAmendment);
                     buildAmendedMessageFunc.accept(msgAmendCtx);
                 }
             }
@@ -92,7 +92,31 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
         }
     }
 
-    private CashMessageAmendmentContext buildAmendmentContextFor(CashLegType primaryAmendmentSubjectCashLegType, MmTradeContext trdCtx) {
+    private CashMessageAmendmentContext buildAmendedMessageStep2(MmCashLeg primaryAmendmentSubject, MmTradeContext trdCtxForAmendment) {
+        var primaryAmndSubMsg = trdCtxForAmendment.principalLeg().cashMessage();
+        var nextTradeEventAction = getNextEventActionPair(primaryAmndSubMsg.tradeEventType(), primaryAmndSubMsg.tradeEventAction());
+        var nextEventType = nextTradeEventAction.event();
+        return switch (nextEventType) {
+            // Common trade amend events applicable for all trades
+            case CANCEL -> buildAmendmentContextForCancelEvent(nextTradeEventAction);
+            case AMEND, REBOOK -> buildAmendmentContextForCommonAmendEvents(primaryAmendmentSubject.cashLegType(), trdCtxForAmendment, nextTradeEventAction);
+
+            case BOOK_MOVE -> throw new RuntimeException("Trade amendment for BOOK_MOVE event is not implemented yet");
+            // Trade specific amendments
+            case TERMINATE, ROLL, EXERCISE, CORRECTION, KNOCK_OUT, EXPIRE, FIX, UN_FIX, INTEREST_ACTION, MATURE ->
+                    throw new RuntimeException("Trade amendment trade specific event: " + nextEventType + " are not implemented yet");
+            case NEW_TRADE -> throw new RuntimeException("Invalid selection of next trade event and action. NEW_TRADE is not amendment");
+        };
+    }
+
+    /// NOTE: This method is used to handle only cancel event, [TradeEventType#CANCEL], for both [CashLegType#MM_PRINCIPAL] and [CashLegType#MM_MATURITY]
+    private CashMessageAmendmentContext buildAmendmentContextForCancelEvent(TradeEventActionPair nextTradeEventAction) {
+        // No field need to be amended because this is trade cancellation
+        return new CashMessageAmendmentContext(nextTradeEventAction);
+    }
+
+    /// NOTE: This method is used to handle common amendment events, [TradeEventType#AMEND] and [TradeEventType#REBOOK], for both [CashLegType#MM_PRINCIPAL] and [CashLegType#MM_MATURITY]
+    private CashMessageAmendmentContext buildAmendmentContextForCommonAmendEvents(CashLegType primaryAmendmentSubjectCashLegType, MmTradeContext trdCtx, TradeEventActionPair nextTradeEventAction) {
         MmCashLeg principalLeg = trdCtx.principalLeg();
         MmCashLeg maturityLeg = trdCtx.maturityLeg(); // NOTE: MaturityLeg could be null for MM CALL trades
 
@@ -156,9 +180,6 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
             }
         }
 
-        var primaryAmndSubCashMsg = principalLeg.cashMessage();
-        var nextTradeEventAction = getNextEventActionPair(primaryAmndSubCashMsg.tradeEventType(), primaryAmndSubCashMsg.tradeEventAction());
-
         // 1. Amendment context for PrincipalLeg(primary amendment subject)
         var primaryAmndSubCtx = new AmendmentSubjectContextEager(principalLeg, principalLeg::setCashMessage, Collections.unmodifiableSet(amendableFields.get(MM_PRINCIPAL)));
         // 2. Amendment context for MaturityLeg
@@ -195,7 +216,7 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
         InterestCashLeg interestLeg = trdCtx.interestLegs().getFirst();
 
         // Build the INTEREST leg
-        var bdr = createBuilderFrom(principalCashMsg, MM_INTEREST)
+        var bdr = createBuilderFrom(principalLeg, MM_INTEREST)
                 // Id and version of INTEREST leg was already determined when the PRINCIPAL was created
                 .cashflowID(interestLegIds.cashflowID())
                 .cashflowVersion(interestLegIds.cashflowVersion())
@@ -296,11 +317,12 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
     }
 
     private FoCashMessageBuilder buildMaturityLeg(MmTradeContext trdCtx, Ids maturityLegIds) {
-        var principalMsg = trdCtx.principalLeg().cashMessage();
-        var maturityLegValueDate = determineMaturityLegValueDate(trdCtx.principalLeg());
+        var principalLeg = trdCtx.principalLeg();
+        var principalMsg = principalLeg.cashMessage();
+        var maturityLegValueDate = determineMaturityLegValueDate(principalLeg);
 
         // Build the MATURITY leg
-        var bdr = createBuilderFrom(principalMsg, MM_MATURITY)
+        var bdr = createBuilderFrom(principalLeg, MM_MATURITY)
                 // Id and version of MATURITY leg was already determined when the PRINCIPAL was created
                 .cashflowID(maturityLegIds.cashflowID())
                 .cashflowVersion(maturityLegIds.cashflowVersion())
@@ -311,7 +333,7 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
                 .payOrReceive(principalMsg.payOrReceive() == PAY ? RECEIVE : PAY)
                 .amount(principalMsg.amount().negate());
 
-        if (trdCtx.principalLeg().rateType() == FLOAT && (VERSION_ONE != bdr.cashflowVersion() || VERSION_ONE != bdr.tradeVersion())) {
+        if (principalLeg.rateType() == FLOAT && (VERSION_ONE != bdr.cashflowVersion() || VERSION_ONE != bdr.tradeVersion())) {
             bdr.rate(cyclicRateProvider.get());
         }
 
@@ -343,22 +365,17 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
         var ipFrequency = cyclicIpFrequencyProvider.get();
         var basis = InterestBasis.ThirtyBy360;
 
+        var principal = new MmCashLeg(mmType, MM_PRINCIPAL, rateType, ipFrequency, basis);
+        var interest = new InterestCashLeg(mmType, MM_INTEREST, rateType, ipFrequency, basis);
+        var interests = new ArrayList<InterestCashLeg>();
+        interests.add(interest);
+
         return switch (mmType) {
             case TERM -> {
-                var principal = new MmCashLeg(TERM, MM_PRINCIPAL, rateType, ipFrequency, basis);
                 var maturity = new MmCashLeg(TERM, MM_MATURITY, rateType, ipFrequency, basis);
-                List<InterestCashLeg> interests = new ArrayList<>();
-                interests.add(new InterestCashLeg(TERM, MM_INTEREST, rateType, ipFrequency, basis));
-
                 yield new MmTradeContext(principal, interests, maturity);
             }
-            case CALL -> {
-                var principal = new MmCashLeg(CALL, MM_PRINCIPAL, rateType, ipFrequency, basis);
-                List<InterestCashLeg> interests = new ArrayList<>();
-                interests.add(new InterestCashLeg(CALL, MM_INTEREST, rateType, ipFrequency, basis));
-
-                yield new MmTradeContext(principal, interests);
-            }
+            case CALL -> new MmTradeContext(principal, interests);
         };
     }
 

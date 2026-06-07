@@ -2,6 +2,7 @@ package io.alw.css.fosimulator.template;
 
 import io.alw.css.domain.cashflow.*;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
+import io.alw.css.fosimulator.template.domain.CashLeg;
 import io.alw.css.fosimulator.template.domain.CashLegType;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
@@ -87,9 +88,9 @@ sealed abstract class CashMessageTemplate<M extends TradeContext>
         return trdCtx;
     }
 
-    /// This method ensures that the same day is used at all points of building the template.
-    /// This method is the starting point to build a template
-    protected CashMessageTemplate<M> newTemplateBuilder() {
+    /// This method is the starting point to start a new build cycle
+    /// This method ensures that the same [DayTicker#day()] is used at all points of building multiple cash messages in current cycle
+    protected CashMessageTemplate<M> newBuildCycle() {
         msgTemplateHelper.setDayForMsgTemplate(dayTicker.day());
         return this;
     }
@@ -97,7 +98,7 @@ sealed abstract class CashMessageTemplate<M extends TradeContext>
     /// This method is used to create root [FoCashMessageBuilder]. The builder for grouped or related items are created using [CashMessageTemplate#createBuilderFrom(FoCashMessage, String)]
     /// NOTE: New [CashMessageTemplate] instances are not created by this method.
     /// Instead, the existing [FoCashMessageBuilder] (`bdr`) is just replaced with a new one and then new values are assigned.
-    protected FoCashMessageBuilder getNewCashMsgBuilder(Ids rooCashMessageIds, M trdCtx) {
+    protected FoCashMessageBuilder getBaseCashMsgBuilder(Ids rooCashMessageIds, M trdCtx) {
         msgTemplateHelper.incrementCounter();
         this.bdr = FoCashMessageBuilder.builder();
         this.trdCtx = trdCtx;
@@ -131,12 +132,21 @@ sealed abstract class CashMessageTemplate<M extends TradeContext>
         return bdr;
     }
 
-    /// This method is used to create [FoCashMessageBuilder] for grouped or related cashMessages. The root [FoCashMessageBuilder] is created using [CashMessageTemplate#getNewCashMsgBuilder(Ids, TradeContext)]
-    /// TradeLink is also set in this method using the linkType parameter. Further build steps can add more tradeLinks to the list if needed
+    /// see {@link CashMessageTemplate#createBuilderFrom(FoCashMessage, FoCashMessage, CashLegType)}
+    protected FoCashMessageBuilder createBuilderFrom(CashLeg cashLeg, CashLegType linkType) {
+        FoCashMessage referenceFoCashMessage = cashLeg.cashMessage();
+        FoCashMessage rootFoCashMessage = cashLeg.tradeContext().rootFoCashMessage();
+
+        return createBuilderFrom(referenceFoCashMessage, rootFoCashMessage, linkType);
+    }
+
+    /// This method is used to create [FoCashMessageBuilder] for grouped or related cashMessages.
+    /// TradeLink is also assigned in this method using the `linkType` parameter.
+    /// IMPORTANT: The `linkType` parameter must be the [CashLegType] of the new cashMessage that is created from the `referenceFoCashMessage`
+    /// Further build steps can add more tradeLinks to the list if needed
     ///
-    /// NOTE: The [CashMessageTemplate#counter] is not incremented by this method
-    protected FoCashMessageBuilder createBuilderFrom(FoCashMessage cashMsg, CashLegType linkType) {
-        FoCashMessage rootFoCashMessage = trdCtx.rootFoCashMessage();
+    /// NOTE: The [CashMessageTemplateHelper#counter] is NOTE incremented by this method
+    protected FoCashMessageBuilder createBuilderFrom(FoCashMessage referenceFoCashMessage, FoCashMessage rootFoCashMessage, CashLegType linkType) {
         TradeLink tradeLink = TradeLinkBuilder.TradeLink(
                 linkType.name, null,
                 rootFoCashMessage.cashflowID(), rootFoCashMessage.cashflowVersion(),
@@ -146,7 +156,7 @@ sealed abstract class CashMessageTemplate<M extends TradeContext>
         tradeLinkList.add(tradeLink);
 
         return FoCashMessageBuilder
-                .builder(cashMsg)
+                .builder(referenceFoCashMessage)
                 .tradeLinks(tradeLinkList);
     }
 

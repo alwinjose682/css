@@ -11,6 +11,7 @@ public sealed class MmCashLeg implements CashLeg, MmMetadata permits InterestCas
     private final InterestPayoutFrequency ipFrequency;
     private final InterestBasis interestBasis;
     private FoCashMessage cashMessage;
+    private TradeContext trdCtx;
 
     public MmCashLeg(MmTradeType mmTradeType, CashLegType mmLegType, RateType rateType, InterestPayoutFrequency ipFrequency, InterestBasis interestBasis) {
         this.mmTradeType = mmTradeType;
@@ -53,5 +54,18 @@ public sealed class MmCashLeg implements CashLeg, MmMetadata permits InterestCas
     @Override
     public void setCashMessage(FoCashMessage cashMessage) {
         this.cashMessage = cashMessage;
+    }
+
+    @Override
+    public TradeContext tradeContext() {
+        return trdCtx;
+    }
+
+    @Override
+    public void setTradeContext(TradeContext trdCtx) {
+        if (this.trdCtx != null) {
+            throw new RuntimeException("Reference to TradeContext can be set only once");
+        }
+        this.trdCtx = trdCtx;
     }
 }

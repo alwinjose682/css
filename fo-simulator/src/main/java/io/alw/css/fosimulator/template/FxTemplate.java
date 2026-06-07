@@ -14,7 +14,6 @@ import io.alw.css.fosimulator.template.domain.FxTradeContext;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
@@ -45,7 +44,7 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxTradeCo
         // Create message context and all tradeLinks
         var fxSide1Ctx = new FxTradeContext();
         // Create FoCashMessage builder for new template with default base values
-        FoCashMessageBuilder bdr = getNewCashMsgBuilder(fxSide1Ids, fxSide1Ctx);
+        FoCashMessageBuilder bdr = getBaseCashMsgBuilder(fxSide1Ids, fxSide1Ctx);
         // Set the values specific to the FX trade being built
         bdr
                 .valueDate(msgTemplateHelper.getRndmValueDate(50))
@@ -66,7 +65,7 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxTradeCo
         String entityCode = entity.entityCode();
         String currCode = entity.currCode();
 
-        return createBuilderFrom(fxSide1Msg, FX_SIDE2)
+        return createBuilderFrom(fxSide1Msg, fxSide1Msg, FX_SIDE2)
                 // Id and version of fxSide2 was already determined when fxSide1 was created
                 .cashflowID(ids.cashflowID())
                 .cashflowVersion(ids.cashflowVersion())
@@ -112,7 +111,8 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxTradeCo
     }
 
     @Override
-    protected void buildAmendedMessage(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, List<FxTradeContext> trdCtxsForAmendment) {
+    protected void buildAmendedMessage(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, FxTradeContext trdCtxForAmendment) {
+        //TODO: Pending implementation
 
         //New VD
         msgTemplateHelper.getRndmValueDate();
@@ -123,7 +123,6 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxTradeCo
         // NOTE: Here, it is required to get a counterpartyCode that is not used by 1) the current cashMessage being amended and 2) the counter side cashMessage of the current cashMessage
         // But, counterpartyCode of point 2 above is not available handy and hence there is a risk that the counterpartyCode used by counter side cashMessage may be re-used.
         String newCounterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(bdr.counterpartyCode());
-
     }
 
     @Override
