@@ -28,7 +28,7 @@ import java.util.random.RandomGenerator;
 sealed abstract class CashMessageTemplate<M extends TradeContext>
         extends AggregateTemplateBuilder<M, FoCashMessageBuilder, FoCashMessage>
         implements Supplier<List<FoCashMessage>>
-        permits CashMessageTemplateWithDataStore {
+        permits CashMessageAmendmentTemplate {
 
     /// Variable values for each template build. These values remain un-modified for each template build.
     /// After each build of the template, the [TradeContext] (trdCtx) and [FoCashMessageBuilder] (`bdr`) references are just assigned with new instances

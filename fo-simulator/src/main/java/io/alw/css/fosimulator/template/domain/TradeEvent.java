@@ -9,9 +9,9 @@ public sealed interface TradeEvent
     int hi();
     int lo();
 
-    record NEW_TRADE(int hi, int lo) implements TradeEvent {}
-    record AMEND    (int hi, int lo) implements TradeEvent {}
-    record CANCEL   (int hi, int lo) implements TradeEvent {}
-    record REBOOK   (int hi, int lo) implements TradeEvent {}
-    record BOOK_MOVE(int hi, int lo) implements TradeEvent {}
+    record NEW_TRADE(int hi, int lo, TradeEventType standardTradeEventType) implements TradeEvent {}
+    record AMEND    (int hi, int lo, TradeEventType standardTradeEventType) implements TradeEvent {}
+    record CANCEL   (int hi, int lo, TradeEventType standardTradeEventType) implements TradeEvent {}
+    record REBOOK   (int hi, int lo, TradeEventType standardTradeEventType) implements TradeEvent {}
+    record BOOK_MOVE(int hi, int lo, TradeEventType standardTradeEventType) implements TradeEvent {}
 }

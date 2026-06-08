@@ -26,7 +26,7 @@ import static io.alw.css.domain.cashflow.RateType.FLOAT;
 import static io.alw.css.fosimulator.template.MmTemplateConstants.*;
 import static io.alw.css.fosimulator.template.domain.CashLegType.*;
 
-public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeContext> {
+public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContext> {
     private final CashMessageStoreHelper<MmTradeContext> msgStoreHelper;
 
     public MmTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
@@ -105,14 +105,13 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
         var nextEventType = nextTradeEventAction.event();
         return switch (nextEventType) {
             // Common trade amend events applicable for all trades
-            case CANCEL -> buildAmendmentContextForCancelEvent(nextTradeEventAction);
             case AMEND, REBOOK -> buildAmendmentContextForCommonAmendEvents(primaryAmendmentSubject.cashLegType(), trdCtxForAmendment, nextTradeEventAction);
-
+            case CANCEL -> buildAmendmentContextForCancelEvent(nextTradeEventAction);
             case BOOK_MOVE -> throw new RuntimeException("Trade amendment for BOOK_MOVE event is not implemented yet");
-            // Trade specific amendments
+            // Trade specific amendments are not permitted
             case TERMINATE, ROLL, EXERCISE, CORRECTION, KNOCK_OUT, EXPIRE, FIX, UN_FIX, INTEREST_ACTION, MATURE ->
-                    throw new RuntimeException("Trade amendment trade specific event: " + nextEventType + " are not implemented yet");
-            case NEW_TRADE -> throw new RuntimeException("Invalid selection of next trade event and action. NEW_TRADE is not amendment");
+                    throw new RuntimeException("Invalid trade event and action. Amendment for trade specific event: " + nextEventType + " is not permitted");
+            case NEW_TRADE -> throw new RuntimeException("Invalid trade event and action. NEW_TRADE is not amendment");
         };
     }
 
@@ -188,7 +187,7 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
         }
 
         // 1. Amendment context for PrincipalLeg(primary amendment subject)
-        var primaryAmndSubCtx = new AmendmentSubjectContextEager(principalLeg, principalLeg::setCashMessage, Collections.unmodifiableSet(amendableFields.get(MM_PRINCIPAL)));
+        var primaryAmndSubCtx = new AmendmentSubjectContextEager(principalLeg.cashLegType(), principalLeg.cashMessage(), principalLeg::setCashMessage, amendableFields.get(MM_PRINCIPAL));
         // 2. Amendment context for MaturityLeg
         var maturityAmndSubCtx = new AmendmentSubjectContextLazy(cl -> cl::setCashMessage, amendableFields.get(MM_MATURITY));
         // 3. Amendment context for InterestLegs
@@ -347,11 +346,11 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
     }
 
     private Map<CashLegType, Ids> createFirstVersionIds(MmTradeContext trdCtx) {
-        var principalLegIds = CashMessageTemplateHelper.getIdsForVersionOneCashflowAndVersionOneTrade(MM_PRINCIPAL);
-        var interestLegIds = CashMessageTemplateHelper.getIdsForVersionOneCashflowFromExistingTrade(MM_INTEREST, principalLegIds);
+        var principalLegIds = CashMessageTemplateHelper.getNewTradeIds(MM_PRINCIPAL);
+        var interestLegIds = CashMessageTemplateHelper.getNewCashMsgIdsFromExistingTrade(MM_INTEREST, principalLegIds);
 
         if (trdCtx.rootFoCashMessage().tradeType() != TradeType.MM_CALL) {
-            var maturityLegIds = CashMessageTemplateHelper.getIdsForVersionOneCashflowFromExistingTrade(MM_MATURITY, principalLegIds);
+            var maturityLegIds = CashMessageTemplateHelper.getNewCashMsgIdsFromExistingTrade(MM_MATURITY, principalLegIds);
             return Map.of(MM_PRINCIPAL, principalLegIds, MM_INTEREST, interestLegIds, MM_MATURITY, maturityLegIds);
         } else {
             return Map.of(MM_PRINCIPAL, principalLegIds, MM_INTEREST, interestLegIds);

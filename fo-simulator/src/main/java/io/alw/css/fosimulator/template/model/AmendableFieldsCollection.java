@@ -22,6 +22,6 @@ public final class AmendableFieldsCollection {
     }
 
     public Set<AmendableFoCashMessageField> get(CashLegType type) {
-        return amendableFields.get(type);
+        return Collections.unmodifiableSet(amendableFields.get(type));
     }
 }

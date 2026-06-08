@@ -40,12 +40,14 @@ public final class CashMessageTemplateHelper implements CountAware {
         this.counter = 0L;
     }
 
-    static Ids getIdsForVersionOneCashflowAndVersionOneTrade(CashLegType cashLegType) {
+    /// Returns [Ids] for version 1 cashflow and version 1 trade. ie; for a new trade
+    static Ids getNewTradeIds(CashLegType cashLegType) {
         var idProvider = IdProvider.singleton();
         return new Ids(cashLegType, idProvider.nextCashflowId(), VERSION_ONE, idProvider.nextTradeId(), VERSION_ONE);
     }
 
-    static Ids getIdsForVersionOneCashflowFromExistingTrade(CashLegType cashLegType, Ids ids) {
+    /// Returns [Ids] for version 1 cashflow and with trade version from the given [Ids]
+    static Ids getNewCashMsgIdsFromExistingTrade(CashLegType cashLegType, Ids ids) {
         var idProvider = IdProvider.singleton();
         return new Ids(cashLegType, idProvider.nextCashflowId(), VERSION_ONE, ids.tradeID(), ids.tradeVersion());
     }
