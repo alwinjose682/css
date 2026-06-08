@@ -26,7 +26,7 @@ import static io.alw.css.fosimulator.template.domain.CashLegType.*;
 /// Some implementations choose to store MessageContext instead of just FoCashMessage in [io.alw.css.fosimulator.store.CashMessageStore]
 sealed abstract class CashMessageTemplateWithDataStore<M extends TradeContext>
         extends CashMessageTemplate<M>
-        permits FxTemplate, MmTemplate, TemporaryGenericTemplate {
+        permits FxTemplate, MmTemplate {
 
     public CashMessageTemplateWithDataStore(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
         super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMsgTemplateProps);
