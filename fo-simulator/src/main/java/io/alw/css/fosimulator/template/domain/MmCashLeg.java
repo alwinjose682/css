@@ -1,11 +1,9 @@
 package io.alw.css.fosimulator.template.domain;
 
 import io.alw.css.domain.cashflow.FoCashMessage;
-import io.alw.css.domain.cashflow.MmTradeType;
 import io.alw.css.domain.cashflow.RateType;
 
 public sealed class MmCashLeg implements CashLeg, MmMetadata permits InterestCashLeg {
-    private final MmTradeType mmTradeType;
     private final CashLegType mmLegType;
     private final RateType rateType;
     private final InterestPayoutFrequency ipFrequency;
@@ -13,17 +11,11 @@ public sealed class MmCashLeg implements CashLeg, MmMetadata permits InterestCas
     private FoCashMessage cashMessage;
     private TradeContext trdCtx;
 
-    public MmCashLeg(MmTradeType mmTradeType, CashLegType mmLegType, RateType rateType, InterestPayoutFrequency ipFrequency, InterestBasis interestBasis) {
-        this.mmTradeType = mmTradeType;
+    public MmCashLeg(CashLegType mmLegType, RateType rateType, InterestPayoutFrequency ipFrequency, InterestBasis interestBasis) {
         this.mmLegType = mmLegType;
         this.rateType = rateType;
         this.ipFrequency = ipFrequency;
         this.interestBasis = interestBasis;
-    }
-
-    @Override
-    public MmTradeType mmType() {
-        return mmTradeType;
     }
 
     @Override

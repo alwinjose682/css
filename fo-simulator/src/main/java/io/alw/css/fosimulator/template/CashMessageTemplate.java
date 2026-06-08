@@ -39,7 +39,7 @@ sealed abstract class CashMessageTemplate<M extends TradeContext>
     // Constant values for each instance of CashMessageTemplate
     private final String entityCode;
     private final String currCode;
-    private final TradeType tradeType;
+    protected final TradeType tradeType;
     private final TransactionType transactionType;
     protected final RandomGenerator rndm;
     protected final CashMessageTemplateHelper msgTemplateHelper;

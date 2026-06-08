@@ -39,11 +39,6 @@ public final class MmTradeContext implements TradeContext {
         principalLeg.setCashMessage(rootFoCashMessage);
     }
 
-    @Override
-    public <M extends TradeContext> List<FoCashMessage> mapToCashMessage(List<M> trdCtxs) {
-
-    }
-
     public MmCashLeg principalLeg() {
         return principalLeg;
     }

@@ -26,7 +26,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 
-import static io.alw.css.domain.cashflow.TradeType.MM;
+import static io.alw.css.domain.cashflow.TradeType.MM_CALL;
+import static io.alw.css.domain.cashflow.TradeType.MM_TERM;
 
 public final class CashflowGeneratorHandler {
     private final static Logger log = LoggerFactory.getLogger(CashflowGeneratorHandler.class);
@@ -183,13 +184,14 @@ public final class CashflowGeneratorHandler {
         RandomGenerator rndm = RandomGenerator.getDefault();
         return switch (tradeType) {
             case FX -> new FxTemplate(entity, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
-            case MM -> new MmTemplate(entity, MM, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
+            case MM_TERM -> new MmTemplate(entity, MM_TERM, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
+            case MM_CALL -> new MmTemplate(entity, MM_CALL, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
         };
     }
 
     /// 1. Signals the [CashflowGenerator] to stop in a new Thread
     /// 2. if the
-    /// This method is Concurrent Safe. Performs this computation atomically. generatorMap is ConcurrentHashMap
+    /// This method is Concurrent Safe. Performs this computation atomically.
     /// TODO: dayTicker is not stopped if all the generators are stopped in an adhoc manner
     private CashflowGeneratorHandlerOutcome stop(String key) {
         CashflowGeneratorHandlerOutcome[] outcome = new CashflowGeneratorHandlerOutcome[1];

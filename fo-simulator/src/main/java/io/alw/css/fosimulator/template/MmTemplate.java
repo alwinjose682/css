@@ -10,6 +10,7 @@ import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.store.CashMessageStore;
 import io.alw.css.fosimulator.store.InMemoryCashMessageStore;
 import io.alw.css.fosimulator.template.model.*;
+import io.alw.datagen.template.AggregateTemplateBuilder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -19,8 +20,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 
-import static io.alw.css.domain.cashflow.MmTradeType.CALL;
-import static io.alw.css.domain.cashflow.MmTradeType.TERM;
 import static io.alw.css.domain.cashflow.PayOrReceive.PAY;
 import static io.alw.css.domain.cashflow.PayOrReceive.RECEIVE;
 import static io.alw.css.domain.cashflow.RateType.FLOAT;
@@ -203,7 +202,7 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
 
     /// IMPORTANT NOTE: The order here is important.
     /// MaturityLeg must be built before InterestLeg because building InterestLeg requires maturityLegValueDate.
-    /// The lambdas added via [io.alw.datagen.template.AggregateTemplateBuilder#withGroupedItem] method will be executed strictly in the same order as they are inserted in the queue
+    /// The lambdas added via [AggregateTemplateBuilder#withGroupedItem] method will be executed strictly in the same order as they are inserted in the queue
     private void buildMaturityAndInterestLeg(MmTradeContext trdCtx, MmCashLeg maturityLeg, Ids maturityLegIds, InterestCashLeg interestLeg, Ids interestLegIds) {
         // 1. Add building function of MATURITY leg
         this.withGroupedItem(maturityLeg::setCashMessage, () -> buildMaturityLeg(trdCtx, maturityLegIds));
@@ -351,7 +350,7 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
         var principalLegIds = CashMessageTemplateHelper.getIdsForVersionOneCashflowAndVersionOneTrade(MM_PRINCIPAL);
         var interestLegIds = CashMessageTemplateHelper.getIdsForVersionOneCashflowFromExistingTrade(MM_INTEREST, principalLegIds);
 
-        if (trdCtx.principalLeg().mmType() != CALL) {
+        if (trdCtx.rootFoCashMessage().tradeType() != TradeType.MM_CALL) {
             var maturityLegIds = CashMessageTemplateHelper.getIdsForVersionOneCashflowFromExistingTrade(MM_MATURITY, principalLegIds);
             return Map.of(MM_PRINCIPAL, principalLegIds, MM_INTEREST, interestLegIds, MM_MATURITY, maturityLegIds);
         } else {
@@ -363,22 +362,22 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
     /// Interest cashflow should be generated based on [InterestPayoutFrequency]
     /// Returns message contexts for cashflow version 1. The method parameter `principalLegBuilder` must be of cashflow version 1
     private MmTradeContext createTradeContext() {
-        var mmType = cyclicMmTypeProvider.get();
         var rateType = cyclicRateTypeProvider.get();
         var ipFrequency = cyclicIpFrequencyProvider.get();
         var basis = InterestBasis.ThirtyBy360;
 
-        var principal = new MmCashLeg(mmType, MM_PRINCIPAL, rateType, ipFrequency, basis);
-        var interest = new InterestCashLeg(mmType, MM_INTEREST, rateType, ipFrequency, basis);
+        var principal = new MmCashLeg(MM_PRINCIPAL, rateType, ipFrequency, basis);
+        var interest = new InterestCashLeg(MM_INTEREST, rateType, ipFrequency, basis);
         var interests = new ArrayList<InterestCashLeg>();
         interests.add(interest);
 
-        return switch (mmType) {
-            case TERM -> {
-                var maturity = new MmCashLeg(TERM, MM_MATURITY, rateType, ipFrequency, basis);
+        return switch (this.tradeType) {
+            case MM_TERM -> {
+                var maturity = new MmCashLeg(MM_MATURITY, rateType, ipFrequency, basis);
                 yield new MmTradeContext(principal, interests, maturity);
             }
-            case CALL -> new MmTradeContext(principal, interests);
+            case MM_CALL -> new MmTradeContext(principal, interests);
+            default -> throw new IllegalStateException("Invalid TradeType: " + this.tradeType + " for an MmTemplate");
         };
     }
 

@@ -8,7 +8,8 @@ import static io.alw.css.domain.cashflow.TradeEventType.*;
 
 public enum TradeType {
     FX(commonEventTypes()), // FXSpotForward,
-    MM(commonEventTypes())
+    MM_TERM(commonEventTypes()),
+    MM_CALL(commonEventTypes())
 //    PAYMENT(commonEventTypes()),
 //    FX_NDF(commonEventTypesWith(List.of(FIX, UN_FIX))), // FXNonDeliverableForward
 //    BOND(commonEventTypesWith(List.of(INTEREST_ACTION, MATURE))),
