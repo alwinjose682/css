@@ -32,11 +32,28 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends TradeContext>
         super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMsgTemplateProps);
     }
 
-    protected abstract void buildAmendedMessage(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, M trdCtxForAmendment);
+    /// Both primary and secondary criteria will be applied to select a tradeContext for amendment.
+    /// This applies both for the selecting a tradeContext for first time and each time after amendment
+    private final Predicate<M> amendmentCandidateSelectionCriteriaPrimary = givenTrdCtx -> {
+        FoCashMessage msg = givenTrdCtx.rootFoCashMessage();
+        return msg.tradeEventType() != TradeEventType.CANCEL
+                && msg.tradeEventType() != TradeEventType.REBOOK
+                && (msg.cashflowVersion() + msg.tradeVersion() <= msgTemplateHelper.cashMsgTemplateProps.maxPermittedAmendments());
+    };
+
+    /// see also{@link CashMessageTemplateWithDataStore#amendmentCandidateSelectionCriteriaPrimary}
+    private Predicate<M> amendmentCandidateSelectionCriteria() {
+        return amendmentCandidateSelectionCriteriaPrimary.and(tradeContextAmendmentFrequency());
+    }
+
+    /// The tradeContext amendment frequency is the secondary amendmentCandidateSelectionCriteria.
+    /// see also {@link CashMessageTemplateWithDataStore#amendmentCandidateSelectionCriteriaPrimary}
+    protected abstract Predicate<M> tradeContextAmendmentFrequency();
+
+    /// All the cashMessages selected for amendment must belong only to the trdCtx being passed via this method
+    protected abstract void buildCashMessageAmendmentContext(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, M trdCtxForAmendment);
 
     protected abstract CashMessageStoreHelper<M> msgStoreHelper();
-
-    protected abstract Predicate<M> amendableMsgSelectionCriteria();
 
     /// Return cash messages(new+amends) which can be consumed by the CashflowGenerators and published to CSS
     @Override
@@ -48,13 +65,17 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends TradeContext>
                         .withRootTemplateValues()
                         .build();
 
-        // Select cash messages from the build result which includes new+amends for future amendments
-        List<M> amendableCashMsgs = buildResult.stream().filter(amendableMsgSelectionCriteria()).toList();
-        // Add the future amend candidates to the message store
-        msgStoreHelper().storeMessagesForFutureRndmRetrievalDay(amendableCashMsgs);
+        M trdCtx = buildResult.root();
+        // Store the newly created tradeContext for future amendments if the selection criteria allows to do so
+        applyFutureAmendmentInclusion(trdCtx);
 
         // Return messages(new+amends) which can be consumed by the CashflowGenerators
-        return sdsdsd.mapToCashMessage(buildResult);
+        var cashflowGnrtrInput = new ArrayList<FoCashMessage>();
+        cashflowGnrtrInput.add(trdCtx.rootFoCashMessage());
+        cashflowGnrtrInput.addAll(buildResult.grouped());
+        cashflowGnrtrInput.addAll(buildResult.related());
+
+        return Collections.unmodifiableList(cashflowGnrtrInput);
     }
 
     protected CashMessageTemplateWithDataStore<M> withMessageAmendments() {
@@ -62,24 +83,28 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends TradeContext>
         final List<M> trdCtxsForAmendment = msgStoreHelper().retrieveMessagesForCurrentDay();
         // Add the list of foCashMessages for amendment to the template build step
         for (M trdCtx : trdCtxsForAmendment) {
-            buildAmendedMessage(this::buildAmendedMessage, trdCtx);
+            buildCashMessageAmendmentContext(amndCtx -> buildAmendedMessage(amndCtx, trdCtx), trdCtx);
         }
         return this;
     }
 
     /// Adds the step to lazily build amended messages in the [io.alw.datagen.template.AggregateTemplateBuilder].
+    /// All the cashMessages being amended belongs to the same trdCtx
     /// The steps to lazily build(functions) and the actual build done by [io.alw.datagen.template.AggregateTemplateBuilder] are performed in FIFO order
-    protected void buildAmendedMessage(CashMessageAmendmentContext amndCtx) {
+    protected void buildAmendedMessage(CashMessageAmendmentContext amndCtx, M trdCtx) {
         var amndSubCtxs = amndCtx.amendmentSubjectContexts();
         for (AmendmentSubjectContext amndSubCtx : amndSubCtxs) {
             switch (amndSubCtx) {
-                case AmendmentSubjectContextEager subCtxEager -> this.withRelatedItem(subCtxEager.callback(), () -> buildAmendedMessageFor(amndCtx, subCtxEager));
-                case AmendmentSubjectContextLazy subCtxLazy -> this.withRelatedItem(() -> buildAmendedMessageFor(amndCtx, subCtxLazy));
+                case AmendmentSubjectContextEager subCtxEager -> this.withRelatedItem(
+                        subCtxEager.callback(),
+                        () -> applyFutureAmendmentInclusion(trdCtx),
+                        () -> buildAmendedMessageFor(amndCtx, subCtxEager));
+                case AmendmentSubjectContextLazy subCtxLazy -> this.withRelatedItem(() -> buildAmendedMessageFor(amndCtx, subCtxLazy, trdCtx));
             }
         }
     }
 
-    private void buildAmendedMessageFor(CashMessageAmendmentContext amndCtx, AmendmentSubjectContextLazy subCtxLazy) {
+    private void buildAmendedMessageFor(CashMessageAmendmentContext amndCtx, AmendmentSubjectContextLazy subCtxLazy, M trdCtx) {
         for (AmendableFoCashMessageField amendableFieldSupplier : subCtxLazy.amendableFields()) {
             switch (amendableFieldSupplier) {
                 case AmendableFoCashMessageFieldSupplier fieldSupplier -> {
@@ -98,7 +123,10 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends TradeContext>
                                 // 2. Create the amendment subject context with the above derived values
                                 var amndSubCtxEager = new AmendmentSubjectContextEager(cashLeg, subCtxLazy.callbackProvider().apply(cashLeg), amendableFields);
                                 // 4. Register the build step with the templateBuilder
-                                this.withRelatedItem(amndSubCtxEager.callback(), () -> buildAmendedMessageFor(amndCtx, amndSubCtxEager));
+                                this.withRelatedItem(
+                                        amndSubCtxEager.callback(),
+                                        () -> applyFutureAmendmentInclusion(trdCtx),
+                                        () -> buildAmendedMessageFor(amndCtx, amndSubCtxEager));
                             }
                         }
                         case AmendableFoCashMessageFieldSupplier.SupplierWithMessageSelector supplier -> {
@@ -115,7 +143,10 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends TradeContext>
                                 // 3. Create the amendment subject context with the above derived values
                                 var amndSubCtxEager = new AmendmentSubjectContextEager(cashLeg, subCtxLazy.callbackProvider().apply(cashLeg), amendableFields);
                                 // 4. Register the build step with the templateBuilder
-                                this.withRelatedItem(amndSubCtxEager.callback(), () -> buildAmendedMessageFor(amndCtx, amndSubCtxEager));
+                                this.withRelatedItem(
+                                        amndSubCtxEager.callback(),
+                                        () -> applyFutureAmendmentInclusion(trdCtx),
+                                        () -> buildAmendedMessageFor(amndCtx, amndSubCtxEager));
                             }
                         }
                     }
@@ -182,13 +213,16 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends TradeContext>
         return amndBdr;
     }
 
-    /// 1) creates a new trade with a new cashMessage.
-    /// 2) creates cashflow to cancel the original cashMessage.
+    /// 1) creates a new cashMessage for a new trade
+    /// 2) creates cashflow to cancel the original cashMessage and adds to the builder without callback. The callback needs to be used for the new cashMessage
+    /// 3) the new cashMessage corresponding to the new trade is associated with the same [TradeContext] -
+    /// Nothing has to be done explicitly to ensure this. The callback is created to do this already.
+    ///
+    /// NOTE: The new cashMessage is added to the templateBuilder queue in the parent method that called this method
     private void handleTradeRebookEvent(CashMessageAmendmentContext rootAmendedMsgCtx, FoCashMessageBuilder amndBdr, AmendmentSubjectContextEager amndSubjectCtx) {
         CashLeg amendmentSubjectLeg = amndSubjectCtx.amendmentSubject();
         FoCashMessage amendmentSubjectMsg = amendmentSubjectLeg.cashMessage();
         CashLegType amendmentSubjectLinkType = amendmentSubjectLeg.cashLegType();
-        Consumer<FoCashMessage> callback = amndSubjectCtx.callback();
 
         // 1. Create new trade ID and cashflow ID
         // These same values used for the first message are used for the subsequent messages being amended that belong to the same MessageContext
@@ -203,7 +237,7 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends TradeContext>
         final int cancelledTradeVersion = amendmentSubjectMsg.tradeVersion();
 
         // 2. Create cancellation for the original cashflow and register in the TemplateBuilder
-        this.withRelatedItem(callback, () -> {
+        this.withRelatedItem(() -> {
             // Add trade link that corresponds to rebooked cashflow to the existing list of trade links
             List<TradeLink> newTradeLinks = amendmentSubjectMsg.tradeLinks() != null && !amendmentSubjectMsg.tradeLinks().isEmpty() ? new ArrayList<>(amendmentSubjectMsg.tradeLinks()) : new ArrayList<>();
             newTradeLinks.add(TradeLinkBuilder.TradeLink(
@@ -244,5 +278,11 @@ sealed abstract class CashMessageTemplateWithDataStore<M extends TradeContext>
                 .cashflowVersion(rebookedTradeIds.cashflowVersion())
                 .tradeLinks(Collections.unmodifiableList(newTradeLinks));
 
+    }
+
+    private void applyFutureAmendmentInclusion(M trdCtx) {
+        if (amendmentCandidateSelectionCriteria().test(trdCtx)) {
+            msgStoreHelper().storeMessageDataForFutureRndmRetrievalDay(trdCtx);
+        }
     }
 }

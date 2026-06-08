@@ -40,8 +40,13 @@ public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, B,
     /// This method can be called recursively
     ///
     /// NOTE: The items inserted in the queue will be removed in the same order as they are inserted
-    public AggregateTemplateBuilder<T, B, R> withRelatedItem(Consumer<R> callback, Supplier<B> buildStep) {
-        relatedItemBuilders.addFirst(new BuildItem<>(callback, buildStep));
+    public AggregateTemplateBuilder<T, B, R> withRelatedItem(Consumer<R> callback, Runnable runnableAfterCallback, Supplier<B> buildStep) {
+        relatedItemBuilders.addFirst(new BuildItem<>(callback, runnableAfterCallback, buildStep));
+        return this;
+    }
+
+    public AggregateTemplateBuilder<T, B, R> withRelatedItem(Supplier<B> buildStep) {
+        relatedItemBuilders.addFirst(new BuildItem<>(buildStep));
         return this;
     }
 
@@ -54,6 +59,8 @@ public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, B,
     /// The related objects can access the build output, T, during their builds.
     ///
     /// NOTE: The grouped and related items will be removed(retrieved for build) in the same order as they were inserted
+    ///
+    /// see also {@link AggregateTemplateBuilder#buildItem(BuildItem, List)}
     @Override
     public AggregateTemplateBuilderResult<T, R> build() {
         // 1. Build the template
@@ -76,22 +83,39 @@ public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, B,
         return new AggregateTemplateBuilderResult<>(root, groupedItems, relatedItems);
     }
 
+    /// If the item is a buildable item:
+    /// 1) build the item
+    /// 2) execute callback if any
+    /// 3) execute the runnableAfterCallback if any and
+    /// 4) add the buildResult to the resultList
+    ///
+    /// If the item is just a runnable, just execute the runnable. There is no build result in this case.
+    ///
+    /// NOTE: The buildItem cannot be both a runnable and buildable item. It is ensured so
     private void buildItem(BuildItem<B, R> buildItem, final List<R> resultList) {
         Supplier<B> buildStep = buildItem.buildStep();
 
-        // If the item is a buildable item: build the item, execute callback if any and add to the resultList
+        // If a buildable item:
         if (buildStep != null) {
             B resultBuilder = buildStep.get();
             R result = buildGroupedOrRelatedItem(resultBuilder);
 
+            // callback
             Consumer<R> callback = buildItem.callback();
             if (callback != null) {
                 callback.accept(result);
             }
 
+            // runnableAfterCallback
+            Runnable runnableAfterCallback = buildItem.runnableAfterCallback();
+            if (runnableAfterCallback != null) {
+                runnableAfterCallback.run();
+            }
+
+            // add the result to the resultList
             resultList.add(result);
         }
-        // If the item is just a runnable (The item cannot be both a runnable and buildable item)
+        // If note a buildable item:
         else if (buildItem.runnable() != null) {
             buildItem.runnable().run();
         }

@@ -28,15 +28,23 @@ import static io.alw.css.fosimulator.template.MmTemplateConstants.*;
 import static io.alw.css.fosimulator.template.domain.CashLegType.*;
 
 public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeContext> {
-    // Message Store and Related
     private final CashMessageStoreHelper<MmTradeContext> msgStoreHelper;
-    private final Predicate<MmTradeContext> amendableMsgSelectionCriteria = ;
 
     public MmTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
         super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMsgTemplateProps);
 
         CashMessageStore<MmTradeContext> msgStore = new InMemoryCashMessageStore<>();
         this.msgStoreHelper = new CashMessageStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
+    }
+
+    @Override
+    protected Predicate<MmTradeContext> tradeContextAmendmentFrequency() {
+        return _ -> rndm.nextInt(0, 100) > 80;
+    }
+
+    @Override
+    protected TradeEventActionPair getNextEventActionPair(TradeEventType amendMsgEvt, TradeEventAction amendMsgAct) {
+
     }
 
     /// Build new template for MM cashflow. A new MM trade can have 1 to 3 cashMessages depending on whether its a TERM or CALL and depending on the interest cashflow
@@ -74,17 +82,17 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
     }
 
     @Override
-    protected void buildAmendedMessage(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, MmTradeContext trdCtxForAmendment) {
+    protected void buildCashMessageAmendmentContext(Consumer<CashMessageAmendmentContext> amendedMessageBuilderFunc, MmTradeContext trdCtxForAmendment) {
         switch (cyclicAmendableMmLegProvider.get()) {
             case MM_PRINCIPAL -> {
-                var msgAmendCtx = buildAmendedMessageStep2(trdCtxForAmendment.principalLeg(), trdCtxForAmendment);
-                buildAmendedMessageFunc.accept(msgAmendCtx);
+                var msgAmendCtx = buildCashMessageAmendmentContextStep2(trdCtxForAmendment.principalLeg(), trdCtxForAmendment);
+                amendedMessageBuilderFunc.accept(msgAmendCtx);
             }
             case MM_MATURITY -> {
                 MmCashLeg maturityLeg = trdCtxForAmendment.maturityLeg();
                 if (maturityLeg != null && maturityLeg.cashMessage() != null) {
-                    var msgAmendCtx = buildAmendedMessageStep2(maturityLeg, trdCtxForAmendment);
-                    buildAmendedMessageFunc.accept(msgAmendCtx);
+                    var msgAmendCtx = buildCashMessageAmendmentContextStep2(maturityLeg, trdCtxForAmendment);
+                    amendedMessageBuilderFunc.accept(msgAmendCtx);
                 }
             }
             case MM_INTEREST -> throw new RuntimeException("Amending interest leg is not allowed");
@@ -92,7 +100,7 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
         }
     }
 
-    private CashMessageAmendmentContext buildAmendedMessageStep2(MmCashLeg primaryAmendmentSubject, MmTradeContext trdCtxForAmendment) {
+    private CashMessageAmendmentContext buildCashMessageAmendmentContextStep2(MmCashLeg primaryAmendmentSubject, MmTradeContext trdCtxForAmendment) {
         var primaryAmndSubMsg = trdCtxForAmendment.principalLeg().cashMessage();
         var nextTradeEventAction = getNextEventActionPair(primaryAmndSubMsg.tradeEventType(), primaryAmndSubMsg.tradeEventAction());
         var nextEventType = nextTradeEventAction.event();
@@ -191,11 +199,6 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
                 .addNextAmndSubCtx(primaryAmndSubCtx)
                 .addNextAmndSubCtx(maturityAmndSubCtx)
                 .addNextAmndSubCtx(interestAmndCtx);
-    }
-
-    @Override
-    protected TradeEventActionPair getNextEventActionPair(TradeEventType amendMsgEvt, TradeEventAction amendMsgAct) {
-
     }
 
     /// IMPORTANT NOTE: The order here is important.
@@ -382,11 +385,6 @@ public final class MmTemplate extends CashMessageTemplateWithDataStore<MmTradeCo
     @Override
     protected CashMessageStoreHelper<MmTradeContext> msgStoreHelper() {
         return msgStoreHelper;
-    }
-
-    @Override
-    protected Predicate<MmTradeContext> amendableMsgSelectionCriteria() {
-        return amendableMsgSelectionCriteria;
     }
 
     private static final class MmAmendmentFieldValue {

@@ -24,6 +24,7 @@ final class CashMessageStoreHelper<T> {
         this.msgTemplateHelper = msgTemplateHelper;
     }
 
+    /// Removes the message data from the store and returns it
     List<T> retrieveMessagesForCurrentDay() {
         final long currentDay = msgTemplateHelper.currentDayForMsgTemplate();
         List<T> msgsToBeAmended = new ArrayList<>();
@@ -37,8 +38,8 @@ final class CashMessageStoreHelper<T> {
     }
 
     /// Store message data in [CashMessageStore] with a random retrieval day that ranges from `lastMessageRetrievalDay` upto `maxAmendmentGenerationDelayInDays` into the future
-    void storeMessagesForFutureRndmRetrievalDay(List<T> msgs) {
+    void storeMessageDataForFutureRndmRetrievalDay(T msgData) {
         long futureAmendmentDay = rndm.nextLong(lastMessageRetrievalDay, lastMessageRetrievalDay + maxAmendmentGenerationDelayInDays);
-        msgs.forEach(msg -> msgStore.add(futureAmendmentDay, msg));
+        msgStore.add(futureAmendmentDay, msgData);
     }
 }

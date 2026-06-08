@@ -23,16 +23,18 @@ import static io.alw.css.domain.cashflow.TradeEventType.*;
 import static io.alw.css.fosimulator.template.domain.CashLegType.*;
 
 public final class FxTemplate extends CashMessageTemplateWithDataStore<FxTradeContext> {
-    // Message Store and Related
     private final CashMessageStoreHelper<FxTradeContext> msgStoreHelper;
-    private final Predicate<FxTradeContext> amendableMsgSelectionCriteria = msg -> msg.tradeEventType() != TradeEventType.CANCEL
-            && (msg.cashflowVersion() + msg.tradeVersion() <= msgTemplateHelper.cashMsgTemplateProps.maxPermittedAmendments() && msg.cashflowID() % 10 + msg.tradeID() % 10 > 10 /* To choose random cashflows*/);
 
     public FxTemplate(Entity entity, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMessageTemplateProperties) {
         super(entity, TradeType.FX, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
 
         CashMessageStore<FxTradeContext> msgStore = new InMemoryCashMessageStore<>();
         this.msgStoreHelper = new CashMessageStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
+    }
+
+    @Override
+    protected Predicate<FxTradeContext> tradeContextAmendmentFrequency() {
+        return _ -> rndm.nextInt(0, 100) > 80;
     }
 
     /// Build side 1 of the fx message
@@ -111,7 +113,7 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxTradeCo
     }
 
     @Override
-    protected void buildAmendedMessage(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, FxTradeContext trdCtxForAmendment) {
+    protected void buildCashMessageAmendmentContext(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, FxTradeContext trdCtxForAmendment) {
         //TODO: Pending implementation
 
         //New VD
@@ -128,10 +130,5 @@ public final class FxTemplate extends CashMessageTemplateWithDataStore<FxTradeCo
     @Override
     protected CashMessageStoreHelper<FxTradeContext> msgStoreHelper() {
         return msgStoreHelper;
-    }
-
-    @Override
-    protected Predicate<FxTradeContext> amendableMsgSelectionCriteria() {
-        return amendableMsgSelectionCriteria;
     }
 }
