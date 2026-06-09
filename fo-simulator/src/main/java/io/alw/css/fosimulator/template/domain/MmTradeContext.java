@@ -5,15 +5,16 @@ import io.alw.css.domain.cashflow.*;
 import java.util.List;
 
 public final class MmTradeContext implements TradeContext {
+    private final TradeType tradeType;
     private final MmCashLeg principalLeg;
     private MmCashLeg maturityLeg;
     private final List<InterestCashLeg> interestLegs;
 
-    public MmTradeContext(MmCashLeg principalLeg, List<InterestCashLeg> interestLegs) {
-        this(principalLeg, interestLegs, null);
+    public MmTradeContext(TradeType tradeType, MmCashLeg principalLeg, List<InterestCashLeg> interestLegs) {
+        this(tradeType, principalLeg, interestLegs, null);
     }
 
-    public MmTradeContext(MmCashLeg principalLeg, List<InterestCashLeg> interestLegs, MmCashLeg maturityLeg) {
+    public MmTradeContext(TradeType tradeType, MmCashLeg principalLeg, List<InterestCashLeg> interestLegs, MmCashLeg maturityLeg) {
         if (interestLegs == null) {
             throw new RuntimeException("Must have at least one interest leg to construct MmTradeContext");
         }
@@ -24,9 +25,15 @@ public final class MmTradeContext implements TradeContext {
             maturityLeg.setTradeContext(this);
         }
 
+        this.tradeType = tradeType;
         this.principalLeg = principalLeg;
         this.interestLegs = interestLegs;
         this.maturityLeg = maturityLeg;
+    }
+
+    @Override
+    public TradeType tradeType() {
+        return tradeType;
     }
 
     @Override

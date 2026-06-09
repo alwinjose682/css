@@ -1,10 +1,21 @@
 package io.alw.css.fosimulator.template.domain;
 
 import io.alw.css.domain.cashflow.FoCashMessage;
+import io.alw.css.domain.cashflow.TradeType;
 
 public final class FxTradeContext implements TradeContext {
+    private final TradeType tradeType;
     private FoCashMessage side1Msg;
     private FoCashMessage side2Msg;
+
+    public FxTradeContext(TradeType tradeType) {
+        this.tradeType = tradeType;
+    }
+
+    @Override
+    public TradeType tradeType() {
+        return tradeType;
+    }
 
     @Override
     public FoCashMessage rootFoCashMessage() {

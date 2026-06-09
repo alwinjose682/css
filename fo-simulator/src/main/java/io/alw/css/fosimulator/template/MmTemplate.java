@@ -339,7 +339,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
         var principalLegIds = CashMessageTemplateHelper.getNewTradeIds(MM_PRINCIPAL);
         var interestLegIds = CashMessageTemplateHelper.getNewCashMsgIdsFromExistingTrade(MM_INTEREST, principalLegIds);
 
-        if (trdCtx.rootFoCashMessage().tradeType() != TradeType.MM_CALL) {
+        if (trdCtx.tradeType() != TradeType.MM_CALL) {
             var maturityLegIds = CashMessageTemplateHelper.getNewCashMsgIdsFromExistingTrade(MM_MATURITY, principalLegIds);
             return Map.of(MM_PRINCIPAL, principalLegIds, MM_INTEREST, interestLegIds, MM_MATURITY, maturityLegIds);
         } else {
@@ -363,9 +363,9 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
         return switch (this.tradeType) {
             case MM_TERM -> {
                 var maturity = new MmCashLeg(MM_MATURITY, rateType, ipFrequency, basis);
-                yield new MmTradeContext(principal, interests, maturity);
+                yield new MmTradeContext(TradeType.MM_TERM, principal, interests, maturity);
             }
-            case MM_CALL -> new MmTradeContext(principal, interests);
+            case MM_CALL -> new MmTradeContext(TradeType.MM_CALL, principal, interests);
             default -> throw new IllegalStateException("Invalid TradeType: " + this.tradeType + " for an MmTemplate");
         };
     }
