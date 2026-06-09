@@ -21,8 +21,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 
-import static io.alw.css.domain.cashflow.TradeEventAction.*;
-import static io.alw.css.domain.cashflow.TradeEventType.*;
 import static io.alw.css.fosimulator.template.domain.CashLegType.*;
 import static io.alw.css.fosimulator.template.model.AmendableFoCashMessageFieldType.*;
 
@@ -89,39 +87,9 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTradeContex
     }
 
     @Override
-    protected TradeEventActionPair getNextEventActionPair(TradeEventType amendMsgEvt, TradeEventAction amendMsgAct) {
-        int rndmNum = rndm.nextInt(1, 100);
-        return switch (amendMsgEvt) {
-            case NEW_TRADE -> {
-                if (rndmNum > 40) yield new TradeEventActionPair(AMEND, ADD);
-                else if (rndmNum > 10) yield new TradeEventActionPair(CANCEL, ADD);
-                else yield new TradeEventActionPair(REBOOK, ADD);
-            }
-            case REBOOK -> {
-                if (rndmNum > 10) yield new TradeEventActionPair(AMEND, ADD);
-                else yield new TradeEventActionPair(CANCEL, ADD);
-            }
-            case AMEND -> {
-                if (amendMsgAct == REMOVE) yield new TradeEventActionPair(AMEND, ADD);
-                else if (rndmNum > 30) {
-                    if (amendMsgAct == ADD) yield new TradeEventActionPair(AMEND, MODIFY);
-                    else if (amendMsgAct == MODIFY) {
-                        if (rndmNum > 60) yield new TradeEventActionPair(AMEND, MODIFY);
-                        else yield new TradeEventActionPair(AMEND, REMOVE);
-                    } else /*if (amendMsgAct == REMOVE)*/ yield new TradeEventActionPair(AMEND, ADD);
-                } else if (rndmNum > 20) yield new TradeEventActionPair(CANCEL, ADD);
-                else yield new TradeEventActionPair(REBOOK, ADD);
-            }
-            case CANCEL -> throw new RuntimeException("Attempt to amend a cancelled cashflow is invalid");
-
-            default -> throw new IllegalStateException("Unexpected value: " + amendMsgEvt);
-        };
-    }
-
-    @Override
     protected void buildCashMessageAmendmentContext(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, FxTradeContext trdCtxForAmendment) {
         var rootMsg = trdCtxForAmendment.rootFoCashMessage();
-        var nextTradeEventAction = getNextEventActionPair(rootMsg.tradeEventType(), rootMsg.tradeEventAction());
+        var nextTradeEventAction = determineNextTradeEventAndAction(rootMsg.tradeEventType(), rootMsg.tradeEventAction());
         var nextEventType = nextTradeEventAction.event();
         var msgAmndCtx = switch (nextEventType) {
             // Common trade amend events applicable for all trades
@@ -190,11 +158,6 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTradeContex
         return rndm.nextDouble(Math.abs(side1Amount - 100), side1Amount + 1000);
     }
 
-    @Override
-    protected CashMessageStoreHelper<FxTradeContext> msgStoreHelper() {
-        return msgStoreHelper;
-    }
-
     private static List<Set<AmendableFoCashMessageFieldType>> getListOfAmendableCashMessageFieldTypes() {
         return List.of(
                 Set.of(COUNTERPARTY_CODE),
@@ -203,6 +166,16 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTradeContex
                 Set.of(COUNTERPARTY_CODE, AMOUNT),
                 Set.of(VALUE_DATE, AMOUNT, COUNTERPARTY_CODE)
         );
+    }
+
+    @Override
+    protected TradeEventActionPair determineNextTradeEventAndAction(TradeEventType tradeEventType, TradeEventAction tradeEventAction) {
+        return msgTemplateHelper.determineNextTradeEventAndActionForCommonEvents(rndm, tradeEventType, tradeEventAction);
+    }
+
+    @Override
+    protected CashMessageStoreHelper<FxTradeContext> msgStoreHelper() {
+        return msgStoreHelper;
     }
 
     private static class CyclicAmendableFoCashMessageFieldProvider extends AbstractCyclicDataProvider<Set<AmendableFoCashMessageFieldType>> {

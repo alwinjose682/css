@@ -1,21 +1,27 @@
 package io.alw.css.fosimulator.template;
 
-import io.alw.css.domain.cashflow.TradeLink;
-import io.alw.css.domain.cashflow.TradeLinkBuilder;
-import io.alw.css.domain.cashflow.TransactionType;
+import io.alw.css.domain.cashflow.*;
+import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.template.domain.CashLegType;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
+import io.alw.css.fosimulator.template.domain.MmTradeEvent;
+import io.alw.css.fosimulator.template.domain.TradeEventActionRecord;
+import io.alw.css.fosimulator.template.domain.TradeEventTypeRecord;
 import io.alw.css.fosimulator.template.model.Ids;
 import io.alw.datagen.template.CountAware;
 
 import java.time.LocalDate;
 import java.util.random.RandomGenerator;
 
+import static io.alw.css.domain.cashflow.TradeEventAction.*;
+import static io.alw.css.domain.cashflow.TradeEventAction.ADD;
+import static io.alw.css.domain.cashflow.TradeEventType.*;
+import static io.alw.css.domain.cashflow.TradeEventType.AMEND;
 import static io.alw.css.fosimulator.template.CashMessageTemplate.VERSION_ONE;
 
 
-/// NOTE: This helper class has variable state
+/// NOTE: This helper class has mutable state
 public final class CashMessageTemplateHelper implements CountAware {
     // Variable values for each template build. Also, these remain un-modified for each template build.
     private long dayForMsgTemplate;
@@ -140,6 +146,33 @@ public final class CashMessageTemplateHelper implements CountAware {
 
     void setDayForMsgTemplate(long day) {
         dayForMsgTemplate = day;
+    }
+
+    TradeEventActionPair determineNextTradeEventAndActionForCommonEvents(RandomGenerator rbdm, TradeEventType standardEvent, TradeEventAction standardAction) {
+        int num = rndm.nextInt(1, 100);
+        TradeEventTypeRecord event = TradeEventTypeRecord.getCorrespondingTradeEventRecord(standardEvent);
+        TradeEventActionRecord action = TradeEventActionRecord.getCorrespondingTradeEventAction(standardAction);
+
+        return switch (event) {
+            case TradeEventTypeRecord.NEW_TRADE _ when num > 30 -> new TradeEventActionPair(AMEND, ADD);
+            case TradeEventTypeRecord.NEW_TRADE _ when num > 10 -> new TradeEventActionPair(CANCEL, ADD);
+            case TradeEventTypeRecord.NEW_TRADE _ -> new TradeEventActionPair(REBOOK, ADD);
+            case TradeEventTypeRecord.REBOOK _ when num > 10 -> new TradeEventActionPair(AMEND, ADD);
+            case TradeEventTypeRecord.REBOOK _ -> new TradeEventActionPair(CANCEL, ADD);
+            case TradeEventTypeRecord.AMEND _ -> switch (action) {
+                case TradeEventActionRecord.ADD _ when num > 30 -> new TradeEventActionPair(AMEND, MODIFY);
+                case TradeEventActionRecord.ADD _ when num > 20 -> new TradeEventActionPair(CANCEL, ADD);
+                case TradeEventActionRecord.ADD _ -> new TradeEventActionPair(REBOOK, ADD);
+                case TradeEventActionRecord.MODIFY _ when num > 40 -> new TradeEventActionPair(AMEND, MODIFY);
+                case TradeEventActionRecord.MODIFY _ when num > 30 -> new TradeEventActionPair(AMEND, REMOVE);
+                case TradeEventActionRecord.MODIFY _ when num > 10 -> new TradeEventActionPair(REBOOK, ADD);
+                case TradeEventActionRecord.MODIFY _ -> new TradeEventActionPair(CANCEL, ADD);
+                case TradeEventActionRecord.REMOVE _ when num > 30 -> new TradeEventActionPair(AMEND, ADD);
+                case TradeEventActionRecord.REMOVE _ -> new TradeEventActionPair(AMEND, ADD);
+            };
+            case TradeEventTypeRecord.CANCEL _ -> throw new RuntimeException("Attempt to amend a cancelled cashflow is invalid");
+            case MmTradeEvent _ -> throw new RuntimeException("Invalid trade event");
+        };
     }
 
     @Override

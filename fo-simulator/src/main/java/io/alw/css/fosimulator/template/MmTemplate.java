@@ -36,16 +36,6 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
         this.msgStoreHelper = new CashMessageStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
     }
 
-    @Override
-    protected Predicate<MmTradeContext> tradeContextAmendmentFrequency() {
-        return _ -> rndm.nextInt(0, 100) > 80;
-    }
-
-    @Override
-    protected TradeEventActionPair getNextEventActionPair(TradeEventType amendMsgEvt, TradeEventAction amendMsgAct) {
-
-    }
-
     /// Build new template for MM cashflow. A new MM trade can have 1 to 3 cashMessages depending on whether its a TERM or CALL and depending on the interest cashflow
     @Override
     public MmTemplate withRootTemplateValues() {
@@ -101,7 +91,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
 
     private CashMessageAmendmentContext buildCashMessageAmendmentContextStep2(MmCashLeg primaryAmendmentSubject, MmTradeContext trdCtxForAmendment) {
         var primaryAmndSubMsg = trdCtxForAmendment.principalLeg().cashMessage();
-        var nextTradeEventAction = getNextEventActionPair(primaryAmndSubMsg.tradeEventType(), primaryAmndSubMsg.tradeEventAction());
+        var nextTradeEventAction = determineNextTradeEventAndAction(primaryAmndSubMsg.tradeEventType(), primaryAmndSubMsg.tradeEventAction());
         var nextEventType = nextTradeEventAction.event();
         return switch (nextEventType) {
             // Common trade amend events applicable for all trades
@@ -378,6 +368,16 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
             case MM_CALL -> new MmTradeContext(principal, interests);
             default -> throw new IllegalStateException("Invalid TradeType: " + this.tradeType + " for an MmTemplate");
         };
+    }
+
+    @Override
+    protected Predicate<MmTradeContext> tradeContextAmendmentFrequency() {
+        return _ -> rndm.nextInt(0, 100) > 80;
+    }
+
+    @Override
+    protected TradeEventActionPair determineNextTradeEventAndAction(TradeEventType tradeEventType, TradeEventAction tradeEventAction) {
+        return msgTemplateHelper.determineNextTradeEventAndActionForCommonEvents(rndm, tradeEventType, tradeEventAction);
     }
 
     @Override

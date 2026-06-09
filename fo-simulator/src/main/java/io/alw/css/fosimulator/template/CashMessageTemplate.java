@@ -68,7 +68,7 @@ sealed abstract class CashMessageTemplate<M extends TradeContext>
         this.refDataService = refDataService;
     }
 
-    protected abstract TradeEventActionPair getNextEventActionPair(TradeEventType amendMsgEvt, TradeEventAction amendMsgAct);
+    protected abstract TradeEventActionPair determineNextTradeEventAndAction(TradeEventType amendMsgEvt, TradeEventAction amendMsgAct);
 
     /// Build the grouped or related cash message associated with the cashMessage template being built
     /// tradeLinks of grouped and related items are set when creating a cashMessage builder via [CashMessageTemplate#createBuilderFrom(FoCashMessage, String)]
