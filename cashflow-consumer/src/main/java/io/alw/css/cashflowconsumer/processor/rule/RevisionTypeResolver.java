@@ -16,6 +16,7 @@ import static io.alw.css.cashflowconsumer.model.constants.ExceptionSubCategoryTy
 
 public final class RevisionTypeResolver {
     private static final Map<CashflowOrder, List<Rule>> commonRules = groupByCashflowOrder(CommonRules.rules);
+    private static final Map<CashflowOrder, List<Rule>> mmRules = combineWithCommonRulesAndGroupByCashflowOrder(MmRules.rules);
     private static final Map<CashflowOrder, List<Rule>> ndfRules = combineWithCommonRulesAndGroupByCashflowOrder(NdfRules.rules);
     private static final Map<CashflowOrder, List<Rule>> bondRules = combineWithCommonRulesAndGroupByCashflowOrder(BondRules.rules);
     private static final Map<CashflowOrder, List<Rule>> repoRules = combineWithCommonRulesAndGroupByCashflowOrder(RepoRules.rules);
@@ -61,6 +62,7 @@ public final class RevisionTypeResolver {
 
     private static Map<CashflowOrder, List<Rule>> getRulesForTradeType(TradeType tradeType) {
         return switch (tradeType) {
+            case MM_TERM, MM_CALL -> mmRules;
             case PAYMENT -> commonRules;
             case FX -> commonRules;
             case FX_NDF -> ndfRules;
