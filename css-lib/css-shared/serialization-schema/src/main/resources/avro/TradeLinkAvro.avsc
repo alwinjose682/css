@@ -9,7 +9,23 @@
     },
     {
       "name": "relatedReference",
-      "type": "string"
+      "type": ["null","string"]
+    },
+    {
+      "name": "relatedFoCashflowID",
+      "type": ["null","long"]
+    },
+    {
+      "name": "relatedFoCashflowVersion",
+      "type": ["null","int"]
+    },
+    {
+      "name": "relatedTradeID",
+      "type": ["null","long"]
+    },
+    {
+      "name": "relatedTradeVersion",
+      "type": ["null","int"]
     }
   ]
 }

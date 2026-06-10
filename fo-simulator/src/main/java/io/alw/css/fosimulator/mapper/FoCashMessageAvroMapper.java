@@ -34,14 +34,28 @@ public interface FoCashMessageAvroMapper {
     static List<TradeLinkAvro> mapTradeLinksToAvro(List<TradeLink> tradeLinks) {
         return tradeLinks == null
                 ? null
-                : tradeLinks.stream().map(tl -> new TradeLinkAvro(tl.linkType(), tl.relatedReference())).toList();
+                : tradeLinks.stream().map(tl -> new TradeLinkAvro(
+                tl.linkType(),
+                tl.relatedReference(),
+                tl.relatedFoCashflowID(),
+                tl.relatedFoCashflowVersion(),
+                tl.relatedTradeID(),
+                tl.relatedTradeVersion()
+        )).toList();
     }
 
     @Named("mapAvroToTradeLinks")
-    static List<TradeLink> mapAvroToTradeLinks(List<TradeLinkAvro> tradeLinks) {
-        return tradeLinks == null
+    static List<TradeLink> mapAvroToTradeLinks(List<TradeLinkAvro> tradeLinksAvro) {
+        return tradeLinksAvro == null
                 ? null
-                : tradeLinks.stream().map(tl -> new TradeLink(tl.getLinkType(), tl.getRelatedReference())).toList();
+                : tradeLinksAvro.stream().map(tla -> new TradeLink(
+                tla.getLinkType(),
+                tla.getRelatedReference(),
+                tla.getRelatedFoCashflowID(),
+                tla.getRelatedFoCashflowVersion(),
+                tla.getRelatedTradeID(),
+                tla.getRelatedTradeVersion()
+        )).toList();
     }
 
     @Named("mapJavaTimeDateToString")

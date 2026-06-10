@@ -29,6 +29,18 @@ public class TradeLinkEntity {
     @Column(name = "RELATED_REFERENCE")
     String relatedReference;
 
+    @Column(name = "RELATED_FO_CASHFLOW_ID")
+    Long relatedFoCashflowID;
+
+    @Column(name = "RELATED_FO_CASHFLOW_VERSION")
+    Integer relatedFoCashflowVersion;
+
+    @Column(name = "RELATED_TRADE_ID")
+    Long relatedTradeID;
+
+    @Column(name = "RELATED_TRADE_VERSION")
+    Integer relatedTradeVersion;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumns({
             @JoinColumn(referencedColumnName = "CASHFLOW_ID", name = "CF_ID", nullable = false, updatable = false, insertable = false),
@@ -75,6 +87,38 @@ public class TradeLinkEntity {
         this.relatedReference = relatedReference;
     }
 
+    public Long getRelatedFoCashflowID() {
+        return relatedFoCashflowID;
+    }
+
+    public void setRelatedFoCashflowID(Long relatedFoCashflowID) {
+        this.relatedFoCashflowID = relatedFoCashflowID;
+    }
+
+    public Integer getRelatedFoCashflowVersion() {
+        return relatedFoCashflowVersion;
+    }
+
+    public void setRelatedFoCashflowVersion(Integer relatedFoCashflowVersion) {
+        this.relatedFoCashflowVersion = relatedFoCashflowVersion;
+    }
+
+    public Long getRelatedTradeID() {
+        return relatedTradeID;
+    }
+
+    public void setRelatedTradeID(Long relatedTradeID) {
+        this.relatedTradeID = relatedTradeID;
+    }
+
+    public Integer getRelatedTradeVersion() {
+        return relatedTradeVersion;
+    }
+
+    public void setRelatedTradeVersion(Integer relatedTradeVersion) {
+        this.relatedTradeVersion = relatedTradeVersion;
+    }
+
     public CashflowEntity getCashflow() {
         return cashflow;
     }
@@ -103,7 +147,10 @@ public class TradeLinkEntity {
                 ", cashflowVersion=" + cashflowVersion +
                 ", linkType='" + linkType + '\'' +
                 ", relatedReference='" + relatedReference + '\'' +
-                ", cashflow=" + cashflow +
+                ", relatedFoCashflowID=" + relatedFoCashflowID +
+                ", relatedFoCashflowVersion=" + relatedFoCashflowVersion +
+                ", relatedTradeID=" + relatedTradeID +
+                ", relatedTradeVersion=" + relatedTradeVersion +
                 '}';
     }
 }

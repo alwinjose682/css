@@ -98,14 +98,23 @@ sealed abstract class CashMessageTemplateWithDataStore
             final long newCashflowID = idProvider.nextCashflowId();
 
             // 2. Create cancellation for the original cashflow and register in the TemplateBuilder
-            this.withRelatedTemplate(origMsg -> {
-                        List<TradeLink> newTradeLinks = origMsg.tradeLinks() != null && !origMsg.tradeLinks().isEmpty() ? new ArrayList<>(origMsg.tradeLinks()) : new ArrayList<>();
-                        newTradeLinks.add(new TradeLink(tradeLink_childTrade, String.valueOf(newTradeID)));
-                        newTradeLinks.add(new TradeLink(tradeLink_childCashflow, String.valueOf(newCashflowID)));
-                        return createBuilderFrom(origMsg)
+            this.withRelatedTemplate(msg1 -> {
+                        final int newCashflowVersion = msg1.cashflowVersion() + 1;
+                        final int newTradeVersion = msg1.tradeVersion();
+
+                        List<TradeLink> newTradeLinks = msg1.tradeLinks() != null && !msg1.tradeLinks().isEmpty() ? new ArrayList<>(msg1.tradeLinks()) : new ArrayList<>();
+                        newTradeLinks.add(TradeLinkBuilder.builder()
+                                .linkType(tradeLink_childCashflow)
+                                .relatedReference(null)
+                                .relatedFoCashflowID(newCashflowID)
+                                .relatedFoCashflowVersion(newCashflowVersion)
+                                .relatedTradeID(newTradeID)
+                                .relatedTradeVersion(newTradeVersion)
+                                .build());
+                        return createBuilderFrom(msg1)
                                 // Id Version
-                                .tradeVersion(origMsg.tradeVersion())
-                                .cashflowVersion(origMsg.cashflowVersion() + 1)
+                                .tradeVersion(newTradeVersion)
+                                .cashflowVersion(newCashflowVersion)
                                 // Trade Event and Action
                                 .tradeEventType(TradeEventType.CANCEL)
                                 .tradeEventAction(TradeEventAction.ADD)
@@ -116,14 +125,20 @@ sealed abstract class CashMessageTemplateWithDataStore
 
             // 3. Create the new trade and cashflow
             List<TradeLink> newTradeLinks = msg.tradeLinks() != null && !msg.tradeLinks().isEmpty() ? new ArrayList<>(msg.tradeLinks()) : new ArrayList<>();
-            newTradeLinks.add(new TradeLink(tradeLink_parentTrade, String.valueOf(msg.tradeID())));
-            newTradeLinks.add(new TradeLink(tradeLink_parentCashflow, String.valueOf(msg.cashflowID())));
+            newTradeLinks.add(TradeLinkBuilder.builder()
+                    .linkType(tradeLink_parentCashflow)
+                    .relatedReference(null)
+                    .relatedFoCashflowID(msg.cashflowID())
+                    .relatedFoCashflowVersion(VERSION_ONE)
+                    .relatedTradeID(msg.tradeID())
+                    .relatedTradeVersion(VERSION_ONE)
+                    .build());
             amndBdr
                     // Id Version
                     .tradeID(newTradeID)
-                    .tradeVersion(1)
+                    .tradeVersion(VERSION_ONE)
                     .cashflowID(newCashflowID)
-                    .cashflowVersion(1)
+                    .cashflowVersion(VERSION_ONE)
                     .tradeLinks(Collections.unmodifiableList(newTradeLinks));
         }
 
