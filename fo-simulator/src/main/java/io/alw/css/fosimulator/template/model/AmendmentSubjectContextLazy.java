@@ -8,8 +8,15 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public record AmendmentSubjectContextLazy(
+        // Nullable field
+        CashLeg cashLeg,
+        // Non-nullable fields
         Function<CashLeg, Consumer<FoCashMessage>> callbackProvider,
         Set<AmendableFoCashMessageField> amendableFields) implements AmendmentSubjectContext {
+
+    public AmendmentSubjectContextLazy(Function<CashLeg, Consumer<FoCashMessage>> callbackProvider, Set<AmendableFoCashMessageField> amendableFields) {
+        this(null, callbackProvider, amendableFields);
+    }
 
     public AmendmentSubjectContextLazy {
         if (callbackProvider == null || amendableFields == null) {

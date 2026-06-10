@@ -29,7 +29,7 @@ public sealed interface TradeEventTypeRecord
             case REBOOK -> rebook;
             case AMEND -> amend;
             case CANCEL -> cancel;
-            case MATURE, INTEREST_ACTION, UN_FIX, FIX, TERMINATE, ROLL, EXPIRE, KNOCK_OUT, EXERCISE, BOOK_MOVE, CORRECTION -> throw new IllegalStateException("Mapping from TradeEventRecord to TradeEventType does not exist for: " + standardEvent);
+            case MATURE, INTEREST_ACTION, COUPON, UN_FIX, FIX, TERMINATE, ROLL, EXPIRE, KNOCK_OUT, EXERCISE, BOOK_MOVE, CORRECTION -> throw new IllegalStateException("Mapping from TradeEventRecord to TradeEventType does not exist for: " + standardEvent);
         };
     }
 }

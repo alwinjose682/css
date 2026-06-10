@@ -13,8 +13,15 @@ public record AmendmentSubjectContextEager(
         Consumer<FoCashMessage> callback,
         Set<AmendableFoCashMessageField> amendableFields) implements AmendmentSubjectContext {
 
+    public AmendmentSubjectContextEager(CashLeg cashLeg, Consumer<FoCashMessage> callback, Set<AmendableFoCashMessageField> amendableFields) {
+        this(cashLeg == null ? null : cashLeg.cashLegType(),
+                cashLeg == null ? null : cashLeg.cashMessage(),
+                callback,
+                amendableFields);
+    }
+
     public AmendmentSubjectContextEager {
-        if (cashLegType==null || amendmentSubject == null || callback == null || amendableFields == null) {
+        if (cashLegType == null || amendmentSubject == null || callback == null || amendableFields == null) {
             throw new RuntimeException("No part of the state of this class can be null. If some values are not known, use AmendmentSubjectContextLazy.class");
         }
     }

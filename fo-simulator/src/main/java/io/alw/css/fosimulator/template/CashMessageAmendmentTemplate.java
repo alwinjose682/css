@@ -2,14 +2,13 @@ package io.alw.css.fosimulator.template;
 
 import io.alw.css.domain.cashflow.*;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
-import io.alw.css.fosimulator.model.TradeEventActionPair;
-import io.alw.css.fosimulator.template.domain.CashLeg;
-import io.alw.css.fosimulator.template.domain.TradeContext;
-import io.alw.css.fosimulator.template.model.AmendableFoCashMessageField;
-import io.alw.css.fosimulator.template.domain.CashLegType;
 import io.alw.css.fosimulator.model.Entity;
+import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
+import io.alw.css.fosimulator.template.domain.CashLeg;
+import io.alw.css.fosimulator.template.domain.CashLegType;
+import io.alw.css.fosimulator.template.domain.TradeContext;
 import io.alw.css.fosimulator.template.model.*;
 import io.alw.datagen.template.AggregateTemplateBuilderResult;
 
@@ -20,7 +19,8 @@ import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 
-import static io.alw.css.fosimulator.template.domain.CashLegType.*;
+import static io.alw.css.fosimulator.template.domain.CashLegType.CHILD_CASHFLOW;
+import static io.alw.css.fosimulator.template.domain.CashLegType.PARENT_CASHFLOW;
 
 /// The type parameter M stands for MessageContext which is a combination of [FoCashMessage] and its metadata created by the implementations of this class.
 /// Some implementations choose to store MessageContext instead of just FoCashMessage in [io.alw.css.fosimulator.store.CashMessageStore]
@@ -105,8 +105,10 @@ sealed abstract class CashMessageAmendmentTemplate<M extends TradeContext>
     }
 
     private void buildAmendedMessageFor(CashMessageAmendmentContext amndCtx, AmendmentSubjectContextLazy subCtxLazy, M trdCtx) {
-        for (AmendableFoCashMessageField amendableFieldSupplier : subCtxLazy.amendableFields()) {
-            switch (amendableFieldSupplier) {
+        Set<AmendableFoCashMessageField> concreteAmendableFields = new HashSet<>();
+
+        for (AmendableFoCashMessageField amendableField : subCtxLazy.amendableFields()) {
+            switch (amendableField) {
                 case AmendableFoCashMessageFieldSupplier fieldSupplier -> {
                     switch (fieldSupplier) {
                         case AmendableFoCashMessageFieldSupplier.ConditionalSupplier supplier -> {
@@ -152,10 +154,27 @@ sealed abstract class CashMessageAmendmentTemplate<M extends TradeContext>
                     }
                 }
                 case AmendableFoCashMessageField.Amount _, AmendableFoCashMessageField.CounterpartyCode _, AmendableFoCashMessageField.ValueDate _ -> {
-                    // NOTE: This type of usage as mentioned in the RuntimeException message is not possible to occur in any case due to the structure of AmendmentSubjectContextEager and AmendmentSubjectContextLazy
-                    throw new RuntimeException("Incorrect use of `AmendableFoCashMessageField` type. Instead, `AmendableFoCashMessageFieldSupplier` type is expected to be used when the values are NOT known at the time of constructing the object");
+                    concreteAmendableFields.add(amendableField);
                 }
             }
+        }
+
+
+        // NOTE: AmendmentSubjectContextLazy may contain a both concrete amendable fields like AmendableFoCashMessageField.Amount, ValueDate etc in addition to the obviously expected 'AmendableFoCashMessageFieldSupplier'
+        if (!concreteAmendableFields.isEmpty()) {
+            var cashLeg = subCtxLazy.cashLeg();
+            if (cashLeg == null) {
+                throw new RuntimeException("Unable to amend a cashMessage. cashLeg should not be null when a concrete 'AmendableFoCashMessageField' is present in 'AmendmentSubjectContextLazy'");
+            }
+            var callback = subCtxLazy.callbackProvider().apply(cashLeg);
+
+            // Create the amendment subject context
+            var amndSubCtxEager = new AmendmentSubjectContextEager(cashLeg.cashLegType(), cashLeg.cashMessage(), callback, concreteAmendableFields);
+            // Register the build step with the templateBuilder
+            this.withRelatedItem(
+                    amndSubCtxEager.callback(),
+                    () -> applyFutureAmendmentInclusion(trdCtx),
+                    () -> buildAmendedMessageFor(amndCtx, amndSubCtxEager, trdCtx));
         }
     }
 

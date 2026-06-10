@@ -8,8 +8,8 @@ import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.store.CashMessageStore;
 import io.alw.css.fosimulator.store.InMemoryCashMessageStore;
-import io.alw.css.fosimulator.template.model.*;
 import io.alw.css.fosimulator.template.domain.FxTradeContext;
+import io.alw.css.fosimulator.template.model.*;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
 
 import java.math.BigDecimal;
@@ -21,7 +21,8 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 
-import static io.alw.css.fosimulator.template.domain.CashLegType.*;
+import static io.alw.css.fosimulator.template.domain.CashLegType.FX_SIDE1;
+import static io.alw.css.fosimulator.template.domain.CashLegType.FX_SIDE2;
 import static io.alw.css.fosimulator.template.model.AmendableFoCashMessageFieldType.*;
 
 public final class FxTemplate extends CashMessageAmendmentTemplate<FxTradeContext> {
@@ -97,7 +98,7 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTradeContex
             case CANCEL -> buildAmendmentContextForCancelEvent(nextTradeEventAction);
             case BOOK_MOVE -> throw new RuntimeException("Trade amendment for BOOK_MOVE event is not implemented yet");
             // Trade specific amendments are not permitted
-            case TERMINATE, ROLL, EXERCISE, CORRECTION, KNOCK_OUT, EXPIRE, FIX, UN_FIX, INTEREST_ACTION, MATURE ->
+            case TERMINATE, ROLL, EXERCISE, CORRECTION, KNOCK_OUT, EXPIRE, FIX, UN_FIX, INTEREST_ACTION, COUPON, MATURE ->
                     throw new RuntimeException("Invalid trade event and action. Amendment for trade specific event: " + nextEventType + " is not permitted");
             case NEW_TRADE -> throw new RuntimeException("Invalid trade event and action. NEW_TRADE is not amendment");
         };

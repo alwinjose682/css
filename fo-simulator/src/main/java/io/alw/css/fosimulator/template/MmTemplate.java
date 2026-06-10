@@ -2,20 +2,22 @@ package io.alw.css.fosimulator.template;
 
 import io.alw.css.domain.cashflow.*;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
-import io.alw.css.fosimulator.template.domain.*;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.store.CashMessageStore;
 import io.alw.css.fosimulator.store.InMemoryCashMessageStore;
+import io.alw.css.fosimulator.template.domain.*;
 import io.alw.css.fosimulator.template.model.*;
 import io.alw.datagen.template.AggregateTemplateBuilder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
@@ -99,7 +101,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
             case CANCEL -> buildAmendmentContextForCancelEvent(nextTradeEventAction);
             case BOOK_MOVE -> throw new RuntimeException("Trade amendment for BOOK_MOVE event is not implemented yet");
             // Trade specific amendments are not permitted
-            case TERMINATE, ROLL, EXERCISE, CORRECTION, KNOCK_OUT, EXPIRE, FIX, UN_FIX, INTEREST_ACTION, MATURE ->
+            case TERMINATE, ROLL, EXERCISE, CORRECTION, KNOCK_OUT, EXPIRE, FIX, UN_FIX, INTEREST_ACTION, COUPON, MATURE ->
                     throw new RuntimeException("Invalid trade event and action. Amendment for trade specific event: " + nextEventType + " is not permitted");
             case NEW_TRADE -> throw new RuntimeException("Invalid trade event and action. NEW_TRADE is not amendment");
         };
@@ -128,19 +130,23 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
                     intLegAmndFieldSupplier.add(cl -> new AmendableFoCashMessageField.Amount(determineInterestLegAmount(principalLeg, maturityLeg, (InterestCashLeg) cl)));
                     amendableFields
                             .add(MM_PRINCIPAL, amount)
-                            .add(MM_MATURITY, amount) // The Pay/Receive direction remains the same
                             .add(MM_INTEREST, intLegAmndFieldSupplier);
+                    if (maturityLeg != null) {
+                        amendableFields.add(MM_MATURITY, amount); // The Pay/Receive direction remains the same
+                    }
                 }
                 case COUNTERPARTY_CODE -> {
                     var cpCode = MmAmendmentFieldValue.PrimarySubject.forCounterpartyCode(principalLeg, msgTemplateHelper);
                     amendableFields
                             .add(MM_PRINCIPAL, cpCode)
-                            .add(MM_MATURITY, cpCode)
                             .add(MM_INTEREST, intLegAmndFieldSupplier.add(_ -> cpCode));
+                    if (maturityLeg != null) {
+                        amendableFields.add(MM_MATURITY, cpCode);
+                    }
                 }
                 case VALUE_DATE -> {
                     if (primaryAmendmentSubjectCashLegType == MM_PRINCIPAL) {
-                        // No adjustments not needed for MM_INTEREST with respect to valueDate change of principalLeg
+                        // No adjustments needed for MM_INTEREST with respect to valueDate change of principalLeg
 
                         // Get new valueDate for principalLeg and add to the collection
                         var principalLegNewVd = MmAmendmentFieldValue.PrimarySubject.PrincipalLeg.forValueDate(principalLeg, msgTemplateHelper, trdCtx);
@@ -177,9 +183,9 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
         }
 
         // 1. Amendment context for PrincipalLeg(primary amendment subject)
-        var primaryAmndSubCtx = new AmendmentSubjectContextEager(principalLeg.cashLegType(), principalLeg.cashMessage(), principalLeg::setCashMessage, amendableFields.get(MM_PRINCIPAL));
+        var primaryAmndSubCtx = new AmendmentSubjectContextEager(principalLeg, principalLeg::setCashMessage, amendableFields.get(MM_PRINCIPAL));
         // 2. Amendment context for MaturityLeg
-        var maturityAmndSubCtx = new AmendmentSubjectContextLazy(cl -> cl::setCashMessage, amendableFields.get(MM_MATURITY));
+        var maturityAmndSubCtx = new AmendmentSubjectContextLazy(maturityLeg, cl -> cl::setCashMessage, amendableFields.get(MM_MATURITY));
         // 3. Amendment context for InterestLegs
         var interestAmndCtx = new AmendmentSubjectContextLazy(cl -> cl::setCashMessage, amendableFields.get(MM_INTEREST));
 
