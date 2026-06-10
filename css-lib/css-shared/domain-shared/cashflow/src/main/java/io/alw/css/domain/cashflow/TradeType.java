@@ -12,8 +12,9 @@ public enum TradeType {
     MM_CALL(commonEventTypes()),
     PAYMENT(commonEventTypes()),
     FX_NDF(commonEventTypesWith(List.of(FIX, UN_FIX))), // FXNonDeliverableForward
-    BOND(commonEventTypesWith(List.of(INTEREST_ACTION, MATURE))),
-    REPO(commonEventTypesWith(List.of(ROLL, TERMINATE))),
+    BOND(commonEventTypesWith(List.of(COUPON, MATURE))),
+    REPO(commonEventTypesWith(List.of(INTEREST_ACTION, ROLL, TERMINATE))),
+    MM(commonEventTypesWith(List.of(INTEREST_ACTION, ROLL, TERMINATE))),
     OPTION(commonEventTypesWith(List.of(EXERCISE, KNOCK_OUT, EXPIRE)));
 
     private static List<TradeEventType> commonEventTypes() {
