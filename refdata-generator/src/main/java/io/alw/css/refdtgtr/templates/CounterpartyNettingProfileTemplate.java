@@ -10,12 +10,12 @@ import io.alw.css.refdtgtr.config.ConfigParams;
 import io.alw.css.refdtgtr.model.TestDataType;
 import io.alw.css.refdtgtr.provider.StringRefDataProvider;
 import io.alw.css.refdtgtr.provider.RefDataProvider;
+import io.alw.datagen.template.CascadingTemplateBuilder;
 import io.alw.datagen.tokengenerator.LongTokenGenerator;
-import io.alw.datagen.template.TemplateBuilder;
 
 import java.time.LocalDateTime;
 
-public final class CounterpartyNettingProfileTemplate extends TemplateBuilder<CounterpartyNettingProfile> {
+public final class CounterpartyNettingProfileTemplate extends CascadingTemplateBuilder<CounterpartyNettingProfile> {
     private final CounterpartyNettingProfileTemplateUtilities utilities;
     private final CounterpartyNettingProfileBuilder bdr;
     private final Counterparty counterparty;
@@ -32,7 +32,7 @@ public final class CounterpartyNettingProfileTemplate extends TemplateBuilder<Co
     }
 
     @Override
-    public CounterpartyNettingProfileTemplate withCustomTemplateValues() {
+    public CounterpartyNettingProfileTemplate withRootTemplateValues() {
         LongTokenGenerator idGntr = utilities.idGntr;
         StringRefDataProvider stringRefDataProvider = utilities.stringRefDataProvider;
 
@@ -72,7 +72,7 @@ public final class CounterpartyNettingProfileTemplate extends TemplateBuilder<Co
     }
 
     @Override
-    public CounterpartyNettingProfile buildTemplate() {
+    public CounterpartyNettingProfile buildRootTemplate() {
         return bdr.build();
     }
 

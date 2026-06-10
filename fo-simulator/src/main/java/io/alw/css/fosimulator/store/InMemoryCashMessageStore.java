@@ -1,31 +1,29 @@
 package io.alw.css.fosimulator.store;
 
-import io.alw.css.domain.cashflow.FoCashMessage;
-
 import java.util.*;
 
 /// [InMemoryCashMessageStore] is not thread safe. It is intended to be used exclusively by a single thread
-public final class InMemoryCashMessageStore implements CashMessageStore {
-    private final Map<Long, List<FoCashMessage>> store;
+public final class InMemoryCashMessageStore<T> implements CashMessageStore<T> {
+    private final Map<Long, List<T>> store;
 
     public InMemoryCashMessageStore() {
         this.store = new HashMap<>();
     }
 
     @Override
-    public void add(long retrievalDay, FoCashMessage foCashMessage) {
-        final List<FoCashMessage> foCashMessages = store.get(retrievalDay);
-        if (foCashMessages == null) {
-            List<FoCashMessage> newFoCashMessageList = new ArrayList<>();
-            newFoCashMessageList.add(foCashMessage);
-            store.put(retrievalDay, newFoCashMessageList);
+    public void add(long retrievalDay, T cashMsgDatum) {
+        final List<T> cashMsgData = store.get(retrievalDay);
+        if (cashMsgData == null) {
+            List<T> newCashMsgData = new ArrayList<>();
+            newCashMsgData.add(cashMsgDatum);
+            store.put(retrievalDay, newCashMsgData);
         } else {
-            foCashMessages.add(foCashMessage);
+            cashMsgData.add(cashMsgDatum);
         }
     }
 
     @Override
-    public List<FoCashMessage> remove(long retrievalDay) {
+    public List<T> remove(long retrievalDay) {
         return store.remove(retrievalDay);
     }
 }

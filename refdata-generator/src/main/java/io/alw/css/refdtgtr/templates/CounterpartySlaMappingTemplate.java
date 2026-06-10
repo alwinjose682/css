@@ -5,12 +5,12 @@ import io.alw.css.domain.referencedata.CounterpartySlaMapping;
 import io.alw.css.domain.referencedata.CounterpartySlaMappingBuilder;
 import io.alw.css.domain.referencedata.Nostro;
 import io.alw.css.refdtgtr.config.ConfigParams;
+import io.alw.datagen.template.CascadingTemplateBuilder;
 import io.alw.datagen.tokengenerator.LongTokenGenerator;
-import io.alw.datagen.template.TemplateBuilder;
 
 import java.time.LocalDateTime;
 
-public class CounterpartySlaMappingTemplate extends TemplateBuilder<CounterpartySlaMapping> {
+public class CounterpartySlaMappingTemplate extends CascadingTemplateBuilder<CounterpartySlaMapping> {
     private final CounterpartySlaMappingTemplateUtilities utilities;
     private final CounterpartySlaMappingBuilder bdr;
     private final Counterparty counterparty;
@@ -29,7 +29,7 @@ public class CounterpartySlaMappingTemplate extends TemplateBuilder<Counterparty
     }
 
     @Override
-    public CounterpartySlaMappingTemplate withCustomTemplateValues() {
+    public CounterpartySlaMappingTemplate withRootTemplateValues() {
         LongTokenGenerator idGntr = utilities.idGntr;
 
         bdr
@@ -47,7 +47,7 @@ public class CounterpartySlaMappingTemplate extends TemplateBuilder<Counterparty
     }
 
     @Override
-    public CounterpartySlaMapping buildTemplate() {
+    public CounterpartySlaMapping buildRootTemplate() {
         return bdr.build();
     }
 

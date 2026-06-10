@@ -7,7 +7,7 @@ import io.alw.css.fosimulator.CashMessagePublisher;
 import io.alw.css.fosimulator.CssTaskExecutor;
 import io.alw.css.fosimulator.template.FxTemplate;
 import io.alw.css.fosimulator.template.IdProvider;
-import io.alw.css.fosimulator.template.TemporaryGenericTemplate;
+import io.alw.css.fosimulator.template.MmTemplate;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.GeneratorDetail;
 import io.alw.css.fosimulator.model.CashflowGenerationInitialValues;
@@ -25,6 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
+
+import static io.alw.css.domain.cashflow.TradeType.*;
 
 public final class CashflowGeneratorHandler {
     private final static Logger log = LoggerFactory.getLogger(CashflowGeneratorHandler.class);
@@ -105,11 +107,11 @@ public final class CashflowGeneratorHandler {
         dayTicker.start();
 
         List<GeneratorDetail> startedGenerators = new ArrayList<>();
-        List<TradeType> listOfCurrentlySupportedTradeTypes = List.of(TradeType.values());
+        List<TradeType> listOfSupportedTradeTypes = List.of(FX, MM_TERM, MM_CALL);
 
         // Create and start generator for all combinations of each TransactionType, TradeType and Entity
         for (TransactionType transactionType : TransactionType.values()) {
-            for (TradeType tradeType : listOfCurrentlySupportedTradeTypes) {
+            for (TradeType tradeType : listOfSupportedTradeTypes) {
                 for (Entity entity : refDataService.entities()) {
                     String key = getKey(transactionType, tradeType, entity);
                     final long generatorSleepDurationSeconds = getGeneratorSleepDurationFor(key);
@@ -120,6 +122,7 @@ public final class CashflowGeneratorHandler {
                         // Create the cashflowGenerator
                         GeneratorDetail generatorDetail = new GeneratorDetail(key, generatorSleepDurationSeconds);
                         CashflowGenerator cashflowGenerator = createGenerator(generatorDetail, cashMessageSupplier, cashMessagePublisher);
+                        log.info("Created Cashflow Generator for TransactionType: " + transactionType + ", TradeType: " + tradeType + ", Entity: " + entity + " [key: " + generatorDetail.generatorKey() + ", freq: " + generatorDetail.generationFrequency() + "]");
                         // Start the cashflowGenerator
                         cssTaskExecutor.submit(cashflowGenerator);
                         startedGenerators.add(generatorDetail);
@@ -181,18 +184,15 @@ public final class CashflowGeneratorHandler {
         RandomGenerator rndm = RandomGenerator.getDefault();
         return switch (tradeType) {
             case FX -> new FxTemplate(entity, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
-            case PAYMENT -> new TemporaryGenericTemplate(entity, TradeType.PAYMENT, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
-            case FX_NDF -> new TemporaryGenericTemplate(entity, TradeType.FX_NDF, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
-            case BOND -> new TemporaryGenericTemplate(entity, TradeType.BOND, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
-            case REPO -> new TemporaryGenericTemplate(entity, TradeType.REPO, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
-            case MM -> new TemporaryGenericTemplate(entity, TradeType.MM, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
-            case OPTION -> new TemporaryGenericTemplate(entity, TradeType.OPTION, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
+            case MM_TERM -> new MmTemplate(entity, MM_TERM, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
+            case MM_CALL -> new MmTemplate(entity, MM_CALL, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
+            default -> throw new IllegalStateException("Cashflow generation not implemented yet for TradeType: " + tradeType);
         };
     }
 
     /// 1. Signals the [CashflowGenerator] to stop in a new Thread
     /// 2. if the
-    /// This method is Concurrent Safe. Performs this computation atomically. generatorMap is ConcurrentHashMap
+    /// This method is Concurrent Safe. Performs this computation atomically.
     /// TODO: dayTicker is not stopped if all the generators are stopped in an adhoc manner
     private CashflowGeneratorHandlerOutcome stop(String key) {
         CashflowGeneratorHandlerOutcome[] outcome = new CashflowGeneratorHandlerOutcome[1];

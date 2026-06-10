@@ -5,7 +5,7 @@ import io.alw.css.domain.referencedata.CounterpartyBuilder;
 import io.alw.css.domain.referencedata.Entity;
 import io.alw.css.refdtgtr.config.ConfigParams;
 import io.alw.css.refdtgtr.domain.CounterpartyType;
-import io.alw.datagen.template.TemplateBuilder;
+import io.alw.datagen.template.CascadingTemplateBuilder;
 import io.alw.datagen.formattingtemplate.TokenFormattingTemplate;
 import io.alw.css.refdtgtr.model.CountryStateCurrency;
 import io.alw.datagen.model.AffixPosition;
@@ -27,7 +27,7 @@ import java.util.List;
 /// It is valid for a single entity to have multiple counterparty codes
 ///
 /// Note: Creating child counterparty is optional
-public final class CounterpartyTemplate extends TemplateBuilder<Counterparty> {
+public final class CounterpartyTemplate extends CascadingTemplateBuilder<Counterparty> {
     private final CounterpartyTemplateUtilities utilities;
     private final CounterpartyBuilder cptyBdr;
     private final CountryStateCurrency countryStateCurrency;
@@ -53,7 +53,7 @@ public final class CounterpartyTemplate extends TemplateBuilder<Counterparty> {
     }
 
     @Override
-    public CounterpartyTemplate withCustomTemplateValues() {
+    public CounterpartyTemplate withRootTemplateValues() {
         BinaryStringTokenGenerator<String, Long> idProvider = utilities.idProvider();
         TokenFormattingTemplate<String, String> simpleConcatenatingTemplate = utilities.simpleConcatenatingTemplate();
         List<String> idValues = idProvider.next();
@@ -141,14 +141,14 @@ public final class CounterpartyTemplate extends TemplateBuilder<Counterparty> {
     }
 
     @Override
-    public Counterparty buildTemplate() {
+    public Counterparty buildRootTemplate() {
         return cptyBdr.build();
     }
 
     @Override
     protected CounterpartyTemplate childTemplate(Counterparty parent) {
         return new CounterpartyTemplate(this.countryStateCurrency, parent)
-                .withCustomTemplateValues()
+                .withRootTemplateValues()
                 .internal(cptyBdr.internal());
     }
 }

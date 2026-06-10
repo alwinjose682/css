@@ -7,8 +7,10 @@ import java.util.List;
 import static io.alw.css.domain.cashflow.TradeEventType.*;
 
 public enum TradeType {
+    FX(commonEventTypes()), // FXSpotForward,
+    MM_TERM(commonEventTypes()),
+    MM_CALL(commonEventTypes()),
     PAYMENT(commonEventTypes()),
-    FX(commonEventTypes()), // FXSpotForward
     FX_NDF(commonEventTypesWith(List.of(FIX, UN_FIX))), // FXNonDeliverableForward
     BOND(commonEventTypesWith(List.of(COUPON, MATURE))),
     REPO(commonEventTypesWith(List.of(INTEREST_ACTION, ROLL, TERMINATE))),

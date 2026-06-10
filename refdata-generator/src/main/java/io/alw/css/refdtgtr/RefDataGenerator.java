@@ -79,9 +79,9 @@ public class RefDataGenerator {
 
         for (var currency : RefDataCollection.singleton().currencies) {
             List<Nostro> nostros = new NostroTemplate(entity, (Currency) currency)
-                    .withCustomTemplateValues()
+                    .withRootTemplateValues()
                     .childTemplate(rndm.nextInt(5, 10))
-                    .buildWithChildTemplates();
+                    .build();
             allNostros.addAll(nostros);
 
             int numOfNostros = nostros.size();
@@ -108,10 +108,10 @@ public class RefDataGenerator {
 
             // Build Counterparty
             List<Counterparty> counterparties = new CounterpartyTemplate()
-                    .withCustomTemplateValues()
+                    .withRootTemplateValues()
                     .internal(rndm.nextBoolean())
                     .childTemplate(rndm.nextInt(0, 5))
-                    .buildWithChildTemplates();
+                    .build();
             int numOfCps = counterparties.size();
             totalCounterparties += numOfCps;
             //System.out.println("Number of counterparties: " + numOfCps);
@@ -163,9 +163,9 @@ public class RefDataGenerator {
                 // Build Ssi
                 for (var currency : PreDefinedTestData.singleton().currencies) {
                     List<Ssi> ssisForEachCurrency = new SsiTemplate(cp, currency, tradeType)
-                            .withCustomTemplateValues()
+                            .withRootTemplateValues()
                             .childTemplate(rndm.nextInt(2, 7))
-                            .buildWithChildTemplates();
+                            .build();
                     ssis.addAll(ssisForEachCurrency);
 
                     ++numOfCps;
@@ -175,11 +175,11 @@ public class RefDataGenerator {
 
                 // Build CounterpartyNettingProfile
                 List<CounterpartyNettingProfile> cpnpsForEachProduct = new CounterpartyNettingProfileTemplate(cp)
-                        .withCustomTemplateValues()
+                        .withRootTemplateValues()
                         .product(tradeType)
                         .netForAnyEntity(rndm.nextBoolean())
                         .netByParentCounterpartyCode(rndm.nextBoolean())
-                        .buildWithChildTemplates();
+                        .build();
                 cpnps.addAll(cpnpsForEachProduct);
 
             }
@@ -189,8 +189,8 @@ public class RefDataGenerator {
             final List<CounterpartySlaMapping> cpsms;
             if (shouldGenerateCpSlaMapping) {
                 cpsms = new CounterpartySlaMappingTemplate(cp, secondaryNostros.get(rndm.nextInt(0, secondaryNostros.size())))
-                        .withCustomTemplateValues()
-                        .buildWithChildTemplates();
+                        .withRootTemplateValues()
+                        .build();
             } else {
                 cpsms = new ArrayList<>();
             }

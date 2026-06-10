@@ -5,7 +5,7 @@ import io.alw.css.domain.referencedata.Entity;
 import io.alw.css.domain.referencedata.Nostro;
 import io.alw.css.domain.referencedata.NostroBuilder;
 import io.alw.css.refdtgtr.config.ConfigParams;
-import io.alw.datagen.template.TemplateBuilder;
+import io.alw.datagen.template.CascadingTemplateBuilder;
 import io.alw.datagen.formattingtemplate.TokenFormattingTemplate;
 import io.alw.datagen.model.AffixPosition;
 import io.alw.css.refdtgtr.model.TestDataType;
@@ -20,7 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class NostroTemplate extends TemplateBuilder<Nostro> {
+public class NostroTemplate extends CascadingTemplateBuilder<Nostro> {
     private final NostroTemplateUtilities utilities;
     private final NostroBuilder nsBdr;
     private final Entity entity;
@@ -39,7 +39,7 @@ public class NostroTemplate extends TemplateBuilder<Nostro> {
     }
 
     @Override
-    public NostroTemplate withCustomTemplateValues() {
+    public NostroTemplate withRootTemplateValues() {
         AlphaNumericTokenGenerator idProvider = utilities.idGenerator;
         AlphaNumericTokenGenerator slaCodeProvider = utilities.slaCodeGenerator;
         LongTokenGenerator bnkAccNumGntr = utilities.bankAccountNumberGenerator;
@@ -83,12 +83,12 @@ public class NostroTemplate extends TemplateBuilder<Nostro> {
     }
 
     @Override
-    public Nostro buildTemplate() {
+    public Nostro buildRootTemplate() {
         return nsBdr.build();
     }
 
     @Override
     protected NostroTemplate childTemplate(Nostro parent) {
-        return new NostroTemplate(this.entity, this.currency, parent).withCustomTemplateValues();
+        return new NostroTemplate(this.entity, this.currency, parent).withRootTemplateValues();
     }
 }

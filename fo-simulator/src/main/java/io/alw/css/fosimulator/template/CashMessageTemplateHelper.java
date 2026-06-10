@@ -1,16 +1,28 @@
 package io.alw.css.fosimulator.template;
 
-import io.alw.css.domain.cashflow.TransactionType;
+import io.alw.css.domain.cashflow.*;
+import io.alw.css.fosimulator.model.TradeEventActionPair;
+import io.alw.css.fosimulator.template.domain.CashLegType;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
+import io.alw.css.fosimulator.template.domain.MmTradeEvent;
+import io.alw.css.fosimulator.template.domain.TradeEventActionRecord;
+import io.alw.css.fosimulator.template.domain.TradeEventTypeRecord;
+import io.alw.css.fosimulator.template.model.Ids;
 import io.alw.datagen.template.CountAware;
 
 import java.time.LocalDate;
 import java.util.random.RandomGenerator;
 
+import static io.alw.css.domain.cashflow.TradeEventAction.*;
+import static io.alw.css.domain.cashflow.TradeEventAction.ADD;
+import static io.alw.css.domain.cashflow.TradeEventType.*;
+import static io.alw.css.domain.cashflow.TradeEventType.AMEND;
+import static io.alw.css.fosimulator.template.CashMessageTemplate.VERSION_ONE;
 
-/// NOTE: This helper class has variable state
-final class CashMessageTemplateHelper implements CountAware {
+
+/// NOTE: This helper class has mutable state
+public final class CashMessageTemplateHelper implements CountAware {
     // Variable values for each template build. Also, these remain un-modified for each template build.
     private long dayForMsgTemplate;
 
@@ -20,7 +32,7 @@ final class CashMessageTemplateHelper implements CountAware {
     private final RandomGenerator rndm;
 
     // Spring Beans
-    private final CashMessageTemplateProperties cashMsgTemplateProps;
+    final CashMessageTemplateProperties cashMsgTemplateProps;
     private final RefDataService refDataService;
 
     private long counter;
@@ -32,6 +44,25 @@ final class CashMessageTemplateHelper implements CountAware {
         this.cashMsgTemplateProps = cashMsgTemplateProps;
         this.refDataService = refDataService;
         this.counter = 0L;
+    }
+
+    /// Returns [Ids] for version 1 cashflow and version 1 trade. ie; for a new trade
+    static Ids getNewTradeIds(CashLegType cashLegType) {
+        var idProvider = IdProvider.singleton();
+        return new Ids(cashLegType, idProvider.nextCashflowId(), VERSION_ONE, idProvider.nextTradeId(), VERSION_ONE);
+    }
+
+    /// Returns [Ids] for version 1 cashflow and with trade version from the given [Ids]
+    static Ids getNewCashMsgIdsFromExistingTrade(CashLegType cashLegType, Ids ids) {
+        var idProvider = IdProvider.singleton();
+        return new Ids(cashLegType, idProvider.nextCashflowId(), VERSION_ONE, ids.tradeID(), ids.tradeVersion());
+    }
+
+    public static TradeLink mapToTradeLink(Ids ids) {
+        return TradeLinkBuilder.TradeLink(
+                ids.linkType().name, null,
+                ids.cashflowID(), ids.cashflowVersion(),
+                ids.tradeID(), ids.tradeVersion());
     }
 
     /// Check the documentation for [CashMessageTemplate#getRndmValueDate()]
@@ -50,12 +81,39 @@ final class CashMessageTemplateHelper implements CountAware {
     /// This means this method can return back valued date as well, but the percentage of back valued cashMessages is configured to be very less.
     LocalDate getRndmValueDate() {
         final long daysToAdd;
-        if (isAnNthItem(cashMsgTemplateProps.numOfCfsForABackVdCf())) {
+        if (isAnNthItem(cashMsgTemplateProps.numOfCfsForABackVdCf())) { // A back valued cashflow will be created only when this becomes true
             daysToAdd = rndm.nextInt(Math.negateExact(cashMsgTemplateProps.vdBackwardDays()), -1);
         } else {
             daysToAdd = dayForMsgTemplate + rndm.nextInt(0, cashMsgTemplateProps.vdForwardDays());
         }
         return initialValueDate.plusDays(daysToAdd);
+    }
+
+    LocalDate getRndmFutureValuedDate() {
+        return getRndmFutureValueDateRelativeTo(initialValueDate, false, 0);
+    }
+
+    /// NOTE: This method can create valueDate higher than cashMsgTemplateProps::vdForwardDays()
+    /// NOTE: The method can return a current or future valued date even though the param`isBackValuedDateExpectedAsResult` is set to true
+    LocalDate getRndmFutureValueDateRelativeTo(LocalDate givenDate, boolean isBackValuedDateExpectedAsResult, long minimumNumOfDaysIntoFutureRelativeToTheGivenDate) {
+        final long daysToAdd;
+        if (!isBackValuedDateExpectedAsResult) {
+            daysToAdd = dayForMsgTemplate + minimumNumOfDaysIntoFutureRelativeToTheGivenDate + rndm.nextInt(0, 365 + cashMsgTemplateProps.vdForwardDays());
+        } else {
+            daysToAdd = minimumNumOfDaysIntoFutureRelativeToTheGivenDate;
+        }
+
+        return givenDate.plusDays(daysToAdd);
+    }
+
+    /// If the resultant value date after adding `daysToAdd` is after `dateRangeEnd`, then `dateRangeEnd` is returned as the result, because the value date returned must be within the given date range
+    public LocalDate getFutureValueDate(long daysToAdd, LocalDate dateRangeStart, LocalDate dateRangeEnd) {
+        LocalDate resultVD = dateRangeStart.plusDays(daysToAdd);
+        if (resultVD.isAfter(dateRangeEnd)) {
+            return dateRangeEnd;
+        } else {
+            return resultVD;
+        }
     }
 
     String getCounterpartyCorrespondingToTransactionType() {
@@ -78,12 +136,43 @@ final class CashMessageTemplateHelper implements CountAware {
         return transactionType == TransactionType.INTER_BOOK || transactionType == TransactionType.INTER_BRANCH || transactionType == TransactionType.INTER_COMPANY;
     }
 
-    long dayForMsgTemplate() {
+    long currentDayForMsgTemplate() {
         return dayForMsgTemplate;
+    }
+
+    LocalDate currentDateForMsgTemplate() {
+        return initialValueDate.plusDays(dayForMsgTemplate);
     }
 
     void setDayForMsgTemplate(long day) {
         dayForMsgTemplate = day;
+    }
+
+    TradeEventActionPair determineNextTradeEventAndActionForCommonEvents(RandomGenerator rbdm, TradeEventType standardEvent, TradeEventAction standardAction) {
+        int num = rndm.nextInt(1, 100);
+        TradeEventTypeRecord event = TradeEventTypeRecord.getCorrespondingTradeEventRecord(standardEvent);
+        TradeEventActionRecord action = TradeEventActionRecord.getCorrespondingTradeEventAction(standardAction);
+
+        return switch (event) {
+            case TradeEventTypeRecord.NEW_TRADE _ when num > 30 -> new TradeEventActionPair(AMEND, ADD);
+            case TradeEventTypeRecord.NEW_TRADE _ when num > 10 -> new TradeEventActionPair(CANCEL, ADD);
+            case TradeEventTypeRecord.NEW_TRADE _ -> new TradeEventActionPair(REBOOK, ADD);
+            case TradeEventTypeRecord.REBOOK _ when num > 10 -> new TradeEventActionPair(AMEND, ADD);
+            case TradeEventTypeRecord.REBOOK _ -> new TradeEventActionPair(CANCEL, ADD);
+            case TradeEventTypeRecord.AMEND _ -> switch (action) {
+                case TradeEventActionRecord.ADD _ when num > 30 -> new TradeEventActionPair(AMEND, MODIFY);
+                case TradeEventActionRecord.ADD _ when num > 20 -> new TradeEventActionPair(CANCEL, ADD);
+                case TradeEventActionRecord.ADD _ -> new TradeEventActionPair(REBOOK, ADD);
+                case TradeEventActionRecord.MODIFY _ when num > 40 -> new TradeEventActionPair(AMEND, MODIFY);
+                case TradeEventActionRecord.MODIFY _ when num > 30 -> new TradeEventActionPair(AMEND, REMOVE);
+                case TradeEventActionRecord.MODIFY _ when num > 10 -> new TradeEventActionPair(REBOOK, ADD);
+                case TradeEventActionRecord.MODIFY _ -> new TradeEventActionPair(CANCEL, ADD);
+                case TradeEventActionRecord.REMOVE _ when num > 30 -> new TradeEventActionPair(AMEND, ADD);
+                case TradeEventActionRecord.REMOVE _ -> new TradeEventActionPair(AMEND, ADD);
+            };
+            case TradeEventTypeRecord.CANCEL _ -> throw new RuntimeException("Attempt to amend a cancelled cashflow is invalid");
+            case MmTradeEvent _ -> throw new RuntimeException("Invalid trade event");
+        };
     }
 
     @Override
