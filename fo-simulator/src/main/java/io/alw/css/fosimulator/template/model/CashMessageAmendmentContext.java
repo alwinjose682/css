@@ -34,9 +34,12 @@ public final class CashMessageAmendmentContext {
     }
 
     /// The order in which elements are added determines the encounter order as well(FIFO).
+    /// If the [AmendmentSubjectContext] is null, then it is not added to the Set
     /// see {@link CashMessageAmendmentContext}
     public CashMessageAmendmentContext addNextAmndSubCtx(AmendmentSubjectContext amndSubCtx) {
-        amendmentSubjectContexts.add(amndSubCtx);
+        if (amndSubCtx != null) {
+            amendmentSubjectContexts.add(amndSubCtx);
+        }
         return this;
     }
 

@@ -73,17 +73,18 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
     }
 
     @Override
-    protected void buildCashMessageAmendmentContext(Consumer<CashMessageAmendmentContext> amendedMessageBuilderFunc, MmTradeContext trdCtxForAmendment) {
+    protected void buildCashMessageAmendmentContext(Consumer<CashMessageAmendmentContext> amendmentMessageBuilderFunc, MmTradeContext trdCtxForAmendment) {
         switch (cyclicAmendableMmLegProvider.get()) {
             case MM_PRINCIPAL -> {
                 var msgAmendCtx = buildCashMessageAmendmentContextStep2(trdCtxForAmendment.principalLeg(), trdCtxForAmendment);
-                amendedMessageBuilderFunc.accept(msgAmendCtx);
+                amendmentMessageBuilderFunc.accept(msgAmendCtx);
             }
             case MM_MATURITY -> {
                 MmCashLeg maturityLeg = trdCtxForAmendment.maturityLeg();
+                // maturityLeg may not be present for CALL trade. If not present, do no amendment to create, hence do not execute the function
                 if (maturityLeg != null && maturityLeg.cashMessage() != null) {
                     var msgAmendCtx = buildCashMessageAmendmentContextStep2(maturityLeg, trdCtxForAmendment);
-                    amendedMessageBuilderFunc.accept(msgAmendCtx);
+                    amendmentMessageBuilderFunc.accept(msgAmendCtx);
                 }
             }
             case MM_INTEREST -> throw new RuntimeException("Amending interest leg is not allowed");
@@ -182,10 +183,13 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
             }
         }
 
-        // 1. Amendment context for PrincipalLeg(primary amendment subject)
+        // 1. Amendment context for PrincipalLeg
         var primaryAmndSubCtx = new AmendmentSubjectContextEager(principalLeg, principalLeg::setCashMessage, amendableFields.get(MM_PRINCIPAL));
-        // 2. Amendment context for MaturityLeg
-        var maturityAmndSubCtx = new AmendmentSubjectContextLazy(maturityLeg, cl -> cl::setCashMessage, amendableFields.get(MM_MATURITY));
+        // 2. Amendment context for MaturityLeg(could be null for CALL trades)
+        AmendmentSubjectContextLazy maturityAmndSubCtx = null;
+        if (maturityLeg != null) {
+            maturityAmndSubCtx = new AmendmentSubjectContextLazy(maturityLeg, cl -> cl::setCashMessage, amendableFields.get(MM_MATURITY));
+        }
         // 3. Amendment context for InterestLegs
         var interestAmndCtx = new AmendmentSubjectContextLazy(cl -> cl::setCashMessage, amendableFields.get(MM_INTEREST));
 
