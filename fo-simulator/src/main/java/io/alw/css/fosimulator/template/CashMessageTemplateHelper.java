@@ -8,6 +8,7 @@ import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.template.domain.MmTradeEvent;
 import io.alw.css.fosimulator.template.domain.TradeEventActionRecord;
 import io.alw.css.fosimulator.template.domain.TradeEventTypeRecord;
+import io.alw.css.fosimulator.template.domain.TradeMetadata;
 import io.alw.css.fosimulator.template.model.Ids;
 import io.alw.datagen.template.CountAware;
 
@@ -44,12 +45,6 @@ public final class CashMessageTemplateHelper implements CountAware {
         this.counter = 0L;
     }
 
-    /// Returns [Ids] for version 1 cashflow and version 1 trade. ie; for a new trade
-    static Ids getNewTradeIds(TradeLegType tradeLegType) {
-        var idProvider = IdProvider.singleton();
-        return new Ids(tradeLegType, idProvider.nextCashflowId(), VERSION_ONE, idProvider.nextTradeId(), VERSION_ONE);
-    }
-
     /// Returns [Ids] for version 1 cashflow and with trade version from the given [Ids]
     static Ids getNewCashMsgIdsFromExistingTrade(TradeLegType tradeLegType, Ids ids) {
         var idProvider = IdProvider.singleton();
@@ -59,8 +54,12 @@ public final class CashMessageTemplateHelper implements CountAware {
     public static TradeLink mapToTradeLink(Ids ids) {
         return TradeLinkBuilder.TradeLink(
                 ids.linkType().name, null,
-                ids.cashflowID(), ids.cashflowVersion(),
+                ids.tradeLegId(), ids.tradeLegVersion(),
                 ids.tradeID(), ids.tradeVersion());
+    }
+
+    public static Ids getNewTradeLegIds(TradeMetadata trd) {
+        return new Ids(trd.nextTradeLegId(),VERSION_ONE);
     }
 
     /// Check the documentation for [CashMessageTemplate#getRndmValueDate()]

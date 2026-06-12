@@ -1,16 +1,16 @@
 package io.alw.css.fosimulator.template;
 
-import io.alw.css.domain.cashflow.FoCashMessage;
-import io.alw.css.domain.cashflow.FoCashMessageBuilder;
-import io.alw.css.domain.common.*;
-import io.alw.css.domain.trade.TradeLegType;
+import io.alw.css.domain.common.TradeEventAction;
+import io.alw.css.domain.common.TradeEventType;
+import io.alw.css.domain.common.TradeType;
+import io.alw.css.domain.common.TransactionType;
+import io.alw.css.domain.trade.*;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
-import io.alw.css.fosimulator.template.domain.CashLeg;
-import io.alw.css.fosimulator.template.domain.TradeContext;
+import io.alw.css.fosimulator.template.domain.TradeMetadata;
 import io.alw.css.fosimulator.template.model.Ids;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
 import io.alw.datagen.template.AggregateTemplateBuilder;
@@ -18,7 +18,6 @@ import io.alw.datagen.template.AggregateTemplateBuilder;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
@@ -27,16 +26,16 @@ import java.util.random.RandomGenerator;
 ///
 /// [CashMessageTemplate] instances are both a trade type template and a supplier of the build output of the template
 /// Each instance of this class is supposed to be exclusive for a single thread
-sealed abstract class CashMessageTemplate<M extends TradeContext>
-        extends AggregateTemplateBuilder<M, FoCashMessageBuilder, FoCashMessage>
-        implements Supplier<List<FoCashMessage>>
+sealed abstract class CashMessageTemplate<M extends TradeMetadata>
+        extends AggregateTemplateBuilder<M, TradeLegBuilder, TradeLeg>
+        implements Supplier<List<Trade>>
         permits CashMessageAmendmentTemplate {
 
     /// Variable values for each template build. These values remain un-modified for each template build.
-    /// After each build of the template, the [TradeContext] (trdCtx) and [FoCashMessageBuilder] (`bdr`) references are just assigned with new instances
+    /// After each build of the template, the [TradeMetadata] (trdCtx) and [TradeBuilder] (`bdr`) references are just assigned with new instances
     // Message Context and FoCashMessage builder
-    private M trdCtx;
-    private FoCashMessageBuilder bdr;
+    private M trd;
+    private MutableTradeBuilder bdr;
 
     // Constant values for each instance of CashMessageTemplate
     private final String entityCode;
@@ -73,21 +72,21 @@ sealed abstract class CashMessageTemplate<M extends TradeContext>
     protected abstract TradeEventActionPair determineNextTradeEventAndAction(TradeEventType amendMsgEvt, TradeEventAction amendMsgAct);
 
     /// Build the grouped or related cash message associated with the cashMessage template being built
-    /// tradeLinks of grouped and related items are set when creating a cashMessage builder via [CashMessageTemplate#createBuilderFrom(FoCashMessage, String)]
-    /// The resultant [FoCashMessage] is already associated with the [TradeContext] in prior steps(using callbacks when creating new trade, amendments and new grouped cashMessages)
+    /// tradeLinks of grouped and related items are set when creating a cashMessage builder via [CashMessageTemplate#createBuilderFrom(Trade , String)]
+    /// The resultant [Trade] is already associated with the [TradeMetadata] in prior steps(using callbacks when creating new trade, amendments and new grouped cashMessages)
     @Override
-    protected FoCashMessage buildGroupedOrRelatedItem(FoCashMessageBuilder bdr) {
+    protected TradeLeg buildGroupedOrRelatedItem(TradeLegBuilder bdr) {
         return bdr.build();
     }
 
     /// Builds the cashMessage template
     ///
     /// **tradeLinks of root FoCashMessage**:
-    /// tradeLinks of rootFoCashMessage are set when creating a cashMessage builder with the default values via the method: [CashMessageTemplate#getNewCashMsgBuilder(Ids, TradeContext)]
+    /// tradeLinks of rootFoCashMessage are set when creating a cashMessage builder with the default values via the method: [CashMessageTemplate#getNewCashMsgBuilder(Ids, TradeMetadata)]
     @Override
     public M buildRootTemplate() {
-        trdCtx.setRootFoCashMessage(bdr.build());
-        return trdCtx;
+        trd.setRootTradeLeg(bdr.build());
+        return trd;
     }
 
     /// This method is the starting point to start a new build cycle
@@ -97,69 +96,54 @@ sealed abstract class CashMessageTemplate<M extends TradeContext>
         return this;
     }
 
-    /// This method is used to create root [FoCashMessageBuilder]. The builder for grouped or related items are created using [CashMessageTemplate#createBuilderFrom(FoCashMessage, String)]
+    /// This method is used to create root [MutableTradeBuilder]. The builder for grouped or related items are created using [CashMessageTemplate#createBuilderFrom(Trade , String)]
     /// NOTE: New [CashMessageTemplate] instances are not created by this method.
-    /// Instead, the existing [FoCashMessageBuilder] (`bdr`) is just replaced with a new one and then new values are assigned.
-    protected FoCashMessageBuilder getBaseCashMsgBuilder(Ids rooCashMessageIds, M trdCtx) {
+    /// Instead, the existing [TradeBuilder] (`bdr`) is just replaced with a new one and then new values are assigned.
+    protected MutableTradeBuilder getBaseCashMsgBuilder(Ids rooCashMessageIds, M trd, TradeLegType tradeLegType) {
         msgTemplateHelper.incrementCounter();
-        this.bdr = FoCashMessageBuilder.builder();
-        this.trdCtx = trdCtx;
+        this.bdr = Trade.builder(); // MutableTradeBuilder.class, not the default TradeBuilder.class
+        this.trd = trd;
 
         final String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionType();
         bdr
                 // Fixed value for this template
                 .entityCode(this.entityCode)
-                .currCode(this.currCode)
                 .tradeType(tradeType)
                 .transactionType(transactionType)
-                // Always a new trade
-                .tradeEventType(TradeEventType.NEW_TRADE)
-                .tradeEventAction(TradeEventAction.ADD)
                 // Id values
                 .tradeID(rooCashMessageIds.tradeID())
                 .tradeVersion(rooCashMessageIds.tradeVersion())
-                .cashflowID(rooCashMessageIds.cashflowID())
-                .cashflowVersion(rooCashMessageIds.cashflowVersion())
-                // TradeLink for root cash message(This method is invoked only for root cash message)
-                .tradeLinks(List.of(CashMessageTemplateHelper.mapToTradeLink(rooCashMessageIds)))
+                // Always a new trade
                 // Entity dependent fields. Book codes are dummy for now
                 .bookCode(refDataService.dummyBookCode())
                 .counterBookCode(msgTemplateHelper.isInterbookTransaction() ? refDataService.dummyCounterBookCode() : null) // Also a TransactionType dependent
                 // TransactionType dependent fields
                 .counterpartyCode(counterpartyCode)
-                // Others
-                .rate(new BigDecimal("1.2154754")) // rate is just a constant. No rate dependent calculation is done in CSS
+        // Others
         ;
 
+        // Create the rootLeg of the trade. Other legs can be set by the implementing class
+        TradeLegBuilder trdLegBdr = TradeLegBuilder.builder()
+                .tradeLegId(trd.nextTradeLegId())
+                .tradeLegVersion(VERSION_ONE)
+                .tradeLegType(tradeLegType)
+                .tradeEventType(TradeEventType.NEW_TRADE)
+                .tradeEventAction(TradeEventAction.ADD)
+                .rate(cyclicRateProvider.get()) // rate is just a constant from a list of multiple rate constants. No rate dependent calculation is done in CSS
+                .currCode(this.currCode)
+                // valueDate, payOrReceive and amount are to be set by the implementing class
+                ;
+
+        bdr.tradeLegs(tradeLegType, trdLegBdr);
         return bdr;
     }
 
-    /// see {@link CashMessageTemplate#createBuilderFrom(FoCashMessage, FoCashMessage, TradeLegType)}
-    protected FoCashMessageBuilder createBuilderFrom(CashLeg cashLeg, TradeLegType linkType) {
-        FoCashMessage referenceFoCashMessage = cashLeg.cashMessage();
-        FoCashMessage rootFoCashMessage = cashLeg.tradeContext().rootFoCashMessage();
-
-        return createBuilderFrom(referenceFoCashMessage, rootFoCashMessage, linkType);
-    }
-
-    /// This method is used to create [FoCashMessageBuilder] for grouped or related cashMessages.
-    /// TradeLink is also assigned in this method using the `linkType` parameter.
-    /// IMPORTANT: The `linkType` parameter must be the [TradeLegType] of the new cashMessage that is created from the `referenceFoCashMessage`
-    /// Further build steps can add more tradeLinks to the list if needed
+    /// This method is used to create [TradeBuilder] for grouped or related cashMessages.
     ///
     /// NOTE: The [CashMessageTemplateHelper#counter] is NOTE incremented by this method
-    protected FoCashMessageBuilder createBuilderFrom(FoCashMessage referenceFoCashMessage, FoCashMessage rootFoCashMessage, TradeLegType linkType) {
-        TradeLink tradeLink = TradeLinkBuilder.TradeLink(
-                linkType.name, null,
-                rootFoCashMessage.cashflowID(), rootFoCashMessage.cashflowVersion(),
-                rootFoCashMessage.tradeID(), rootFoCashMessage.tradeVersion());
-
-        var tradeLinkList = new ArrayList<TradeLink>();
-        tradeLinkList.add(tradeLink);
-
-        return FoCashMessageBuilder
-                .builder(referenceFoCashMessage)
-                .tradeLinks(tradeLinkList);
+    protected TradeLegBuilder createBuilderFrom(TradeLeg referenceTradeLeg) {
+        return TradeLegBuilder
+                .builder(referenceTradeLeg);
     }
 
     private static List<BigDecimal> getRateList() {

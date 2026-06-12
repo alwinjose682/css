@@ -1,6 +1,5 @@
 package io.alw.css.fosimulator.template;
 
-import io.alw.css.domain.cashflow.FoCashMessageBuilder;
 import io.alw.css.domain.common.*;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
 import io.alw.css.fosimulator.model.Entity;
@@ -9,7 +8,7 @@ import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.store.CashMessageStore;
 import io.alw.css.fosimulator.store.InMemoryCashMessageStore;
-import io.alw.css.fosimulator.template.domain.FxTradeContext;
+import io.alw.css.fosimulator.template.domain.FxTrade;
 import io.alw.css.fosimulator.template.model.*;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
 
@@ -26,19 +25,19 @@ import static io.alw.css.domain.trade.TradeLegType.FX_SIDE1;
 import static io.alw.css.domain.trade.TradeLegType.FX_SIDE2;
 import static io.alw.css.fosimulator.template.model.AmendableFoCashMessageFieldType.*;
 
-public final class FxTemplate extends CashMessageAmendmentTemplate<FxTradeContext> {
-    private final CashMessageStoreHelper<FxTradeContext> msgStoreHelper;
+public final class FxTemplate extends CashMessageAmendmentTemplate<FxTrade> {
+    private final CashMessageStoreHelper<FxTrade> msgStoreHelper;
     private static final Supplier<Set<AmendableFoCashMessageFieldType>> cyclicAmendableFoCashMessageFieldTypeProvider = new CyclicAmendableFoCashMessageFieldProvider(getListOfAmendableCashMessageFieldTypes());
 
     public FxTemplate(Entity entity, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMessageTemplateProperties) {
         super(entity, TradeType.FX, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
 
-        CashMessageStore<FxTradeContext> msgStore = new InMemoryCashMessageStore<>();
+        CashMessageStore<FxTrade> msgStore = new InMemoryCashMessageStore<>();
         this.msgStoreHelper = new CashMessageStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
     }
 
     @Override
-    protected Predicate<FxTradeContext> tradeContextAmendmentFrequency() {
+    protected Predicate<FxTrade> tradeContextAmendmentFrequency() {
         return _ -> rndm.nextInt(0, 100) > 80;
     }
 
@@ -46,12 +45,12 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTradeContex
     @Override
     public FxTemplate withRootTemplateValues() {
         // Create Ids for FX-Side-1 and Fx-Side-2
-        var fxSide1Ids = CashMessageTemplateHelper.getNewTradeIds(FX_SIDE1);
+        var fxSide1Ids = CashMessageTemplateHelper.getNewTradeLegIds(FX_SIDE1);
         var fxSide2Ids = CashMessageTemplateHelper.getNewCashMsgIdsFromExistingTrade(FX_SIDE2, fxSide1Ids);
         // Create message context and all tradeLinks
-        var trdCtx = new FxTradeContext(TradeType.FX);
+        var trdCtx = new FxTrade(TradeType.FX);
         // Create FoCashMessage builder for new template with default base values
-        FoCashMessageBuilder bdr = getBaseCashMsgBuilder(fxSide1Ids, trdCtx);
+        TradeBuilder bdr = getBaseCashMsgBuilder(fxSide1Ids, trdCtx);
         // Set the values specific to the FX trade being built
         bdr
                 .valueDate(msgTemplateHelper.getRndmValueDate(50))
@@ -65,17 +64,17 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTradeContex
     }
 
     /// Builds the counter side(side 2) of the fx message
-    private FoCashMessageBuilder buildFxSide2(FxTradeContext trdCtx, Ids ids) {
+    private TradeBuilder buildFxSide2(FxTrade trdCtx, Ids ids) {
         var fxSide1Msg = trdCtx.side1Msg();
         String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(fxSide1Msg.counterpartyCode());
         Entity entity = refDataService.entityOtherThan(rndm, fxSide1Msg.entityCode());
         String entityCode = entity.entityCode();
         String currCode = entity.currCode();
 
-        return createBuilderFrom(fxSide1Msg, trdCtx.rootFoCashMessage(), FX_SIDE2)
+        return createBuilderFrom(trdCtx.rootTradeLeg())
                 // Id and version of fxSide2 was already determined when fxSide1 was created
-                .cashflowID(ids.cashflowID())
-                .cashflowVersion(ids.cashflowVersion())
+                .cashflowID(ids.tradeLegId())
+                .cashflowVersion(ids.tradeLegVersion())
                 .tradeID(ids.tradeID())
                 .tradeVersion(ids.tradeVersion())
                 // Values that differ for counter side of the FX deal
@@ -89,8 +88,8 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTradeContex
     }
 
     @Override
-    protected void buildCashMessageAmendmentContext(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, FxTradeContext trdCtxForAmendment) {
-        var rootMsg = trdCtxForAmendment.rootFoCashMessage();
+    protected void buildCashMessageAmendmentContext(Consumer<CashMessageAmendmentContext> buildAmendedMessageFunc, FxTrade trdCtxForAmendment) {
+        var rootMsg = trdCtxForAmendment.rootTradeLeg();
         var nextTradeEventAction = determineNextTradeEventAndAction(rootMsg.tradeEventType(), rootMsg.tradeEventAction());
         var nextEventType = nextTradeEventAction.event();
         var msgAmndCtx = switch (nextEventType) {
@@ -113,7 +112,7 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTradeContex
         return new CashMessageAmendmentContext(nextTradeEventAction);
     }
 
-    private CashMessageAmendmentContext buildAmendmentContextForCommonAmendEvents(FxTradeContext trdCtxForAmendment, TradeEventActionPair nextTradeEventAction) {
+    private CashMessageAmendmentContext buildAmendmentContextForCommonAmendEvents(FxTrade trdCtxForAmendment, TradeEventActionPair nextTradeEventAction) {
         final var side1Msg = trdCtxForAmendment.side1Msg();
         final var side2Msg = trdCtxForAmendment.side2Msg();
         Set<AmendableFoCashMessageFieldType> amendableFieldTypes = cyclicAmendableFoCashMessageFieldTypeProvider.get();
@@ -176,7 +175,7 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTradeContex
     }
 
     @Override
-    protected CashMessageStoreHelper<FxTradeContext> msgStoreHelper() {
+    protected CashMessageStoreHelper<FxTrade> msgStoreHelper() {
         return msgStoreHelper;
     }
 

@@ -1,21 +1,20 @@
 package io.alw.css.fosimulator.template.model;
 
-import io.alw.css.domain.cashflow.FoCashMessage;
+import io.alw.css.domain.trade.Trade;
 import io.alw.css.domain.trade.TradeLegType;
-import io.alw.css.fosimulator.template.domain.CashLeg;
 
 import java.util.Set;
 import java.util.function.Consumer;
 
 public record AmendmentSubjectContextEager(
         TradeLegType tradeLegType,
-        FoCashMessage amendmentSubject,
-        Consumer<FoCashMessage> callback,
+        Trade amendmentSubject,
+        Consumer<Trade> callback,
         Set<AmendableFoCashMessageField> amendableFields) implements AmendmentSubjectContext {
 
-    public AmendmentSubjectContextEager(CashLeg cashLeg, Consumer<FoCashMessage> callback, Set<AmendableFoCashMessageField> amendableFields) {
-        this(cashLeg == null ? null : cashLeg.cashLegType(),
-                cashLeg == null ? null : cashLeg.cashMessage(),
+    public AmendmentSubjectContextEager(ExtendedTradeLeg cashLeg, Consumer<Trade> callback, Set<AmendableFoCashMessageField> amendableFields) {
+        this(cashLeg == null ? null : cashLeg.tradeLegType(),
+                cashLeg == null ? null : cashLeg.tradeLeg(),
                 callback,
                 amendableFields);
     }

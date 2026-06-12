@@ -1,8 +1,7 @@
 package io.alw.css.fosimulator.template.model;
 
 import io.alw.css.fosimulator.template.MmTemplate;
-import io.alw.css.fosimulator.template.domain.CashLeg;
-import io.alw.css.fosimulator.template.domain.TradeContext;
+import io.alw.css.fosimulator.template.domain.TradeMetadata;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,55 +16,55 @@ import java.util.function.Predicate;
 public sealed interface AmendableFoCashMessageFieldSupplier extends AmendableFoCashMessageField {
 
     sealed abstract class AmendableFoCashMessageFieldSupplierBase implements AmendableFoCashMessageFieldSupplier {
-        private final List<Function<CashLeg, AmendableFoCashMessageField>> amendableFieldSuppliers;
+        private final List<Function<ExtendedTradeLeg, AmendableFoCashMessageField>> amendableFieldSuppliers;
 
         private AmendableFoCashMessageFieldSupplierBase() {
             this.amendableFieldSuppliers = new ArrayList<>();
         }
 
-        public AmendableFoCashMessageFieldSupplier add(Function<CashLeg, AmendableFoCashMessageField> amendableFieldSupplier) {
+        public AmendableFoCashMessageFieldSupplier add(Function<ExtendedTradeLeg, AmendableFoCashMessageField> amendableFieldSupplier) {
             amendableFieldSuppliers.add(amendableFieldSupplier);
             return this;
         }
 
-        public List<Function<CashLeg, AmendableFoCashMessageField>> amendableFieldSupplierFunctions() {
+        public List<Function<ExtendedTradeLeg, AmendableFoCashMessageField>> amendableFieldSupplierFunctions() {
             return amendableFieldSuppliers;
         }
     }
 
     final class ConditionalSupplier extends AmendableFoCashMessageFieldSupplierBase {
-        private final CashLeg conditionSubject;
-        private final Predicate<CashLeg> condition;
+        private final ExtendedTradeLeg conditionSubject;
+        private final Predicate<ExtendedTradeLeg> condition;
 
-        public ConditionalSupplier(CashLeg conditionSubject, Predicate<CashLeg> condition) {
+        public ConditionalSupplier(ExtendedTradeLeg conditionSubject, Predicate<ExtendedTradeLeg> condition) {
             this.conditionSubject = conditionSubject;
             this.condition = condition;
         }
 
-        public Predicate<CashLeg> condition() {
+        public Predicate<ExtendedTradeLeg> condition() {
             return condition;
         }
 
-        public CashLeg conditionSubject() {
+        public ExtendedTradeLeg conditionSubject() {
             return conditionSubject;
         }
     }
 
     final class SupplierWithMessageSelector extends AmendableFoCashMessageFieldSupplierBase {
-        private final TradeContext trdCtx;
-        private final Function<TradeContext, List<? extends CashLeg>> amendmentSubjectSelector;
+        private final TradeMetadata trdCtx;
+        private final Function<TradeMetadata, List<? extends ExtendedTradeLeg>> amendmentSubjectSelector;
 
 
-        public SupplierWithMessageSelector(TradeContext trdCtx, Function<TradeContext, List<? extends CashLeg>> amendmentSubjectSelector) {
+        public SupplierWithMessageSelector(TradeMetadata trdCtx, Function<TradeMetadata, List<? extends ExtendedTradeLeg>> amendmentSubjectSelector) {
             this.trdCtx = trdCtx;
             this.amendmentSubjectSelector = amendmentSubjectSelector;
         }
 
-        public Function<TradeContext, List<? extends CashLeg>> amendmentSubjectSelector() {
+        public Function<TradeMetadata, List<? extends ExtendedTradeLeg>> amendmentSubjectSelector() {
             return amendmentSubjectSelector;
         }
 
-        public TradeContext trdCtx() {
+        public TradeMetadata trdCtx() {
             return trdCtx;
         }
     }

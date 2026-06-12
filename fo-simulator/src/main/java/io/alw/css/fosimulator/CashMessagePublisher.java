@@ -1,10 +1,8 @@
 package io.alw.css.fosimulator;
 
-import io.alw.css.domain.cashflow.FoCashMessage;
 import io.alw.css.fosimulator.mapper.FoCashMessageAvroMapper;
 import io.alw.css.fosimulator.model.properties.KafkaTopicProperties;
 import io.alw.css.serialization.cashflow.FoCashMessageAvro;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +11,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class CashMessagePublisher implements Consumer<List<FoCashMessage>> {
+public class CashMessagePublisher implements Consumer<List<Trade>> {
     private final static Logger log = LoggerFactory.getLogger(CashMessagePublisher.class);
     private final KafkaTopicProperties kafkaTopicProperties;
     private final KafkaTemplate<String, FoCashMessageAvro> kafkaTemplateCashMessage;
@@ -26,11 +24,11 @@ public class CashMessagePublisher implements Consumer<List<FoCashMessage>> {
     }
 
     @Override
-    public void accept(List<FoCashMessage> foCashMessages) {
-        foCashMessages.forEach(this::publish);
+    public void accept(List<Trade> trades) {
+        trades.forEach(this::publish);
     }
 
-    public void publish(FoCashMessage cashMessage) {
+    public void publish(Trade cashMessage) {
         String outputTopic = kafkaTopicProperties.cashMessageOutputTopic();
         FoCashMessageAvro avroMsg = FoCashMessageAvroMapper.instance().domainToAvro(cashMessage);
         String key = avroMsg.getCashflowID() + "-" + avroMsg.getCashflowVersion();

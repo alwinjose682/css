@@ -1,6 +1,5 @@
 package io.alw.css.fosimulator.cashflowgnrtr;
 
-import io.alw.css.domain.cashflow.FoCashMessage;
 import io.alw.css.fosimulator.CashMessagePublisher;
 import io.alw.css.fosimulator.model.GeneratorDetail;
 import org.slf4j.Logger;
@@ -19,13 +18,13 @@ public final class CashflowGenerator extends Stoppable implements Runnable {
      */
 
     private final static Logger log = LoggerFactory.getLogger(CashflowGenerator.class);
-    private final Supplier<List<FoCashMessage>> cashMessageSupplier;
-    private final Consumer<List<FoCashMessage>> cashMessageConsumer;
+    private final Supplier<List<Trade>> cashMessageSupplier;
+    private final Consumer<List<Trade>> cashMessageConsumer;
     private final GeneratorDetail generatorDetail;
     private final long pauseIntervalSeconds;
     private final RandomGenerator rndm;
 
-    public CashflowGenerator(GeneratorDetail generatorDetail, Supplier<List<FoCashMessage>> cashMessageSupplier, CashMessagePublisher cashMessageConsumer) {
+    public CashflowGenerator(GeneratorDetail generatorDetail, Supplier<List<Trade>> cashMessageSupplier, CashMessagePublisher cashMessageConsumer) {
         super();
         this.generatorDetail = generatorDetail;
         this.cashMessageSupplier = cashMessageSupplier;
@@ -42,8 +41,8 @@ public final class CashflowGenerator extends Stoppable implements Runnable {
             Thread.sleep(pauseTimeBeforeActualStart);
             // Start
             while (!isStopSignalled()) {
-                List<FoCashMessage> foCashMessages = cashMessageSupplier.get();
-                cashMessageConsumer.accept(foCashMessages);
+                List<Trade> trades = cashMessageSupplier.get();
+                cashMessageConsumer.accept(trades);
                 Thread.sleep(pauseIntervalSeconds);
             }
         } catch (InterruptedException e) {

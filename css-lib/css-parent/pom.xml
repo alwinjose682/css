@@ -29,7 +29,7 @@
         <ignite.version>2.16.0</ignite.version>
         <oracleDriver.version>23.6.0.24.10</oracleDriver.version>
         <h2Driver.version>2.3.232</h2Driver.version>
-        <record.builder.version>43</record.builder.version>
+        <record.builder.version>52</record.builder.version>
         <slf4j.version>2.0.13</slf4j.version>
         <jakarta-validation-api.version>3.1.0</jakarta-validation-api.version>
         <mapstruct.version>1.6.3</mapstruct.version>
@@ -55,7 +55,7 @@
         </dependency>
         <dependency>
             <groupId>io.soabase.record-builder</groupId>
-            <artifactId>record-builder-processor</artifactId>
+            <artifactId>record-builder-core</artifactId>
             <version>${record.builder.version}</version>
             <scope>provided</scope>
         </dependency>

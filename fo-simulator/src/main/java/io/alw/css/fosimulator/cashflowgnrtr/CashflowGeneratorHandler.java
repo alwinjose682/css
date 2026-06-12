@@ -1,6 +1,5 @@
 package io.alw.css.fosimulator.cashflowgnrtr;
 
-import io.alw.css.domain.cashflow.FoCashMessage;
 import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.common.TransactionType;
 import io.alw.css.fosimulator.CashMessagePublisher;
@@ -86,7 +85,7 @@ public final class CashflowGeneratorHandler {
                     log.info("Initial values for cashflow generation are provided explicitly via REST API. Starting cashflow generation with the explicit initial values: {}", this.cfGenerationInitialValues);
                 }
                 //Initialize the singleton instance of IdProvider
-                IdProvider.init(this.cfGenerationInitialValues.tradeId(), this.cfGenerationInitialValues.foCashflowId());
+                IdProvider.init(this.cfGenerationInitialValues.tradeId());
             }
         }
     }
@@ -120,7 +119,7 @@ public final class CashflowGeneratorHandler {
 
                     try {
                         // Create the FoCashMessage supplier
-                        Supplier<List<FoCashMessage>> cashMessageSupplier = createCashMessageSupplier(transactionType, tradeType, entity);
+                        Supplier<List<Trade>> cashMessageSupplier = createCashMessageSupplier(transactionType, tradeType, entity);
                         // Create the cashflowGenerator
                         GeneratorDetail generatorDetail = new GeneratorDetail(key, generatorSleepDurationSeconds);
                         CashflowGenerator cashflowGenerator = createGenerator(generatorDetail, cashMessageSupplier, cashMessagePublisher);
@@ -166,7 +165,7 @@ public final class CashflowGeneratorHandler {
     /// Creates a new generator and adds to the list of the same type of generators.
     /// Concurrent Safe. Performs this computation atomically. generatorMap is ConcurrentHashMap
     /// This method does NOT change the 'begin' or 'end' handler operation state
-    private CashflowGenerator createGenerator(GeneratorDetail generatorDetail, Supplier<List<FoCashMessage>> cashMessageSupplier, CashMessagePublisher cashMessagePublisher) {
+    private CashflowGenerator createGenerator(GeneratorDetail generatorDetail, Supplier<List<Trade>> cashMessageSupplier, CashMessagePublisher cashMessagePublisher) {
         CashflowGenerator newGenerator = new CashflowGenerator(generatorDetail, cashMessageSupplier, cashMessagePublisher);
         generatorMap.compute(generatorDetail.generatorKey(), (k, v) -> {
             if (v == null) {
@@ -181,7 +180,7 @@ public final class CashflowGeneratorHandler {
         return newGenerator;
     }
 
-    private Supplier<List<FoCashMessage>> createCashMessageSupplier(TransactionType transactionType, TradeType tradeType, Entity entity) {
+    private Supplier<List<Trade>> createCashMessageSupplier(TransactionType transactionType, TradeType tradeType, Entity entity) {
         LocalDate initialValueDate = cfGenerationInitialValues.valueDate();
         RandomGenerator rndm = RandomGenerator.getDefault();
         return switch (tradeType) {

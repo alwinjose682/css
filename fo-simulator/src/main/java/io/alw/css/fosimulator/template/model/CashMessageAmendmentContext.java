@@ -1,6 +1,5 @@
 package io.alw.css.fosimulator.template.model;
 
-import io.alw.css.domain.cashflow.FoCashMessage;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 
 import java.util.ArrayList;
@@ -24,7 +23,7 @@ public final class CashMessageAmendmentContext {
         this.amendmentSubjectContexts = new ArrayList<>();
     }
 
-    public Ids computeFirstAmendedCashMessageIdsIfAbsent(FoCashMessage amendmentSubject, Function<FoCashMessage, Ids> computeFunc) {
+    public Ids computeFirstAmendedCashMessageIdsIfAbsent(Trade amendmentSubject, Function<Trade, Ids> computeFunc) {
         if (firstAmendedSubjectUpdatedIds == null) {
             firstAmendedSubjectUpdatedIds = computeFunc.apply(amendmentSubject);
             return firstAmendedSubjectUpdatedIds;

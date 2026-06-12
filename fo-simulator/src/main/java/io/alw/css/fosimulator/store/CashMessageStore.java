@@ -1,7 +1,5 @@
 package io.alw.css.fosimulator.store;
 
-import io.alw.css.domain.cashflow.FoCashMessage;
-
 import java.util.List;
 
 public sealed interface CashMessageStore<T> permits InMemoryCashMessageStore {

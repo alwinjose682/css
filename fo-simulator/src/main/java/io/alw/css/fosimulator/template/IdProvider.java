@@ -8,18 +8,16 @@ public final class IdProvider {
     public static final long defaultInitialFoCfId = 15432L;
 
     private final AtomicLong tradeIdGenerator;
-    private final AtomicLong foCfIdGenerator;
 
-    private IdProvider(long initialTradeId, long initialFoCfId) {
+    private IdProvider(long initialTradeId) {
         this.tradeIdGenerator = new AtomicLong(initialTradeId);
-        this.foCfIdGenerator = new AtomicLong(initialFoCfId);
     }
 
-    public static void init(long initialTradeId, long initialFoCfId) {
+    public static void init(long initialTradeId) {
         if (instance == null) {
             synchronized (IdProvider.class) {
                 if (instance == null) {
-                    instance = new IdProvider(initialTradeId, initialFoCfId);
+                    instance = new IdProvider(initialTradeId);
                 }
             }
         }
@@ -37,14 +35,10 @@ public final class IdProvider {
     }
 
     private static IdProvider newIdProviderWithDefaultValues() {
-        return new IdProvider(defaultInitialTradeId, defaultInitialFoCfId);
+        return new IdProvider(defaultInitialTradeId);
     }
 
     long nextTradeId() {
         return tradeIdGenerator.getAndIncrement();
-    }
-
-    long nextCashflowId() {
-        return foCfIdGenerator.getAndIncrement();
     }
 }

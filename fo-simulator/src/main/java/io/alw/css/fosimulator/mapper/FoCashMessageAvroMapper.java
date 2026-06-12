@@ -1,6 +1,5 @@
 package io.alw.css.fosimulator.mapper;
 
-import io.alw.css.domain.cashflow.FoCashMessage;
 import io.alw.css.domain.common.TradeLink;
 import io.alw.css.serialization.cashflow.FoCashMessageAvro;
 import io.alw.css.serialization.cashflow.TradeLinkAvro;
@@ -23,12 +22,12 @@ public interface FoCashMessageAvroMapper {
 
     @Mapping(source = "valueDate", target = "valueDate", qualifiedByName = "mapJavaTimeDateToString")
     @Mapping(source = "tradeLinks", target = "tradeLinks", qualifiedByName = "mapTradeLinksToAvro")
-    FoCashMessageAvro domainToAvro(FoCashMessage foCashMessage);
+    FoCashMessageAvro domainToAvro(Trade trade);
 
     @Mapping(target = "valueDate", source = "valueDate", qualifiedByName = "mapStringToJavaTimeDate")
     @Mapping(target = "tradeLinks", source = "tradeLinks", qualifiedByName = "mapAvroToTradeLinks")
     @InheritInverseConfiguration
-    FoCashMessage avroToDomain(FoCashMessageAvro foCashMessageAvro);
+    Trade avroToDomain(FoCashMessageAvro foCashMessageAvro);
 
     @Named("mapTradeLinksToAvro")
     static List<TradeLinkAvro> mapTradeLinksToAvro(List<TradeLink> tradeLinks) {
