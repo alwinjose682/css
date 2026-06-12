@@ -1,10 +1,7 @@
 package io.alw.css.domain.cashflow;
 
-import io.alw.css.domain.common.InputBy;
-import io.alw.css.domain.common.PaymentSuppressionCategory;
-
+import io.alw.css.domain.common.*;
 import io.soabase.recordbuilder.core.RecordBuilder;
-import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

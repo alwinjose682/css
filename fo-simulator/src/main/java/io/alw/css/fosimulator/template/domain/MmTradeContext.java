@@ -1,6 +1,7 @@
 package io.alw.css.fosimulator.template.domain;
 
-import io.alw.css.domain.cashflow.*;
+import io.alw.css.domain.cashflow.FoCashMessage;
+import io.alw.css.domain.common.TradeType;
 
 import java.util.List;
 

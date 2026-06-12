@@ -1,7 +1,7 @@
 package io.alw.css.domain.referencedata;
 
-import io.alw.css.domain.cashflow.TradeType;
 import io.alw.css.domain.common.CssNettingType;
+import io.alw.css.domain.common.TradeType;
 import io.alw.datagen.TestDataGeneratable;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.annotation.Nullable;

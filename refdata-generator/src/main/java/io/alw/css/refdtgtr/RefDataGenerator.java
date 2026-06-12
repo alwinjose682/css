@@ -1,17 +1,17 @@
 package io.alw.css.refdtgtr;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.alw.css.domain.cashflow.TradeType;
-import io.alw.datagen.TestDataGeneratable;
+import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.referencedata.*;
 import io.alw.css.refdtgtr.config.Json;
-import io.alw.css.refdtgtr.templates.*;
 import io.alw.css.refdtgtr.domain.CounterpartyType;
 import io.alw.css.refdtgtr.domain.PreDefinedTestData;
 import io.alw.css.refdtgtr.model.CounterpartyAndDependentData;
 import io.alw.css.refdtgtr.model.EntityAndDependentData;
 import io.alw.css.refdtgtr.model.GeneratedReferenceData;
 import io.alw.css.refdtgtr.provider.RefDataCollection;
+import io.alw.css.refdtgtr.templates.*;
+import io.alw.datagen.TestDataGeneratable;
 import io.alw.datagen.tokengenerator.AlphaNumericTokenGenerator;
 
 import java.util.ArrayList;

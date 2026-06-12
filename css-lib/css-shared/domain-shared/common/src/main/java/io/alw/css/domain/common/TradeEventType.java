@@ -1,8 +1,8 @@
-package io.alw.css.domain.cashflow;
+package io.alw.css.domain.common;
 
 import java.util.List;
 
-import static io.alw.css.domain.cashflow.TradeEventAction.*;
+import static io.alw.css.domain.common.TradeEventAction.*;
 
 /**
  * The event type for each trade version. Can have multiple versions depending on the action taken on the event

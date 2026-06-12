@@ -1,10 +1,10 @@
 package io.alw.css.fosimulator.template;
 
-import io.alw.css.domain.cashflow.*;
+import io.alw.css.domain.common.*;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
-import io.alw.css.fosimulator.template.domain.CashLegType;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
+import io.alw.css.fosimulator.template.domain.CashLegType;
 import io.alw.css.fosimulator.template.domain.MmTradeEvent;
 import io.alw.css.fosimulator.template.domain.TradeEventActionRecord;
 import io.alw.css.fosimulator.template.domain.TradeEventTypeRecord;
@@ -14,10 +14,8 @@ import io.alw.datagen.template.CountAware;
 import java.time.LocalDate;
 import java.util.random.RandomGenerator;
 
-import static io.alw.css.domain.cashflow.TradeEventAction.*;
-import static io.alw.css.domain.cashflow.TradeEventAction.ADD;
-import static io.alw.css.domain.cashflow.TradeEventType.*;
-import static io.alw.css.domain.cashflow.TradeEventType.AMEND;
+import static io.alw.css.domain.common.TradeEventAction.*;
+import static io.alw.css.domain.common.TradeEventType.*;
 import static io.alw.css.fosimulator.template.CashMessageTemplate.VERSION_ONE;
 
 

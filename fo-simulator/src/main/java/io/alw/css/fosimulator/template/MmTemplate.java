@@ -1,6 +1,11 @@
 package io.alw.css.fosimulator.template;
 
-import io.alw.css.domain.cashflow.*;
+import io.alw.css.domain.cashflow.FoCashMessage;
+import io.alw.css.domain.cashflow.FoCashMessageBuilder;
+import io.alw.css.domain.common.TradeEventAction;
+import io.alw.css.domain.common.TradeEventType;
+import io.alw.css.domain.common.TradeType;
+import io.alw.css.domain.common.TransactionType;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
@@ -22,9 +27,9 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 
-import static io.alw.css.domain.cashflow.PayOrReceive.PAY;
-import static io.alw.css.domain.cashflow.PayOrReceive.RECEIVE;
-import static io.alw.css.domain.cashflow.RateType.FLOAT;
+import static io.alw.css.domain.common.PayOrReceive.PAY;
+import static io.alw.css.domain.common.PayOrReceive.RECEIVE;
+import static io.alw.css.domain.common.RateType.FLOAT;
 import static io.alw.css.fosimulator.template.MmTemplateConstants.*;
 import static io.alw.css.fosimulator.template.domain.CashLegType.*;
 

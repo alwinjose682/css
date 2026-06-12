@@ -1,15 +1,15 @@
 package io.alw.css.refdtgtr.templates;
 
-import io.alw.css.domain.cashflow.TradeType;
 import io.alw.css.domain.common.CssNettingType;
+import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.referencedata.Counterparty;
 import io.alw.css.domain.referencedata.CounterpartyNettingProfile;
 import io.alw.css.domain.referencedata.CounterpartyNettingProfileBuilder;
 import io.alw.css.domain.referencedata.Entity;
 import io.alw.css.refdtgtr.config.ConfigParams;
 import io.alw.css.refdtgtr.model.TestDataType;
-import io.alw.css.refdtgtr.provider.StringRefDataProvider;
 import io.alw.css.refdtgtr.provider.RefDataProvider;
+import io.alw.css.refdtgtr.provider.StringRefDataProvider;
 import io.alw.datagen.template.CascadingTemplateBuilder;
 import io.alw.datagen.tokengenerator.LongTokenGenerator;
 

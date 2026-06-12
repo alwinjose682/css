@@ -1,32 +1,34 @@
 package io.alw.css.fosimulator.cashflowgnrtr;
 
 import io.alw.css.domain.cashflow.FoCashMessage;
-import io.alw.css.domain.cashflow.TradeType;
-import io.alw.css.domain.cashflow.TransactionType;
+import io.alw.css.domain.common.TradeType;
+import io.alw.css.domain.common.TransactionType;
 import io.alw.css.fosimulator.CashMessagePublisher;
 import io.alw.css.fosimulator.CssTaskExecutor;
+import io.alw.css.fosimulator.model.CashflowGenerationInitialValues;
+import io.alw.css.fosimulator.model.Entity;
+import io.alw.css.fosimulator.model.GeneratorDetail;
+import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
+import io.alw.css.fosimulator.model.properties.CashflowGeneratorProperties;
+import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.template.FxTemplate;
 import io.alw.css.fosimulator.template.IdProvider;
 import io.alw.css.fosimulator.template.MmTemplate;
-import io.alw.css.fosimulator.model.Entity;
-import io.alw.css.fosimulator.model.GeneratorDetail;
-import io.alw.css.fosimulator.model.CashflowGenerationInitialValues;
-import io.alw.css.fosimulator.model.properties.CashflowGeneratorProperties;
-import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
-import io.alw.css.fosimulator.service.RefDataService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 
-import static io.alw.css.domain.cashflow.TradeType.*;
+import static io.alw.css.domain.common.TradeType.*;
 
 public final class CashflowGeneratorHandler {
     private final static Logger log = LoggerFactory.getLogger(CashflowGeneratorHandler.class);

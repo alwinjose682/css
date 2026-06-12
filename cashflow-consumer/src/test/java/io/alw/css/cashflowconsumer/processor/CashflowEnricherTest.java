@@ -1,13 +1,12 @@
 package io.alw.css.cashflowconsumer.processor;
 
-import io.alw.css.cashflowconsumer.CashflowConsumerTestConfig;
 import io.alw.css.cashflowconsumer.model.SsiWithCounterpartyData;
 import io.alw.css.cashflowconsumer.model.constants.ExceptionSubCategoryType;
 import io.alw.css.cashflowconsumer.model.properties.SuppressionConfig;
 import io.alw.css.cashflowconsumer.service.CacheService;
-import io.alw.css.domain.cashflow.*;
-import io.alw.css.domain.common.InputBy;
-import io.alw.css.domain.common.PaymentSuppressionCategory;
+import io.alw.css.domain.cashflow.Cashflow;
+import io.alw.css.domain.cashflow.CashflowBuilder;
+import io.alw.css.domain.common.*;
 import io.alw.css.domain.exception.CategorizedRuntimeException;
 import io.alw.css.domain.exception.ExceptionCategory;
 import io.alw.css.domain.exception.ExceptionSubCategory;
@@ -19,10 +18,7 @@ import org.mockito.quality.Strictness;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 

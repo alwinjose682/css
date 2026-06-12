@@ -11,7 +11,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>common</artifactId>
+    <artifactId>trade</artifactId>
     <version>1.0.0</version>
 
     <dependencies>
@@ -23,6 +23,19 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
         </dependency>
-    </dependencies>
 
+        <!--        Data Generator Contract     -->
+        <dependency>
+            <groupId>io.alw.css</groupId>
+            <artifactId>data-generator-contract</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
+        <!--        CSS Dependencies    -->
+        <dependency>
+            <groupId>io.alw.css.domain</groupId>
+            <artifactId>common</artifactId>
+        </dependency>
+    </dependencies>
+    
 </project>

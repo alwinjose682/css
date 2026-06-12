@@ -1,14 +1,14 @@
 package io.alw.css.cashflowconsumer.processor;
 
-import io.alw.css.cashflowconsumer.model.SsiWithCounterpartyData;
 import io.alw.css.cashflowconsumer.model.NostroDetails;
+import io.alw.css.cashflowconsumer.model.SsiWithCounterpartyData;
 import io.alw.css.cashflowconsumer.model.constants.ExceptionSubCategoryType;
 import io.alw.css.cashflowconsumer.model.properties.SuppressionConfig;
 import io.alw.css.cashflowconsumer.service.CacheService;
-import io.alw.css.domain.exception.CategorizedRuntimeException;
 import io.alw.css.domain.cashflow.CashflowBuilder;
-import io.alw.css.domain.cashflow.TradeType;
 import io.alw.css.domain.common.PaymentSuppressionCategory;
+import io.alw.css.domain.common.TradeType;
+import io.alw.css.domain.exception.CategorizedRuntimeException;
 import io.alw.css.domain.exception.ExceptionSubCategory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.util.Map;
 
-import static io.alw.css.domain.cashflow.TransactionType.*;
+import static io.alw.css.domain.common.TransactionType.INTER_BOOK;
 
 /// Enriches Cashflow
 ///

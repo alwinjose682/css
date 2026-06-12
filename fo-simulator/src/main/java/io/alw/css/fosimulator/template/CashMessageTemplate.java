@@ -1,15 +1,17 @@
 package io.alw.css.fosimulator.template;
 
-import io.alw.css.domain.cashflow.*;
+import io.alw.css.domain.cashflow.FoCashMessage;
+import io.alw.css.domain.cashflow.FoCashMessageBuilder;
+import io.alw.css.domain.common.*;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
-import io.alw.css.fosimulator.template.domain.CashLeg;
-import io.alw.css.fosimulator.template.domain.CashLegType;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
-import io.alw.css.fosimulator.template.model.Ids;
+import io.alw.css.fosimulator.template.domain.CashLeg;
+import io.alw.css.fosimulator.template.domain.CashLegType;
 import io.alw.css.fosimulator.template.domain.TradeContext;
+import io.alw.css.fosimulator.template.model.Ids;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
 import io.alw.datagen.template.AggregateTemplateBuilder;
 

@@ -1,7 +1,7 @@
 package io.alw.css.fosimulator.template.domain;
 
 import io.alw.css.domain.cashflow.FoCashMessage;
-import io.alw.css.domain.cashflow.TradeType;
+import io.alw.css.domain.common.TradeType;
 
 public final class FxTradeContext implements TradeContext {
     private final TradeType tradeType;

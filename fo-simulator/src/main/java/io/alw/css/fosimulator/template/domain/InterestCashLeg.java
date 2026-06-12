@@ -1,6 +1,6 @@
 package io.alw.css.fosimulator.template.domain;
 
-import io.alw.css.domain.cashflow.RateType;
+import io.alw.css.domain.common.RateType;
 import io.alw.css.fosimulator.template.model.InterestLegContext;
 
 public final class InterestCashLeg extends MmCashLeg {

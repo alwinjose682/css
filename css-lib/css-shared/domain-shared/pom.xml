@@ -18,6 +18,7 @@
 
     <modules>
         <module>cashflow</module>
+        <module>trade</module>
         <module>exception</module>
         <module>common</module>
         <module>reference-data</module>

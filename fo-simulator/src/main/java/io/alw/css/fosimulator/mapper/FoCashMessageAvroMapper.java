@@ -1,7 +1,7 @@
 package io.alw.css.fosimulator.mapper;
 
 import io.alw.css.domain.cashflow.FoCashMessage;
-import io.alw.css.domain.cashflow.TradeLink;
+import io.alw.css.domain.common.TradeLink;
 import io.alw.css.serialization.cashflow.FoCashMessageAvro;
 import io.alw.css.serialization.cashflow.TradeLinkAvro;
 import org.mapstruct.InheritInverseConfiguration;

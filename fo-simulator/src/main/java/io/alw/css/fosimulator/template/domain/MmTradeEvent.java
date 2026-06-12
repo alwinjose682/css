@@ -1,6 +1,6 @@
 package io.alw.css.fosimulator.template.domain;
 
-import io.alw.css.domain.cashflow.TradeEventType;
+import io.alw.css.domain.common.TradeEventType;
 
 /// The name of Trade Events specified in this file corresponds with [TradeEventType] except haircut event
 public sealed interface MmTradeEvent extends TradeEventTypeRecord {

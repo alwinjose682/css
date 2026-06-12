@@ -1,7 +1,7 @@
 package io.alw.css.fosimulator.template.domain;
 
 import io.alw.css.domain.cashflow.FoCashMessage;
-import io.alw.css.domain.cashflow.RateType;
+import io.alw.css.domain.common.RateType;
 
 public sealed class MmCashLeg implements CashLeg, MmMetadata permits InterestCashLeg {
     private final CashLegType mmLegType;

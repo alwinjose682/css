@@ -1,17 +1,17 @@
 package io.alw.css.fosimulator.template;
 
-import io.alw.css.domain.cashflow.RateType;
-import io.alw.css.fosimulator.template.model.AmendableFoCashMessageFieldType;
+import io.alw.css.domain.common.RateType;
 import io.alw.css.fosimulator.template.domain.CashLegType;
 import io.alw.css.fosimulator.template.domain.InterestPayoutFrequency;
+import io.alw.css.fosimulator.template.model.AmendableFoCashMessageFieldType;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
 
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static io.alw.css.domain.cashflow.RateType.FIXED;
-import static io.alw.css.domain.cashflow.RateType.FLOAT;
+import static io.alw.css.domain.common.RateType.FIXED;
+import static io.alw.css.domain.common.RateType.FLOAT;
 import static io.alw.css.fosimulator.template.domain.CashLegType.MM_MATURITY;
 import static io.alw.css.fosimulator.template.domain.CashLegType.MM_PRINCIPAL;
 import static io.alw.css.fosimulator.template.domain.InterestPayoutFrequency.*;

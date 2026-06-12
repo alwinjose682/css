@@ -1,4 +1,4 @@
-package io.alw.css.domain.cashflow;
+package io.alw.css.domain.common;
 
 /**
  * The action taken on a trade event. The action of the first event version is always ADD.

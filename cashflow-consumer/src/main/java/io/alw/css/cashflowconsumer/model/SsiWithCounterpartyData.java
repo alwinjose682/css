@@ -1,6 +1,6 @@
 package io.alw.css.cashflowconsumer.model;
 
-import io.alw.css.domain.cashflow.TradeType;
+import io.alw.css.domain.common.TradeType;
 
 public record SsiWithCounterpartyData(
         String counterpartyCode,

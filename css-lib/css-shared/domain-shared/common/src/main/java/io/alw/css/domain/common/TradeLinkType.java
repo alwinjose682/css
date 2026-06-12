@@ -1,4 +1,4 @@
-package io.alw.css.domain.cashflow;
+package io.alw.css.domain.common;
 
 /**
  * Limited number of link types

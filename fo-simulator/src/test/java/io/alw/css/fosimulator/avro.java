@@ -1,7 +1,6 @@
 package io.alw.css.fosimulator;
 
-import io.alw.css.domain.cashflow.FoCashMessage;
-import io.alw.css.domain.cashflow.TradeLink;
+import io.alw.css.domain.common.TradeLink;
 import org.apache.avro.Schema;
 import org.apache.avro.reflect.ReflectData;
 import org.junit.jupiter.api.Test;

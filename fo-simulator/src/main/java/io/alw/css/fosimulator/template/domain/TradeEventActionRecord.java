@@ -1,6 +1,6 @@
 package io.alw.css.fosimulator.template.domain;
 
-import io.alw.css.domain.cashflow.TradeEventAction;
+import io.alw.css.domain.common.TradeEventAction;
 
 /// The name of Trade Events specified in this file corresponds with [TradeEventAction] that applies to all trades
 ///

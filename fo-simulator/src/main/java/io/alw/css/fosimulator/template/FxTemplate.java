@@ -1,6 +1,7 @@
 package io.alw.css.fosimulator.template;
 
-import io.alw.css.domain.cashflow.*;
+import io.alw.css.domain.cashflow.FoCashMessageBuilder;
+import io.alw.css.domain.common.*;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;

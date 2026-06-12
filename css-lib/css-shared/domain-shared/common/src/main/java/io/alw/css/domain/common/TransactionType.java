@@ -1,4 +1,4 @@
-package io.alw.css.domain.cashflow;
+package io.alw.css.domain.common;
 
 public enum TransactionType {
     CLIENT("Client"), // Trade booked for a client

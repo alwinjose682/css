@@ -1,5 +1,6 @@
 package io.alw.css.domain.cashflow;
 
+import io.alw.css.domain.common.*;
 import io.alw.datagen.TestDataGeneratable;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.Valid;

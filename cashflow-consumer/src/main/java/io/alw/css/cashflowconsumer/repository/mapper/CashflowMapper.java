@@ -3,7 +3,7 @@ package io.alw.css.cashflowconsumer.repository.mapper;
 import io.alw.css.cashflowconsumer.model.jpa.CashflowEntity;
 import io.alw.css.cashflowconsumer.model.jpa.TradeLinkEntity;
 import io.alw.css.domain.cashflow.Cashflow;
-import io.alw.css.domain.cashflow.TradeLink;
+import io.alw.css.domain.common.TradeLink;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;

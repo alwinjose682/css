@@ -1,10 +1,10 @@
 package io.alw.css.cashflowconsumer.service;
 
-import io.alw.css.cashflowconsumer.model.SsiWithCounterpartyData;
 import io.alw.css.cashflowconsumer.model.NostroDetails;
 import io.alw.css.cashflowconsumer.model.OverridableNostro;
 import io.alw.css.cashflowconsumer.model.PrimaryNostro;
-import io.alw.css.domain.cashflow.TradeType;
+import io.alw.css.cashflowconsumer.model.SsiWithCounterpartyData;
+import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.exception.CategorizedRuntimeException;
 import io.alw.css.domain.exception.ExceptionSubCategory;
 import io.alw.css.domain.referencedata.Currency;

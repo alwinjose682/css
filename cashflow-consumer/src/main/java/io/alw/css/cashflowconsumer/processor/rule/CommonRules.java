@@ -1,14 +1,13 @@
 package io.alw.css.cashflowconsumer.processor.rule;
 
-import io.alw.css.domain.cashflow.TradeEventType;
+import io.alw.css.domain.common.TradeEventType;
 
 import java.util.List;
 
 import static io.alw.css.cashflowconsumer.processor.rule.CashflowOrder.FIRST;
 import static io.alw.css.cashflowconsumer.processor.rule.CashflowOrder.NON_FIRST;
-import static io.alw.css.domain.cashflow.RevisionType.*;
-import static io.alw.css.domain.cashflow.TradeEventAction.*;
-import static io.alw.css.domain.cashflow.TradeEventAction.REMOVE;
+import static io.alw.css.domain.common.RevisionType.*;
+import static io.alw.css.domain.common.TradeEventAction.*;
 
 public final class CommonRules implements RuleDefinition {
     private final static Rule rule1 = new Rule(null, NEW, FIRST, List.of(

@@ -1,10 +1,6 @@
 package io.alw.css.cashflowconsumer.model.jpa;
 
-import io.alw.css.domain.cashflow.RevisionType;
-import io.alw.css.domain.common.InputBy;
-import io.alw.css.domain.common.PaymentConstants;
-import io.alw.css.domain.common.PaymentSuppressionCategory;
-import io.alw.css.domain.common.YesNo;
+import io.alw.css.domain.common.*;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;

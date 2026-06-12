@@ -1,8 +1,7 @@
 package io.alw.css.refdtgtr.provider;
 
-import io.alw.css.domain.cashflow.TradeType;
 import io.alw.css.domain.common.CssNettingType;
-import io.alw.datagen.TestDataGeneratable;
+import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.referencedata.Country;
 import io.alw.css.domain.referencedata.Currency;
 import io.alw.css.domain.referencedata.Entity;
@@ -10,6 +9,7 @@ import io.alw.css.refdtgtr.domain.CounterpartyType;
 import io.alw.css.refdtgtr.domain.PreDefinedTestData;
 import io.alw.css.refdtgtr.model.CountryStateCurrency;
 import io.alw.css.refdtgtr.model.EntityCurrencyState;
+import io.alw.datagen.TestDataGeneratable;
 import io.alw.datagen.provider.CyclicStringDataProvider;
 import io.alw.datagen.provider.CyclicTestDataProvider;
 

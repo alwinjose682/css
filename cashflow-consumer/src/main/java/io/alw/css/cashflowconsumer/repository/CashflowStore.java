@@ -1,10 +1,11 @@
 package io.alw.css.cashflowconsumer.repository;
 
 import io.alw.css.cashflowconsumer.model.constants.ExceptionSubCategoryType;
-import io.alw.css.cashflowconsumer.model.jpa.*;
+import io.alw.css.cashflowconsumer.model.jpa.CashflowEntity;
+import io.alw.css.cashflowconsumer.model.jpa.CashflowRejectionEntity;
 import io.alw.css.cashflowconsumer.repository.mapper.CashflowMapper;
 import io.alw.css.domain.cashflow.Cashflow;
-import io.alw.css.domain.cashflow.RevisionType;
+import io.alw.css.domain.common.RevisionType;
 import io.alw.css.domain.exception.CategorizedRuntimeException;
 import io.alw.css.domain.exception.ExceptionSubCategory;
 import jakarta.persistence.EntityManager;

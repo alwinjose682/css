@@ -1,10 +1,10 @@
-package io.alw.css.domain.cashflow;
+package io.alw.css.domain.common;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static io.alw.css.domain.cashflow.TradeEventType.*;
+import static io.alw.css.domain.common.TradeEventType.*;
 
 public enum TradeType {
     FX(commonEventTypes()), // FXSpotForward,
