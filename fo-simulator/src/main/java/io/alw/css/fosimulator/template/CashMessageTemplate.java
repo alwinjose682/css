@@ -3,13 +3,13 @@ package io.alw.css.fosimulator.template;
 import io.alw.css.domain.cashflow.FoCashMessage;
 import io.alw.css.domain.cashflow.FoCashMessageBuilder;
 import io.alw.css.domain.common.*;
+import io.alw.css.domain.trade.TradeLegType;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.template.domain.CashLeg;
-import io.alw.css.fosimulator.template.domain.CashLegType;
 import io.alw.css.fosimulator.template.domain.TradeContext;
 import io.alw.css.fosimulator.template.model.Ids;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
@@ -134,8 +134,8 @@ sealed abstract class CashMessageTemplate<M extends TradeContext>
         return bdr;
     }
 
-    /// see {@link CashMessageTemplate#createBuilderFrom(FoCashMessage, FoCashMessage, CashLegType)}
-    protected FoCashMessageBuilder createBuilderFrom(CashLeg cashLeg, CashLegType linkType) {
+    /// see {@link CashMessageTemplate#createBuilderFrom(FoCashMessage, FoCashMessage, TradeLegType)}
+    protected FoCashMessageBuilder createBuilderFrom(CashLeg cashLeg, TradeLegType linkType) {
         FoCashMessage referenceFoCashMessage = cashLeg.cashMessage();
         FoCashMessage rootFoCashMessage = cashLeg.tradeContext().rootFoCashMessage();
 
@@ -144,11 +144,11 @@ sealed abstract class CashMessageTemplate<M extends TradeContext>
 
     /// This method is used to create [FoCashMessageBuilder] for grouped or related cashMessages.
     /// TradeLink is also assigned in this method using the `linkType` parameter.
-    /// IMPORTANT: The `linkType` parameter must be the [CashLegType] of the new cashMessage that is created from the `referenceFoCashMessage`
+    /// IMPORTANT: The `linkType` parameter must be the [TradeLegType] of the new cashMessage that is created from the `referenceFoCashMessage`
     /// Further build steps can add more tradeLinks to the list if needed
     ///
     /// NOTE: The [CashMessageTemplateHelper#counter] is NOTE incremented by this method
-    protected FoCashMessageBuilder createBuilderFrom(FoCashMessage referenceFoCashMessage, FoCashMessage rootFoCashMessage, CashLegType linkType) {
+    protected FoCashMessageBuilder createBuilderFrom(FoCashMessage referenceFoCashMessage, FoCashMessage rootFoCashMessage, TradeLegType linkType) {
         TradeLink tradeLink = TradeLinkBuilder.TradeLink(
                 linkType.name, null,
                 rootFoCashMessage.cashflowID(), rootFoCashMessage.cashflowVersion(),

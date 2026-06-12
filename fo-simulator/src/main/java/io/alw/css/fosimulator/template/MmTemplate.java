@@ -6,6 +6,7 @@ import io.alw.css.domain.common.TradeEventAction;
 import io.alw.css.domain.common.TradeEventType;
 import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.common.TransactionType;
+import io.alw.css.domain.trade.TradeLegType;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
@@ -30,8 +31,8 @@ import java.util.random.RandomGenerator;
 import static io.alw.css.domain.common.PayOrReceive.PAY;
 import static io.alw.css.domain.common.PayOrReceive.RECEIVE;
 import static io.alw.css.domain.common.RateType.FLOAT;
+import static io.alw.css.domain.trade.TradeLegType.*;
 import static io.alw.css.fosimulator.template.MmTemplateConstants.*;
-import static io.alw.css.fosimulator.template.domain.CashLegType.*;
 
 public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContext> {
     private final CashMessageStoreHelper<MmTradeContext> msgStoreHelper;
@@ -49,7 +50,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
         // Create MessageContext
         MmTradeContext trdCtx = createTradeContext();
         // Create Ids for PRINCIPAL, INTEREST and if applicable for MATURITY as well
-        Map<CashLegType, Ids> idsMap = createFirstVersionIds(trdCtx);
+        Map<TradeLegType, Ids> idsMap = createFirstVersionIds(trdCtx);
         // Build PRINCIPAL leg of the MoneyMarket trade with base values
         FoCashMessageBuilder bdr = getBaseCashMsgBuilder(idsMap.get(MM_PRINCIPAL), trdCtx);
         // Set values specific to the PRINCIPAL leg
@@ -113,14 +114,14 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
         };
     }
 
-    /// NOTE: This method is used to handle only cancel event, [TradeEventType#CANCEL], for both [CashLegType#MM_PRINCIPAL] and [CashLegType#MM_MATURITY]
+    /// NOTE: This method is used to handle only cancel event, [TradeEventType#CANCEL], for both [TradeLegType#MM_PRINCIPAL] and [TradeLegType#MM_MATURITY]
     private CashMessageAmendmentContext buildAmendmentContextForCancelEvent(TradeEventActionPair nextTradeEventAction) {
         // No field need to be amended because this is trade cancellation
         return new CashMessageAmendmentContext(nextTradeEventAction);
     }
 
-    /// NOTE: This method is used to handle common amendment events, [TradeEventType#AMEND] and [TradeEventType#REBOOK], for both [CashLegType#MM_PRINCIPAL] and [CashLegType#MM_MATURITY]
-    private CashMessageAmendmentContext buildAmendmentContextForCommonAmendEvents(CashLegType primaryAmendmentSubjectCashLegType, MmTradeContext trdCtx, TradeEventActionPair nextTradeEventAction) {
+    /// NOTE: This method is used to handle common amendment events, [TradeEventType#AMEND] and [TradeEventType#REBOOK], for both [TradeLegType#MM_PRINCIPAL] and [TradeLegType#MM_MATURITY]
+    private CashMessageAmendmentContext buildAmendmentContextForCommonAmendEvents(TradeLegType primaryAmendmentSubjectTradeLegType, MmTradeContext trdCtx, TradeEventActionPair nextTradeEventAction) {
         MmCashLeg principalLeg = trdCtx.principalLeg();
         MmCashLeg maturityLeg = trdCtx.maturityLeg(); // NOTE: MaturityLeg could be null for MM CALL trades
 
@@ -151,7 +152,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
                     }
                 }
                 case VALUE_DATE -> {
-                    if (primaryAmendmentSubjectCashLegType == MM_PRINCIPAL) {
+                    if (primaryAmendmentSubjectTradeLegType == MM_PRINCIPAL) {
                         // No adjustments needed for MM_INTEREST with respect to valueDate change of principalLeg
 
                         // Get new valueDate for principalLeg and add to the collection
@@ -178,7 +179,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
 
                             amendableFields.add(MM_MATURITY, matLegVdConditionalSupplier);
                         }
-                    } else if (primaryAmendmentSubjectCashLegType == MM_MATURITY && maturityLeg != null) {
+                    } else if (primaryAmendmentSubjectTradeLegType == MM_MATURITY && maturityLeg != null) {
                         // Determine new valueDate for maturityLeg and add to the collection
                         LocalDate newValueDate = determineMaturityLegValueDate(maturityLeg);
                         amendableFields.add(MM_MATURITY, new AmendableFoCashMessageField.ValueDate(newValueDate));
@@ -350,7 +351,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
         return msgTemplateHelper.getRndmFutureValueDateRelativeTo(relativeCashLeg.cashMessage().valueDate(), false, 10);
     }
 
-    private Map<CashLegType, Ids> createFirstVersionIds(MmTradeContext trdCtx) {
+    private Map<TradeLegType, Ids> createFirstVersionIds(MmTradeContext trdCtx) {
         var principalLegIds = CashMessageTemplateHelper.getNewTradeIds(MM_PRINCIPAL);
         var interestLegIds = CashMessageTemplateHelper.getNewCashMsgIdsFromExistingTrade(MM_INTEREST, principalLegIds);
 

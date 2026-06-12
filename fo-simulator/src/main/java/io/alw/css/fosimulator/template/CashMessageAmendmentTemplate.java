@@ -3,13 +3,13 @@ package io.alw.css.fosimulator.template;
 import io.alw.css.domain.cashflow.FoCashMessage;
 import io.alw.css.domain.cashflow.FoCashMessageBuilder;
 import io.alw.css.domain.common.*;
+import io.alw.css.domain.trade.TradeLegType;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.template.domain.CashLeg;
-import io.alw.css.fosimulator.template.domain.CashLegType;
 import io.alw.css.fosimulator.template.domain.TradeContext;
 import io.alw.css.fosimulator.template.model.*;
 import io.alw.datagen.template.AggregateTemplateBuilderResult;
@@ -21,8 +21,8 @@ import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 
-import static io.alw.css.fosimulator.template.domain.CashLegType.CHILD_CASHFLOW;
-import static io.alw.css.fosimulator.template.domain.CashLegType.PARENT_CASHFLOW;
+import static io.alw.css.domain.trade.TradeLegType.CHILD_CASHFLOW;
+import static io.alw.css.domain.trade.TradeLegType.PARENT_CASHFLOW;
 
 /// The type parameter M stands for MessageContext which is a combination of [FoCashMessage] and its metadata created by the implementations of this class.
 /// Some implementations choose to store MessageContext instead of just FoCashMessage in [io.alw.css.fosimulator.store.CashMessageStore]
@@ -183,7 +183,7 @@ sealed abstract class CashMessageAmendmentTemplate<M extends TradeContext>
     private FoCashMessageBuilder buildAmendedMessageFor(CashMessageAmendmentContext amndCtx, AmendmentSubjectContextEager amndSubjectCtx, M trdCtx) {
         TradeEventActionPair nextEventAndAction = amndCtx.tradeEventActionPair();
         FoCashMessage amendmentSubject = amndSubjectCtx.amendmentSubject();
-        CashLegType amendmentSubjectLinkType = amndSubjectCtx.cashLegType();
+        TradeLegType amendmentSubjectLinkType = amndSubjectCtx.tradeLegType();
         Set<AmendableFoCashMessageField> amendableFields = amndSubjectCtx.amendableFields();
 
         // Create builder for amending cashMessage from the cashMessage being amended
@@ -239,7 +239,7 @@ sealed abstract class CashMessageAmendmentTemplate<M extends TradeContext>
     /// Nothing has to be done explicitly to ensure this. The callback although created for the old cashMessage will be applied to the new cashMessage.
     private void handleTradeRebookEvent(CashMessageAmendmentContext rootAmendedMsgCtx, FoCashMessageBuilder amndBdr, AmendmentSubjectContextEager amndSubjectCtx, M trdCtx) {
         FoCashMessage amendmentSubject = amndSubjectCtx.amendmentSubject();
-        CashLegType amendmentSubjectLinkType = amndSubjectCtx.cashLegType();
+        TradeLegType amendmentSubjectLinkType = amndSubjectCtx.tradeLegType();
 
         // 1. Create new trade ID and cashflow ID
         // These same values used for the first message are used for the subsequent messages being amended that belong to the same MessageContext

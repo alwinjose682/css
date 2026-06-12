@@ -1,6 +1,6 @@
 package io.alw.css.fosimulator.template.model;
 
-import io.alw.css.fosimulator.template.domain.CashLegType;
+import io.alw.css.domain.trade.TradeLegType;
 
-public record Ids(CashLegType linkType, long cashflowID, int cashflowVersion, long tradeID, int tradeVersion) {
+public record Ids(TradeLegType linkType, long cashflowID, int cashflowVersion, long tradeID, int tradeVersion) {
 }

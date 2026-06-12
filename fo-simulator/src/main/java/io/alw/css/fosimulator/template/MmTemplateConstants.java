@@ -1,7 +1,7 @@
 package io.alw.css.fosimulator.template;
 
 import io.alw.css.domain.common.RateType;
-import io.alw.css.fosimulator.template.domain.CashLegType;
+import io.alw.css.domain.trade.TradeLegType;
 import io.alw.css.fosimulator.template.domain.InterestPayoutFrequency;
 import io.alw.css.fosimulator.template.model.AmendableFoCashMessageFieldType;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
@@ -12,8 +12,8 @@ import java.util.function.Supplier;
 
 import static io.alw.css.domain.common.RateType.FIXED;
 import static io.alw.css.domain.common.RateType.FLOAT;
-import static io.alw.css.fosimulator.template.domain.CashLegType.MM_MATURITY;
-import static io.alw.css.fosimulator.template.domain.CashLegType.MM_PRINCIPAL;
+import static io.alw.css.domain.trade.TradeLegType.MM_MATURITY;
+import static io.alw.css.domain.trade.TradeLegType.MM_PRINCIPAL;
 import static io.alw.css.fosimulator.template.domain.InterestPayoutFrequency.*;
 import static io.alw.css.fosimulator.template.model.AmendableFoCashMessageFieldType.*;
 
@@ -24,7 +24,7 @@ public final class MmTemplateConstants {
     static final Supplier<RateType> cyclicRateTypeProvider = new CyclicRateTypeProvider(List.of(FIXED, FLOAT, FIXED, FLOAT));
     static final Supplier<InterestPayoutFrequency> cyclicIpFrequencyProvider = new CyclicInterestPayoutFrequencyProvider(List.of(DAY, MONTHLY, MONTHLY, MONTHLY, PRINCIPAL_MATURITY, MONTHLY, QUARTERLY, QUARTERLY, SEMI_ANNUALLY, YEARLY, PRINCIPAL_MATURITY));
     static final Supplier<Set<AmendableFoCashMessageFieldType>> cyclicAmendableFoCashMessageFieldTypeProvider = new CyclicAmendableFoCashMessageFieldProvider(getListOfAmendableCashMessageFieldTypes());
-    static final Supplier<CashLegType> cyclicAmendableMmLegProvider = new CyclicAmendableCashLegTypeProvider(List.of(MM_PRINCIPAL, MM_MATURITY, MM_MATURITY, MM_MATURITY, MM_MATURITY, MM_PRINCIPAL, MM_MATURITY));
+    static final Supplier<TradeLegType> cyclicAmendableMmLegProvider = new CyclicAmendableCashLegTypeProvider(List.of(MM_PRINCIPAL, MM_MATURITY, MM_MATURITY, MM_MATURITY, MM_MATURITY, MM_PRINCIPAL, MM_MATURITY));
 
     static final class CyclicRateTypeProvider extends AbstractCyclicDataProvider<RateType> {
         CyclicRateTypeProvider(List<RateType> dataList) {
@@ -54,8 +54,8 @@ public final class MmTemplateConstants {
         }
     }
 
-    static class CyclicAmendableCashLegTypeProvider extends AbstractCyclicDataProvider<CashLegType> {
-        public CyclicAmendableCashLegTypeProvider(List<CashLegType> mmLegs) {
+    static class CyclicAmendableCashLegTypeProvider extends AbstractCyclicDataProvider<TradeLegType> {
+        public CyclicAmendableCashLegTypeProvider(List<TradeLegType> mmLegs) {
             super(mmLegs);
         }
     }

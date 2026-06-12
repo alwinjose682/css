@@ -1,6 +1,6 @@
-package io.alw.css.fosimulator.template.domain;
+package io.alw.css.domain.trade;
 
-public enum CashLegType {
+public enum TradeLegType {
     FX_SIDE1("FX_Side1"),
     FX_SIDE2("FX_Side2"),
     MM_PRINCIPAL("MM_Principal"),
@@ -11,7 +11,7 @@ public enum CashLegType {
 
     public String name;
 
-    CashLegType(String name) {
+    TradeLegType(String name) {
         this.name = name;
     }
 

@@ -22,8 +22,8 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 
-import static io.alw.css.fosimulator.template.domain.CashLegType.FX_SIDE1;
-import static io.alw.css.fosimulator.template.domain.CashLegType.FX_SIDE2;
+import static io.alw.css.domain.trade.TradeLegType.FX_SIDE1;
+import static io.alw.css.domain.trade.TradeLegType.FX_SIDE2;
 import static io.alw.css.fosimulator.template.model.AmendableFoCashMessageFieldType.*;
 
 public final class FxTemplate extends CashMessageAmendmentTemplate<FxTradeContext> {

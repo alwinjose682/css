@@ -1,9 +1,10 @@
 package io.alw.css.fosimulator.template.domain;
 
 import io.alw.css.domain.cashflow.FoCashMessage;
+import io.alw.css.domain.trade.TradeLegType;
 
 public sealed interface CashLeg permits MmCashLeg {
-    CashLegType cashLegType();
+    TradeLegType cashLegType();
     FoCashMessage cashMessage();
     void setCashMessage(FoCashMessage cashMessage);
     TradeContext tradeContext();
