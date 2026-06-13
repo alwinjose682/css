@@ -1,5 +1,6 @@
 package io.alw.css.fosimulator.template.model;
 
+import io.alw.css.domain.trade.TradeLeg;
 import io.alw.css.fosimulator.template.MmTemplate;
 import io.alw.css.fosimulator.template.domain.TradeMetadata;
 
@@ -13,54 +14,54 @@ import java.util.function.Predicate;
 /// 2) the parameters(object references, not the actual parameter value) necessary for the function to compute the value
 /// Normally, this is not the case where functions need to be used. It is used only to facilitate lazy build of the amendment messages.
 /// Check the use site of this class for context(example: [MmTemplate#buildAmendmentContextForPrimarySubjectPrincipal])
-public sealed interface AmendableFoCashMessageFieldSupplier extends AmendableFoCashMessageField {
+public sealed interface AmendableFieldSupplier extends AmendableField {
 
-    sealed abstract class AmendableFoCashMessageFieldSupplierBase implements AmendableFoCashMessageFieldSupplier {
-        private final List<Function<ExtendedTradeLeg, AmendableFoCashMessageField>> amendableFieldSuppliers;
+    sealed abstract class AmendableFieldSupplierBase implements AmendableFieldSupplier {
+        private final List<Function<TradeLeg, AmendableField>> amendableFieldSuppliers;
 
-        private AmendableFoCashMessageFieldSupplierBase() {
+        private AmendableFieldSupplierBase() {
             this.amendableFieldSuppliers = new ArrayList<>();
         }
 
-        public AmendableFoCashMessageFieldSupplier add(Function<ExtendedTradeLeg, AmendableFoCashMessageField> amendableFieldSupplier) {
+        public AmendableFieldSupplier add(Function<TradeLeg, AmendableField> amendableFieldSupplier) {
             amendableFieldSuppliers.add(amendableFieldSupplier);
             return this;
         }
 
-        public List<Function<ExtendedTradeLeg, AmendableFoCashMessageField>> amendableFieldSupplierFunctions() {
+        public List<Function<TradeLeg, AmendableField>> amendableFieldSupplierFunctions() {
             return amendableFieldSuppliers;
         }
     }
 
-    final class ConditionalSupplier extends AmendableFoCashMessageFieldSupplierBase {
-        private final ExtendedTradeLeg conditionSubject;
-        private final Predicate<ExtendedTradeLeg> condition;
+    final class ConditionalSupplier extends AmendableFieldSupplierBase {
+        private final TradeLeg conditionSubject;
+        private final Predicate<TradeLeg> condition;
 
-        public ConditionalSupplier(ExtendedTradeLeg conditionSubject, Predicate<ExtendedTradeLeg> condition) {
+        public ConditionalSupplier(TradeLeg conditionSubject, Predicate<TradeLeg> condition) {
             this.conditionSubject = conditionSubject;
             this.condition = condition;
         }
 
-        public Predicate<ExtendedTradeLeg> condition() {
+        public Predicate<TradeLeg> condition() {
             return condition;
         }
 
-        public ExtendedTradeLeg conditionSubject() {
+        public TradeLeg conditionSubject() {
             return conditionSubject;
         }
     }
 
-    final class SupplierWithMessageSelector extends AmendableFoCashMessageFieldSupplierBase {
+    final class SupplierWithMessageSelector extends AmendableFieldSupplierBase {
         private final TradeMetadata trdCtx;
-        private final Function<TradeMetadata, List<? extends ExtendedTradeLeg>> amendmentSubjectSelector;
+        private final Function<TradeMetadata, List<? extends TradeLeg>> amendmentSubjectSelector;
 
 
-        public SupplierWithMessageSelector(TradeMetadata trdCtx, Function<TradeMetadata, List<? extends ExtendedTradeLeg>> amendmentSubjectSelector) {
+        public SupplierWithMessageSelector(TradeMetadata trdCtx, Function<TradeMetadata, List<? extends TradeLeg>> amendmentSubjectSelector) {
             this.trdCtx = trdCtx;
             this.amendmentSubjectSelector = amendmentSubjectSelector;
         }
 
-        public Function<TradeMetadata, List<? extends ExtendedTradeLeg>> amendmentSubjectSelector() {
+        public Function<TradeMetadata, List<? extends TradeLeg>> amendmentSubjectSelector() {
             return amendmentSubjectSelector;
         }
 

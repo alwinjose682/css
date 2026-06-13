@@ -5,23 +5,35 @@ import io.alw.css.domain.trade.TradeLegType;
 import java.util.*;
 
 public final class AmendableFieldsCollection {
-    private final Map<TradeLegType, Set<AmendableFoCashMessageField>> amendableFields;
+    private final Set<AmendableField> amendableFieldsForTrade;
+    private final Map<TradeLegType, Set<AmendableField>> amendableFieldsForTradeLeg;
 
     public AmendableFieldsCollection() {
-        amendableFields = new HashMap<>();
+        amendableFieldsForTradeLeg = new HashMap<>();
+        amendableFieldsForTrade = new HashSet<>();
     }
 
-    public AmendableFieldsCollection add(TradeLegType tradeLegType, AmendableFoCashMessageField field) {
-        amendableFields.computeIfAbsent(tradeLegType, _ -> new HashSet<>()).add(field);
+    public AmendableFieldsCollection addForTrade(AmendableField cpCode) {
+        amendableFieldsForTrade.add(cpCode);
         return this;
     }
 
-    public AmendableFieldsCollection add(TradeLegType tradeLegType, AmendableFoCashMessageFieldSupplier supplier) {
-        amendableFields.computeIfAbsent(tradeLegType, _ -> new HashSet<>()).add(supplier);
+    public AmendableFieldsCollection addForTradeLeg(TradeLegType tradeLegType, AmendableField field) {
+        amendableFieldsForTradeLeg.computeIfAbsent(tradeLegType, _ -> new HashSet<>()).add(field);
         return this;
     }
 
-    public Set<AmendableFoCashMessageField> get(TradeLegType type) {
-        return Collections.unmodifiableSet(amendableFields.get(type));
+    public AmendableFieldsCollection addForTradeLeg(TradeLegType tradeLegType, AmendableFieldSupplier supplier) {
+        amendableFieldsForTradeLeg.computeIfAbsent(tradeLegType, _ -> new HashSet<>()).add(supplier);
+        return this;
+    }
+
+    public Set<AmendableField> getForTrade() {
+        return amendableFieldsForTrade;
+    }
+
+    public Set<AmendableField> getForTradeLeg(TradeLegType type) {
+        var fields = amendableFieldsForTradeLeg.get(type);
+        return fields == null ? null : Collections.unmodifiableSet(fields);
     }
 }

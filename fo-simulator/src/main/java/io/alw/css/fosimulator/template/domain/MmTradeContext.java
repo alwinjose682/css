@@ -1,47 +1,30 @@
 package io.alw.css.fosimulator.template.domain;
 
 import io.alw.css.domain.common.RateType;
-import io.alw.css.domain.common.TradeLink;
-import io.alw.css.domain.common.TradeType;
-import io.alw.css.domain.common.TransactionType;
 import io.alw.css.domain.trade.Trade;
 import io.alw.css.domain.trade.TradeLeg;
-import io.alw.css.domain.trade.TradeLegType;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-public final class MmTrade extends Trade implements TradeMetadata {
-    private final TradeType tradeType;
+public final class MmTradeContext implements TradeMetadata {
     private final RateType rateType;
     private final InterestPayoutFrequency ipFrequency;
     private final InterestBasis interestBasis;
+    private final Trade trade;
 
     private int nextTradeLegId;
     private TradeLeg principalLeg;
     private TradeLeg maturityLeg;
     private final List<InterestTradeLeg> interestLegs;
 
-    public MmTrade(TradeType tradeType, RateType rateType, InterestPayoutFrequency ipFrequency, InterestBasis interestBasis) {
+    public MmTradeContext(RateType rateType, InterestPayoutFrequency ipFrequency, InterestBasis interestBasis, Trade trade, List<InterestTradeLeg> interestLegs) {
         this.rateType = rateType;
         this.ipFrequency = ipFrequency;
         this.interestBasis = interestBasis;
-
-        this.nextTradeLegId = 0;
-        this.tradeType = tradeType;
-        this.interestLegs = new ArrayList<>();
+        this.trade = trade;
+        this.interestLegs = interestLegs;
     }
 
-    public MmTrade(long tradeID, int tradeVersion, TradeType tradeType, String bookCode, String counterBookCode, TransactionType transactionType, String entityCode, String counterpartyCode, List<TradeLink> tradeLinks, Map<TradeLegType, TradeLeg> tradeLegs) {
-        super(tradeID, tradeVersion, tradeType, bookCode, counterBookCode, transactionType, entityCode, counterpartyCode, tradeLinks, tradeLegs);
-    }
-
-
-    @Override
-    public TradeType tradeType() {
-        return tradeType;
-    }
 
     @Override
     public TradeLeg rootTradeLeg() {
@@ -92,5 +75,10 @@ public final class MmTrade extends Trade implements TradeMetadata {
 
     public InterestBasis interestBasis() {
         return interestBasis;
+    }
+
+    @Override
+    public Trade trade() {
+        return trade;
     }
 }

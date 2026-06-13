@@ -11,7 +11,7 @@ import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.template.domain.TradeMetadata;
-import io.alw.css.fosimulator.template.model.Ids;
+import io.alw.css.fosimulator.template.model.Id;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
 import io.alw.datagen.template.AggregateTemplateBuilder;
 
@@ -35,11 +35,11 @@ sealed abstract class CashMessageTemplate<M extends TradeMetadata>
     /// After each build of the template, the [TradeMetadata] (trdCtx) and [TradeBuilder] (`bdr`) references are just assigned with new instances
     // Message Context and FoCashMessage builder
     private M trd;
-    private MutableTradeBuilder bdr;
+    private TradeBuilder bdr;
 
     // Constant values for each instance of CashMessageTemplate
     private final String entityCode;
-    private final String currCode;
+    protected final String currCode;
     protected final TradeType tradeType;
     private final TransactionType transactionType;
     protected final RandomGenerator rndm;
@@ -75,14 +75,16 @@ sealed abstract class CashMessageTemplate<M extends TradeMetadata>
     /// tradeLinks of grouped and related items are set when creating a cashMessage builder via [CashMessageTemplate#createBuilderFrom(Trade , String)]
     /// The resultant [Trade] is already associated with the [TradeMetadata] in prior steps(using callbacks when creating new trade, amendments and new grouped cashMessages)
     @Override
-    protected TradeLeg buildGroupedOrRelatedItem(TradeLegBuilder bdr) {
-        return bdr.build();
+    protected TradeLeg buildGroupedItem(TradeLegBuilder trdLegBdr) {
+        TradeLeg trdLeg = trdLegBdr.build();
+        bdr.tradeLegs().add(trdLeg); // Add to the trade's set of tradeLegs
+        return trdLeg;
     }
 
     /// Builds the cashMessage template
     ///
     /// **tradeLinks of root FoCashMessage**:
-    /// tradeLinks of rootFoCashMessage are set when creating a cashMessage builder with the default values via the method: [CashMessageTemplate#getNewCashMsgBuilder(Ids, TradeMetadata)]
+    /// tradeLinks of rootFoCashMessage are set when creating a cashMessage builder with the default values via the method: [CashMessageTemplate#getNewCashMsgBuilder(Id , TradeMetadata)]
     @Override
     public M buildRootTemplate() {
         trd.setRootTradeLeg(bdr.build());
@@ -99,43 +101,30 @@ sealed abstract class CashMessageTemplate<M extends TradeMetadata>
     /// This method is used to create root [MutableTradeBuilder]. The builder for grouped or related items are created using [CashMessageTemplate#createBuilderFrom(Trade , String)]
     /// NOTE: New [CashMessageTemplate] instances are not created by this method.
     /// Instead, the existing [TradeBuilder] (`bdr`) is just replaced with a new one and then new values are assigned.
-    protected MutableTradeBuilder getBaseCashMsgBuilder(Ids rooCashMessageIds, M trd, TradeLegType tradeLegType) {
+    protected TradeBuilder getBaseCashMsgBuilder(M trd) {
         msgTemplateHelper.incrementCounter();
-        this.bdr = Trade.builder(); // MutableTradeBuilder.class, not the default TradeBuilder.class
+        this.bdr = TradeBuilder.builder(); // MutableTradeBuilder.class, not the default TradeBuilder.class
         this.trd = trd;
 
         final String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionType();
-        bdr
+        return bdr
                 // Fixed value for this template
                 .entityCode(this.entityCode)
                 .tradeType(tradeType)
                 .transactionType(transactionType)
                 // Id values
-                .tradeID(rooCashMessageIds.tradeID())
-                .tradeVersion(rooCashMessageIds.tradeVersion())
+                .tradeID(IdProvider.singleton().nextTradeId())
+                .tradeVersion(VERSION_ONE)
                 // Always a new trade
+                .tradeEventType(TradeEventType.NEW_TRADE)
+                .tradeEventAction(TradeEventAction.ADD)
                 // Entity dependent fields. Book codes are dummy for now
                 .bookCode(refDataService.dummyBookCode())
                 .counterBookCode(msgTemplateHelper.isInterbookTransaction() ? refDataService.dummyCounterBookCode() : null) // Also a TransactionType dependent
                 // TransactionType dependent fields
                 .counterpartyCode(counterpartyCode)
-        // Others
+
         ;
-
-        // Create the rootLeg of the trade. Other legs can be set by the implementing class
-        TradeLegBuilder trdLegBdr = TradeLegBuilder.builder()
-                .tradeLegId(trd.nextTradeLegId())
-                .tradeLegVersion(VERSION_ONE)
-                .tradeLegType(tradeLegType)
-                .tradeEventType(TradeEventType.NEW_TRADE)
-                .tradeEventAction(TradeEventAction.ADD)
-                .rate(cyclicRateProvider.get()) // rate is just a constant from a list of multiple rate constants. No rate dependent calculation is done in CSS
-                .currCode(this.currCode)
-                // valueDate, payOrReceive and amount are to be set by the implementing class
-                ;
-
-        bdr.tradeLegs(tradeLegType, trdLegBdr);
-        return bdr;
     }
 
     /// This method is used to create [TradeBuilder] for grouped or related cashMessages.

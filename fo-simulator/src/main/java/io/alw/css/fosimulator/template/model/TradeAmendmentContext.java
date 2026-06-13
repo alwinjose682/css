@@ -1,0 +1,64 @@
+package io.alw.css.fosimulator.template.model;
+
+import io.alw.css.fosimulator.model.TradeEventActionPair;
+import io.alw.css.fosimulator.template.domain.TradeMetadata;
+
+import java.util.*;
+import java.util.function.Function;
+
+/// All amendmentSubjectContexts are held in an ArrayList to ensure strict sequential encounter order(FIFO) when retrieving them.
+/// This is important because, amendmentSubjects are built lazily and may require the previously built amendmentSubjects during their build process
+///
+/// Note: The primaryAmendmentSubject is ideally the cashMessage selected for amendment that has caused amendment for other dependent cashMessages.
+/// But it is not explicitly ensured by this class as to which element is the primaryAmendmentSubject.
+/// It is the responsibility of the user to add the elements in the proper simple sequential order using [TradeAmendmentContext#addNextTradeLegAmndCtx]
+public final class TradeAmendmentContext {
+    private final Set<AmendableField> tradeLevelAmendmentFields;
+    private final TradeEventActionPair tradeEventActionPair;
+    private final List<TradeLegAmendmentContext> tradeLegAmendmentContexts;
+    private Id firstAmendedSubjectUpdatedId;
+
+    public TradeAmendmentContext(TradeEventActionPair tradeEventActionPair) {
+        this(tradeEventActionPair, new HashSet<>());
+    }
+
+    public TradeAmendmentContext(TradeEventActionPair tradeEventActionPair, Set<AmendableField> tradeLevelAmendmentFields) {
+        if (tradeEventActionPair == null || tradeLevelAmendmentFields == null) {
+            throw new RuntimeException("tradeEventActionPair and tradeLevelAmendmentFields cannot be null");
+        }
+        this.tradeEventActionPair = tradeEventActionPair;
+        this.tradeLevelAmendmentFields = tradeLevelAmendmentFields;
+        this.tradeLegAmendmentContexts = new ArrayList<>();
+    }
+
+    public Id computeFirstAmendedCashMessageIdsIfAbsent(TradeMetadata amendmentSubject, Function<TradeMetadata, Id> computeFunc) {
+        if (firstAmendedSubjectUpdatedId == null) {
+            firstAmendedSubjectUpdatedId = computeFunc.apply(amendmentSubject);
+            return firstAmendedSubjectUpdatedId;
+        } else {
+            return firstAmendedSubjectUpdatedId;
+        }
+    }
+
+    /// The order in which elements are added determines the encounter order as well(FIFO).
+    /// If the [TradeLegAmendmentContext] is null, then it is not added to the Set
+    /// see {@link TradeAmendmentContext}
+    public TradeAmendmentContext addNextTradeLegAmndCtx(TradeLegAmendmentContext amndSubCtx) {
+        if (amndSubCtx != null) {
+            tradeLegAmendmentContexts.add(amndSubCtx);
+        }
+        return this;
+    }
+
+    public TradeEventActionPair tradeEventActionPair() {
+        return tradeEventActionPair;
+    }
+
+    public List<TradeLegAmendmentContext> tradeLegAmendmentContexts() {
+        return Collections.unmodifiableList(tradeLegAmendmentContexts);
+    }
+
+    public Set<AmendableField> tradeLevelAmendmentFields() {
+        return tradeLevelAmendmentFields;
+    }
+}
