@@ -6,8 +6,8 @@ public enum TradeLegType {
     MM_PRINCIPAL("MM_Principal"),
     MM_MATURITY("MM_Maturity"),
     MM_INTEREST("MM_Interest"),
-    PARENT_CASHFLOW("Parent_Cashflow"),
-    CHILD_CASHFLOW("Child_Cashflow");
+    PARENT_TRADE("Parent_Trade"),
+    CHILD_TRADE("Child_Trade");
 
     public String name;
 

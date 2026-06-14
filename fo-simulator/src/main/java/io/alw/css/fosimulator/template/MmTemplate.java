@@ -4,7 +4,10 @@ import io.alw.css.domain.common.TradeEventAction;
 import io.alw.css.domain.common.TradeEventType;
 import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.common.TransactionType;
-import io.alw.css.domain.trade.*;
+import io.alw.css.domain.trade.TradeBuilder;
+import io.alw.css.domain.trade.TradeLeg;
+import io.alw.css.domain.trade.TradeLegBuilder;
+import io.alw.css.domain.trade.TradeLegType;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
@@ -51,26 +54,26 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
     @Override
     public MmTemplate withRootTemplateValues() {
         // Create MessageContext
-        MmTradeContext trdCtx = createMmTrade();
+        MmTradeContext trd = createMmTrade();
         // Create MoneyMarket trade builder with base values
-        TradeBuilder bdr = getBaseCashMsgBuilder(trdCtx);
+        TradeBuilder bdr = getBaseCashMsgBuilder(trd);
         // Build PRINCIPAL leg
         var newTrdEventAndAction = new TradeEventActionPair(TradeEventType.NEW_TRADE, TradeEventAction.ADD);
-        var principalLegId = new Id(trdCtx.nextTradeLegId(), VERSION_ONE);
-        this.withGroupedItem(trdCtx::setRootTradeLeg, () -> buildPrincipalLeg(principalLegId, newTrdEventAndAction));
+        var principalLegId = new Id(trd.nextTradeLegId(), VERSION_ONE);
+        this.withGroupedItem(trd::setRootTradeLeg, () -> buildPrincipalLeg(principalLegId, newTrdEventAndAction));
 
         // IMPORTANT NOTE: The order here is important.
         // MaturityLeg must be built before InterestLeg because building InterestLeg requires maturityLegValueDate.
         // The lambdas added via [io.alw.datagen.template.AggregateTemplateBuilder#withGroupedItem(Supplier)] method will be executed strictly in the same order as they are inserted in the queue
-        switch (trdCtx.trade().tradeType()) {
+        switch (trd.trade().tradeType()) {
             case MM_TERM -> {
-                var interestLegIds = CashMessageTemplateHelper.getNewTradeLegId(trdCtx);
-                var maturityLegIds = CashMessageTemplateHelper.getNewTradeLegId(trdCtx);
-                buildMaturityAndInterestLeg(trdCtx, maturityLegIds, interestLegIds, newTrdEventAndAction);
+                var interestLegIds = new Id(trd.nextTradeLegId(), VERSION_ONE);
+                var maturityLegIds = new Id(trd.nextTradeLegId(), VERSION_ONE);
+                buildMaturityAndInterestLeg(trd, maturityLegIds, interestLegIds, newTrdEventAndAction);
             }
             case MM_CALL -> {
-                var interestLegIds = CashMessageTemplateHelper.getNewTradeLegId(trdCtx);
-                this.withGroupedItem(trdCtx::addInterestLeg, () -> buildInterestLeg(trdCtx, interestLegIds, newTrdEventAndAction));
+                var interestLegIds = new Id(trd.nextTradeLegId(), VERSION_ONE);
+                this.withGroupedItem(trd::addInterestLeg, () -> buildInterestLeg(trd, interestLegIds, newTrdEventAndAction));
             }
             default -> throw new RuntimeException("Invalid TradeType for MmTemplate");
         }
@@ -78,14 +81,24 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
     }
 
     private TradeLegBuilder buildPrincipalLeg(Id id, TradeEventActionPair trdEventAndAction) {
+        final String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionType();
+
         return TradeLegBuilder.builder()
                 .tradeLegId(id.Id())
                 .tradeLegVersion(id.version())
                 .tradeLegType(MM_PRINCIPAL)
-                .rate(cyclicRateProvider.get()) // rate is just a constant from a list of multiple rate constants. No rate dependent calculation is done in CSS
+                // Entity dependent fields. Book codes are dummy for now
+                .entityCode(this.entityCode)
                 .currCode(this.currCode)
+                .bookCode(refDataService.dummyBookCode())
+                .counterBookCode(msgTemplateHelper.isInterbookTransaction() ? refDataService.dummyCounterBookCode() : null) // Also a TransactionType dependent
+                // TransactionType dependent fields
+                .counterpartyCode(counterpartyCode)
+                // Event type and event action
                 .tradeEventType(trdEventAndAction.event())
                 .tradeEventAction(trdEventAndAction.action())
+                //
+                .rate(cyclicRateProvider.get()) // rate is just a constant from a list of multiple rate constants. No rate dependent calculation is done in CSS
                 .valueDate(msgTemplateHelper.getRndmValueDate(30))
                 .payOrReceive(rndm.nextBoolean() ? PAY : RECEIVE)
                 .amount(BigDecimal.valueOf(rndm.nextDouble(principalLegAmountOrigin, principalLegAmountBound)))
@@ -147,16 +160,21 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
             switch (ft.amendmentTarget()) {
                 case TRADE -> {
                     switch (ft) {
-                        case COUNTERPARTY_CODE -> {
-                            var cpCode = MmAmendmentFieldValue.PrimarySubject.forCounterpartyCode(trd, msgTemplateHelper);
-                            amendableFields.addForTrade(cpCode);
-                        }
-                        case VALUE_DATE, AMOUNT -> throw new RuntimeException("ValueDate and Amount amendments is not possible on Trade level. Instead, it must be done on TradeLeg level");
+                        case COUNTERPARTY_CODE, VALUE_DATE, AMOUNT ->
+                                throw new RuntimeException("CounterpartyCode, ValueDate and Amount amendments are not possible on Trade level. Instead, it must be done on TradeLeg level");
                     }
                 }
                 case TRADE_LEG -> {
                     switch (ft) {
-                        case COUNTERPARTY_CODE -> throw new RuntimeException("CounterpartyCode amendment is not possible on TradeLeg level. Instead, it must be done on Trade level");
+                        case COUNTERPARTY_CODE -> {
+                            var cpCode = MmAmendmentFieldValue.PrimarySubject.forCounterpartyCode(principalLeg, msgTemplateHelper);
+                            amendableFields
+                                    .addForTradeLeg(MM_PRINCIPAL, cpCode)
+                                    .addForTradeLeg(MM_INTEREST, intLegAmndFieldSupplier.add(_ -> cpCode));
+                            if (maturityLeg != null) {
+                                amendableFields.addForTradeLeg(MM_MATURITY, cpCode);
+                            }
+                        }
                         case AMOUNT -> {
                             var amount = MmAmendmentFieldValue.PrimarySubject.forAmount(rndm);
                             intLegAmndFieldSupplier.add(tl -> new AmendableField.Amount(determineInterestLegAmount(trd, principalLeg, maturityLeg, (InterestTradeLeg) tl)));
@@ -209,7 +227,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
 
         // Create TradeAmendmentContext
         var tradeLevelAmendableFields = amendableFields.getForTrade();
-        var amndCtx = new TradeAmendmentContext(nextTradeEventAction, tradeLevelAmendableFields);
+        var amndCtx = new TradeAmendmentContext(nextTradeEventAction, tradeLevelAmendableFields, trd::setTrade);
 
         // Amendment context for PrincipalLeg
         var fieldsForPrincipalLeg = amendableFields.getForTradeLeg(MM_PRINCIPAL);
@@ -263,7 +281,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
         InterestTradeLeg interestLeg = trd.interestLegs().getFirst();
 
         // Build the INTEREST leg
-        var bdr = createBuilderFrom(principalLeg)
+        var bdr = trd.getSuitableBuilderFrom(principalLeg)
                 .tradeLegId(interestLegId.Id())
                 .tradeLegVersion(interestLegId.version())
                 .tradeLegType(MM_INTEREST)
@@ -368,7 +386,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
         var maturityLegValueDate = determineMaturityLegValueDate(principalLeg);
 
         // Build the MATURITY leg
-        var bdr = createBuilderFrom(principalLeg)
+        var bdr = trd.getSuitableBuilderFrom(principalLeg)
                 .tradeLegId(maturityLegId.Id())
                 .tradeLegVersion(maturityLegId.version())
                 .tradeLegType(MM_MATURITY)
@@ -430,8 +448,8 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
                 return new AmendableField.Amount(newAmount);
             }
 
-            private static AmendableField forCounterpartyCode(Trade trd, CashMessageTemplateHelper msgTemplateHelper) {
-                String newCounterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(trd.counterpartyCode());
+            private static AmendableField forCounterpartyCode(TradeLeg trdLeg, CashMessageTemplateHelper msgTemplateHelper) {
+                String newCounterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(trdLeg.counterpartyCode());
                 return new AmendableField.CounterpartyCode(newCounterpartyCode);
             }
 

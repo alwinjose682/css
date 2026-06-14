@@ -1,14 +1,14 @@
 package io.alw.css.fosimulator.template;
 
-import io.alw.css.domain.common.*;
+import io.alw.css.domain.common.TradeEventAction;
+import io.alw.css.domain.common.TradeEventType;
+import io.alw.css.domain.common.TransactionType;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.template.domain.MmTradeEvent;
 import io.alw.css.fosimulator.template.domain.TradeEventActionRecord;
 import io.alw.css.fosimulator.template.domain.TradeEventTypeRecord;
-import io.alw.css.fosimulator.template.domain.TradeMetadata;
-import io.alw.css.fosimulator.template.model.Id;
 import io.alw.datagen.template.CountAware;
 
 import java.time.LocalDate;
@@ -16,7 +16,6 @@ import java.util.random.RandomGenerator;
 
 import static io.alw.css.domain.common.TradeEventAction.*;
 import static io.alw.css.domain.common.TradeEventType.*;
-import static io.alw.css.fosimulator.template.CashMessageTemplate.VERSION_ONE;
 
 
 /// NOTE: This helper class has mutable state
@@ -42,23 +41,6 @@ public final class CashMessageTemplateHelper implements CountAware {
         this.cashMsgTemplateProps = cashMsgTemplateProps;
         this.refDataService = refDataService;
         this.counter = 0L;
-    }
-
-    /// Returns [Id] for version 1 cashflow and with trade version from the given [Id]
-    static Id getNewCashMsgIdsFromExistingTrade(Id id) {
-        var idProvider = IdProvider.singleton();
-        return new Id(tradeLegType, idProvider.nextCashflowId(), VERSION_ONE, id.tradeID(), id.tradeVersion());
-    }
-
-    public static TradeLink mapToTradeLink(Id id) {
-        return TradeLinkBuilder.TradeLink(
-                id.linkType().name, null,
-                id.Id(), id.version(),
-                id.tradeID(), id.tradeVersion());
-    }
-
-    public static Id getNewTradeLegId(TradeMetadata trd) {
-        return new Id(trd.nextTradeLegId(),VERSION_ONE);
     }
 
     /// Check the documentation for [CashMessageTemplate#getRndmValueDate()]

@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Objects;
 
+
 /*
 @RecordBuilder
 public record TradeLeg(
@@ -19,6 +20,10 @@ public record TradeLeg(
         TradeLegType tradeLegType,
         TradeEventType tradeEventType,
         TradeEventAction tradeEventAction,
+        @NotNull String entityCode,
+        String bookCode,
+        String counterBookCode, // Can be null if not an internal trade
+        @NotBlank String counterpartyCode,
         @NotNull BigDecimal rate,
         @NotNull LocalDate valueDate,
         @NotNull PayOrReceive payOrReceive,
@@ -37,15 +42,19 @@ public record TradeLeg(
         return Objects.hash(tradeLegId, tradeLegVersion);
     }
 }
-
  */
 
-public class TradeLeg {
+
+public final class TradeLeg {
     private final long tradeLegId;
     private final int tradeLegVersion;
     private final TradeLegType tradeLegType;
     private final TradeEventType tradeEventType;
     private final TradeEventAction tradeEventAction;
+    private final @NotNull String entityCode;
+    private final String bookCode;
+    private final String counterBookCode;
+    private final @NotBlank String counterpartyCode;
     private final @NotNull BigDecimal rate;
     private final @NotNull LocalDate valueDate;
     private final @NotNull PayOrReceive payOrReceive;
@@ -59,6 +68,10 @@ public class TradeLeg {
             TradeLegType tradeLegType,
             TradeEventType tradeEventType,
             TradeEventAction tradeEventAction,
+            @NotNull String entityCode,
+            String bookCode,
+            String counterBookCode, // Can be null if not an internal trade
+            @NotBlank String counterpartyCode,
             @NotNull BigDecimal rate,
             @NotNull LocalDate valueDate,
             @NotNull PayOrReceive payOrReceive,
@@ -70,6 +83,10 @@ public class TradeLeg {
         this.tradeLegType = tradeLegType;
         this.tradeEventType = tradeEventType;
         this.tradeEventAction = tradeEventAction;
+        this.entityCode = entityCode;
+        this.bookCode = bookCode;
+        this.counterBookCode = counterBookCode;
+        this.counterpartyCode = counterpartyCode;
         this.rate = rate;
         this.valueDate = valueDate;
         this.payOrReceive = payOrReceive;
@@ -109,6 +126,22 @@ public class TradeLeg {
         return tradeEventAction;
     }
 
+    public @NotNull String entityCode() {
+        return entityCode;
+    }
+
+    public String bookCode() {
+        return bookCode;
+    }
+
+    public String counterBookCode() {
+        return counterBookCode;
+    }
+
+    public @NotBlank String counterpartyCode() {
+        return counterpartyCode;
+    }
+
     public @NotNull BigDecimal rate() {
         return rate;
     }
@@ -137,6 +170,10 @@ public class TradeLeg {
                 "tradeLegType=" + tradeLegType + ", " +
                 "tradeEventType=" + tradeEventType + ", " +
                 "tradeEventAction=" + tradeEventAction + ", " +
+                "entityCode=" + entityCode + ", " +
+                "bookCode=" + bookCode + ", " +
+                "counterBookCode=" + counterBookCode + ", " +
+                "counterpartyCode=" + counterpartyCode + ", " +
                 "rate=" + rate + ", " +
                 "valueDate=" + valueDate + ", " +
                 "payOrReceive=" + payOrReceive + ", " +
@@ -145,3 +182,6 @@ public class TradeLeg {
     }
 
 }
+
+
+

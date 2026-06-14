@@ -14,11 +14,7 @@ public record Trade(
         long tradeID,
         int tradeVersion,
         @NotNull TradeType tradeType,
-        String bookCode,
-        String counterBookCode, // Can be null if not an internal trade
         TransactionType transactionType,
-        @NotNull String entityCode,
-        @NotNull String counterpartyCode,
         List<TradeLink> tradeLinks,
         Set<TradeLeg> tradeLegs,
         TradeEventType tradeEventType,

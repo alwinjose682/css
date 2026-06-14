@@ -1,5 +1,5 @@
 package io.alw.css.fosimulator.template.model;
 
 public enum AmendmentTarget {
-    TRADE, TRADE_LEG
+    TRADE_LEG, TRADE
 }

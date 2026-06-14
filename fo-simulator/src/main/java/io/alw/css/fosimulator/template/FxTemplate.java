@@ -45,8 +45,8 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTradeContex
     @Override
     public FxTemplate withRootTemplateValues() {
         // Create Ids for FX-Side-1 and Fx-Side-2
-        var fxSide1Ids = CashMessageTemplateHelper.getNewTradeLegId(FX_SIDE1);
-        var fxSide2Ids = CashMessageTemplateHelper.getNewCashMsgIdsFromExistingTrade(FX_SIDE2, fxSide1Ids);
+        var fxSide1Ids = new Id(trd.nextTradeLegId(),VERSION_ONE);
+        var fxSide2Ids = new Id(trd.nextTradeLegId(),VERSION_ONE);
         // Create message context and all tradeLinks
         var trdCtx = new FxTradeContext(TradeType.FX);
         // Create FoCashMessage builder for new template with default base values

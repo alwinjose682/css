@@ -7,7 +7,7 @@ import java.time.LocalDate;
 ///
 /// NOTE: [AmendableFieldSupplier] extends [AmendableField]
 public sealed interface AmendableField permits AmendableFieldSupplier, AmendableField.Amount, AmendableField.CounterpartyCode, AmendableField.ValueDate {
-    record ValueDate(LocalDate date) implements AmendableField {public static AmendmentTarget amendmentTarget = AmendmentTarget.TRADE_LEG;}
-    record Amount(BigDecimal value) implements AmendableField {public static AmendmentTarget amendmentTarget = AmendmentTarget.TRADE_LEG;}
-    record CounterpartyCode(String code) implements AmendableField {public static AmendmentTarget amendmentTarget = AmendmentTarget.TRADE;}
+    record ValueDate(LocalDate date) implements AmendableField {public static final AmendmentTarget amendmentTarget = AmendmentTarget.TRADE_LEG;}
+    record Amount(BigDecimal value) implements AmendableField {public static final AmendmentTarget amendmentTarget = AmendmentTarget.TRADE_LEG;}
+    record CounterpartyCode(String code) implements AmendableField {public static final AmendmentTarget amendmentTarget = AmendmentTarget.TRADE_LEG;}
 }

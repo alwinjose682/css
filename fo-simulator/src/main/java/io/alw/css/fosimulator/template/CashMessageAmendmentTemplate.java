@@ -1,7 +1,10 @@
 package io.alw.css.fosimulator.template;
 
 import io.alw.css.domain.common.*;
-import io.alw.css.domain.trade.*;
+import io.alw.css.domain.trade.Trade;
+import io.alw.css.domain.trade.TradeBuilder;
+import io.alw.css.domain.trade.TradeLeg;
+import io.alw.css.domain.trade.TradeLegBuilder;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
@@ -18,8 +21,8 @@ import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 
-import static io.alw.css.domain.trade.TradeLegType.CHILD_CASHFLOW;
-import static io.alw.css.domain.trade.TradeLegType.PARENT_CASHFLOW;
+import static io.alw.css.domain.trade.TradeLegType.CHILD_TRADE;
+import static io.alw.css.domain.trade.TradeLegType.PARENT_TRADE;
 
 /// The type parameter M stands for MessageContext which is a combination of [Trade] and its metadata created by the implementations of this class.
 /// Some implementations choose to store MessageContext instead of just FoCashMessage in [io.alw.css.fosimulator.store.CashMessageStore]
@@ -91,14 +94,24 @@ sealed abstract class CashMessageAmendmentTemplate<T extends TradeMetadata>
     /// All the cashMessages being amended belongs to the same trd
     /// The steps to lazily build(functions) and the actual build done by [io.alw.datagen.template.AggregateTemplateBuilder] are performed in FIFO order
     protected void buildAmendedMessage(TradeAmendmentContext trdAmndCtx, T trd) {
+        // Amendment if trade is rebooked
         var nextEventAndAction = trdAmndCtx.tradeEventActionPair();
         if (nextEventAndAction.event() == TradeEventType.REBOOK) {
             handleTradeRebookEvent(trdAmndCtx, trd);
             return;
         }
 
-        // TODO: Which one should be built first? Trade or TradeLeg
+        // Trade level amendment if applicable
+        var trdLevelAmndFields = trdAmndCtx.tradeLevelAmendmentFields();
+        if (trdLevelAmndFields != null && !trdLevelAmndFields.isEmpty()) {
+            this.withRelatedItem(() -> buildTradeAmendment(trdAmndCtx, trd));
+        }
 
+        // TradeLeg level amendment
+        buildTradeLegAmendment(trdAmndCtx, trd);
+    }
+
+    private void buildTradeLegAmendment(TradeAmendmentContext trdAmndCtx, T trd) {
         var trdLegAmndCtxs = trdAmndCtx.tradeLegAmendmentContexts();
         for (TradeLegAmendmentContext trdLegAmndCtx : trdLegAmndCtxs) {
             switch (trdLegAmndCtx) {
@@ -111,25 +124,75 @@ sealed abstract class CashMessageAmendmentTemplate<T extends TradeMetadata>
         }
     }
 
-    private void handleTradeRebookEvent(TradeAmendmentContext trdAmndCtx, T trd) {
-        // TODO: Which one should be built first? Trade or TradeLeg
+    private TradeBuilder buildTradeAmendment(TradeAmendmentContext trdAmndCtx, T trd) {
+        TradeEventActionPair nextEventAndAction = trdAmndCtx.tradeEventActionPair();
+        TradeBuilder amndTrdBdr = createBuilderFrom(trd.trade());
+        // Set new TradeEvent and TradeEventAction
+        amndTrdBdr
+                .tradeVersion(trd.tradeVersion() + 1)
+                .tradeEventType(nextEventAndAction.event())
+                .tradeEventAction(nextEventAndAction.action());
 
-        // 1. Create cancellation for Trade
-        TradeBuilder canTrdBdr = createBuilderFrom(trd.trade());
-
-        // 2. Create cancellation for all TradeLegs
-        //TODO: What to do for TradeLegs like InterestTradeLeg that extends TradeLeg?
-        for (TradeLeg trdLeg : trd.allTradeLegs()) {
-            TradeLegBuilder trdLegBdr = TradeLegBuilder.builder(trdLeg);
+        // Set amended values
+        for (AmendableField amendableField : trdAmndCtx.tradeLevelAmendmentFields()) {
+            switch (amendableField) {
+                case AmendableField.CounterpartyCode _, AmendableField.ValueDate _, AmendableField.Amount _ ->
+                        throw new RuntimeException("CounterpartyCode, Amount and ValueDate amendment cannot be done on Trade level. Instead it must be done on the TradeLeg level");
+                case AmendableFieldSupplier _ ->
+                        throw new RuntimeException("Incorrect use of `AmendableFoCashMessageFieldSupplier` type. `AmendableFoCashMessageFieldSupplier` type should be used only when the values are NOT known at the time of constructing the object");
+            }
         }
+
+        return amndTrdBdr;
+    }
+
+    private void handleTradeRebookEvent(TradeAmendmentContext trdAmndCtx, T trd) {
+        // New trade's Id and Version
+        var newTrdId = IdProvider.singleton().nextTradeId();
+        var newTrdVer = VERSION_ONE;
+        var canTrdVer = trd.tradeVersion() + 1;
+
+        // 1. Create cancellation for Trade and register in the TemplateBuilder
+        this.withRelatedItem(
+                trd::consumeAmendedTradeLegs,
+                trd::setTrade,
+                () -> {
+                    TradeBuilder canTrdBdr = createBuilderFrom(trd.trade());
+                    return canTrdBdr
+                            .tradeVersion(canTrdVer)
+                            .tradeLinks(List.of(new TradeLink(CHILD_TRADE.name, null, 0, 0, newTrdId, newTrdVer)))
+                            .tradeEventType(TradeEventType.CANCEL)
+                            .tradeEventAction(TradeEventAction.ADD)
+                            ;
+                },
+                // 2. Create cancellation for all TradeLegs
+                () -> {
+                    for (TradeLeg trdLeg : trd.allTradeLegsInOrderOfImportance()) {
+                        var trdLegBdr = trd.getSuitableBuilderFrom(trdLeg);
+                        trdLegBdr
+                                .tradeLegVersion(trdLeg.tradeLegVersion() + 1)
+                                .tradeEventType(TradeEventType.CANCEL)
+                                .tradeEventAction(TradeEventAction.ADD)
+                        ;
+                    }
+                });
 
         // 3. Create rebooked Trade
+        var newTrdEventAndAction = trdAmndCtx.tradeEventActionPair();
         TradeBuilder newTrdBdr = createBuilderFrom(trd.trade());
+        newTrdBdr
+                .tradeID(newTrdId)
+                .tradeVersion(newTrdVer)
+                .tradeLinks(List.of(new TradeLink(PARENT_TRADE.name, null, 0, 0, trd.tradeId(), canTrdVer)))
+                .tradeEventType(newTrdEventAndAction.event())
+                .tradeEventAction(newTrdEventAndAction.action())
+        ;
 
-        // 4. Create rebooked TradeLegs only for those trade legs present in trdAmndCtx which are explicitly selected by implementation class to be valid for rebooked trade
-        for (TradeLegAmendmentContext tradeLegAmendmentContext : trdAmndCtx.tradeLegAmendmentContexts()) {
-            // TODO: Increment tradeLegAmendment or should it be supplied to this method as an Id object because this method may be invoked due to a rebook event ?
-        }
+        // 4. Reset nextTradeLegId provider so that rebooked trade will have TradeLegs with ids starting from 1
+        trd.resetTradeLegIdProvider();
+
+        // 5. Create rebooked TradeLegs only for those trade legs present in trdAmndCtx which are explicitly selected by implementation class to be valid for rebooked trade
+        buildTradeLegAmendment(trdAmndCtx, trd);
     }
 
     private void buildTradeLegAmendment(TradeAmendmentContext trdAmndCtx, TradeLegAmendmentContextLazy trdLegAmndCtxLazy, T trd) {
@@ -206,21 +269,24 @@ sealed abstract class CashMessageAmendmentTemplate<T extends TradeMetadata>
     }
 
     private TradeLegBuilder buildTradeLegAmendment(TradeAmendmentContext trdAmndCtx, TradeLegAmendmentContextEager trdLegAmndCtx, T trd) {
-        Set<AmendableField> amendableFields = trdLegAmndCtx.amendableFields();
-
         TradeEventActionPair nextEventAndAction = trdAmndCtx.tradeEventActionPair();
+        Set<AmendableField> amendableFields = trdLegAmndCtx.amendableFields();
         TradeLeg tradeLeg = trdLegAmndCtx.tradeLeg();
         // Create builder for amending cashMessage from the cashMessage being amended
-        TradeLegBuilder amndBdr = createBuilderFrom(tradeLeg);
+        TradeLegBuilder amndBdr = trd.getSuitableBuilderFrom(tradeLeg);
 
-        // If trade is rebooked, create a cancellation of the tradeLeg in addition to the steps specific for rebook event
+        // If trade is rebooked, get a new tradeLegId. Note: the trd::nextTradeLegId counter was already reset in a previous step due to rebook event
         if (nextEventAndAction.event() == TradeEventType.REBOOK) {
-            handleTradeRebookEventForTradeLeg(trdAmndCtx, amndBdr, trd);
+            amndBdr
+                    .tradeLegId(trd.nextTradeLegId())
+                    .tradeLegVersion(VERSION_ONE);
         }
-
-        // TODO: Increment tradeLegAmendment or should be supplied to this method as an Id object because this method may be invoked due to a rebook event ?
-
-        // Set new TradeEvent and TradeEventAction
+        // If not rebooked, just increment the tradeLegVersion
+        else {
+            amndBdr
+                    .tradeLegVersion(tradeLeg.tradeLegVersion() + 1);
+        }
+        // set new trade even and action
         amndBdr
                 .tradeEventType(nextEventAndAction.event())
                 .tradeEventAction(nextEventAndAction.action());
@@ -230,7 +296,7 @@ sealed abstract class CashMessageAmendmentTemplate<T extends TradeMetadata>
             switch (amendableField) {
                 case AmendableField.ValueDate(var newValueDate) -> amndBdr.valueDate(newValueDate);
                 case AmendableField.Amount(var newAmount) -> amndBdr.amount(newAmount);
-                case AmendableField.CounterpartyCode _ -> throw new RuntimeException("CounterpartyCode amendment cannot be done on TradeLeg level. Instead it must be done on the Trade level");
+                case AmendableField.CounterpartyCode(var cpCode) -> amndBdr.counterpartyCode(cpCode);
                 case AmendableFieldSupplier _ -> {
                     throw new RuntimeException("Incorrect use of `AmendableFoCashMessageFieldSupplier` type. `AmendableFoCashMessageFieldSupplier` type should be used only when the values are NOT known at the time of constructing the object");
                 }
@@ -238,108 +304,6 @@ sealed abstract class CashMessageAmendmentTemplate<T extends TradeMetadata>
         }
 
         return amndBdr;
-    }
-
-    private TradeBuilder buildTradeAmendment(TradeAmendmentContext trdAmndCtx, T trd) {
-        TradeEventActionPair nextEventAndAction = trdAmndCtx.tradeEventActionPair();
-        // If NOT rebooked, increments the cashflow version and randomly chooses to increment the trade version.
-        // These same values used for the first message are used for the subsequent messages being amended that belong to the same MessageContext
-        // The TradeEventType of the root and the related cashMessages being amended will be same. If not same, then Ids assigned to the amended cashflow will go wrong
-        // (Ex: amending PRINCIPAL of an MM trade for TradeEventType#REBOOK, may result in amending MATURITY leg with the same TradeEventType as REBOOK)
-
-        TradeBuilder amndTrdBdr = createBuilderFrom(trd.trade());
-
-        // If trade is rebooked, create a cancellation of the trade(not for tradeLeg) in addition to the steps specific for rebook event
-        // Do not do the same for tradeLeg here. For a rebook event, the tradeLegs that need to be
-        if (nextEventAndAction.event() == TradeEventType.REBOOK) {
-            handleTradeRebookEvent(trdAmndCtx, amndTrdBdr, trd);
-        }
-
-        // Set new TradeEvent and TradeEventAction
-        amndTrdBdr
-                .tradeEventType(nextEventAndAction.event())
-                .tradeEventAction(nextEventAndAction.action());
-
-        // Set amended values
-        for (AmendableField amendableField : trdAmndCtx.tradeLevelAmendmentFields()) {
-            switch (amendableField) {
-                case AmendableField.CounterpartyCode(var newCounterpartyCode) -> {
-                    amndTrdBdr
-                            .tradeVersion(trd.tradeVersion() + 1)
-                            .counterpartyCode(newCounterpartyCode);
-                }
-                case AmendableField.ValueDate _, AmendableField.Amount _ ->
-                        throw new RuntimeException("Amount and ValueDate amendment cannot be done on Trade level. Instead it must be done on the TradeLeg level");
-                case AmendableFieldSupplier _ ->
-                        throw new RuntimeException("Incorrect use of `AmendableFoCashMessageFieldSupplier` type. `AmendableFoCashMessageFieldSupplier` type should be used only when the values are NOT known at the time of constructing the object");
-            }
-        }
-
-
-        return amndTrdBdr;
-    }
-
-    /// 1) creates a new cashMessage for a new trade
-    /// 2) creates cashflow to cancel the original cashMessage and adds to the builder without callback. The callback needs to be used for the new cashMessage
-    /// 3) the new cashMessage corresponding to the new trade is associated with the same [TradeMetadata] -
-    /// Nothing has to be done explicitly to ensure this. The callback although created for the old cashMessage will be applied to the new cashMessage.
-    private void handleTradeRebookEvent123(TradeAmendmentContext amndCtx, TradeBuilder amndBdr, T trdCtx) {
-        TradeLeg amendmentSubject = amndSubjectCtx.amendmentSubject();
-        TradeLegType amendmentSubjectLinkType = amndSubjectCtx.tradeLegType();
-
-        // 1. Create new trade ID and cashflow ID
-        // These same values used for the first message are used for the subsequent messages being amended that belong to the same MessageContext
-        var rebookedTradeIds = amndCtx.computeFirstAmendedCashMessageIdsIfAbsent(amendmentSubject, (_) -> {
-            IdProvider idProvider = IdProvider.singleton();
-            final long rebookedTradeID = idProvider.nextTradeId();
-            return new Id(rebookedTradeID, VERSION_ONE);
-        });
-
-        final int cancelledCashflowVersion = amendmentSubject.cashflowVersion() + 1;
-        final int cancelledTradeVersion = amendmentSubject.tradeVersion();
-
-        // 2. Create cancellation for the original cashflow and register in the TemplateBuilder
-        this.withRelatedItem(() -> {
-            // Add trade link that corresponds to rebooked cashflow to the existing list of trade links
-            List<TradeLink> newTradeLinks = amendmentSubject.tradeLinks() != null && !amendmentSubject.tradeLinks().isEmpty() ? new ArrayList<>(amendmentSubject.tradeLinks()) : new ArrayList<>();
-            newTradeLinks.add(TradeLinkBuilder.TradeLink(
-                    CHILD_CASHFLOW.name, null,
-                    rebookedTradeIds.Id(), rebookedTradeIds.version(),
-                    rebookedTradeIds.tradeID(), rebookedTradeIds.tradeVersion()));
-
-            // Create builder for cashflow cancellation
-            return createBuilderFrom(amendmentSubject)
-                    // Id Version
-                    .tradeVersion(cancelledTradeVersion)
-                    .cashflowVersion(cancelledCashflowVersion)
-                    // Trade Event and Action
-                    .tradeEventType(TradeEventType.CANCEL)
-                    .tradeEventAction(TradeEventAction.ADD)
-                    .tradeLinks(Collections.unmodifiableList(newTradeLinks));
-        });
-
-        // 3. Create the new trade and cashflow (because of trade rebook)
-        List<TradeLink> newTradeLinks = new ArrayList<>();
-        // Add trade link of cancelled cashflow
-        newTradeLinks.add(TradeLinkBuilder.TradeLink(
-                PARENT_CASHFLOW.name, null,
-                amendmentSubject.cashflowID(), cancelledCashflowVersion,
-                amendmentSubject.tradeID(), cancelledTradeVersion));
-        // Add trade link of this new cashflow
-        newTradeLinks.add(TradeLinkBuilder.TradeLink(
-                amendmentSubjectLinkType.name, null,
-                rebookedTradeIds.Id(), rebookedTradeIds.version(),
-                rebookedTradeIds.tradeID(), rebookedTradeIds.tradeVersion()));
-
-        // Note: This amndBdr is used further in the caller method to set other fields like the amended field, trade event and action etc
-        amndBdr
-                // Id Version
-                .tradeID(rebookedTradeIds.tradeID())
-                .tradeVersion(rebookedTradeIds.tradeVersion())
-                .cashflowID(rebookedTradeIds.Id())
-                .cashflowVersion(rebookedTradeIds.version())
-                .tradeLinks(Collections.unmodifiableList(newTradeLinks));
-
     }
 
     private TradeBuilder createBuilderFrom(Trade trd) {

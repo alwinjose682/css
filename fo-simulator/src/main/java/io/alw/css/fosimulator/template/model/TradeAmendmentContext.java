@@ -1,9 +1,11 @@
 package io.alw.css.fosimulator.template.model;
 
+import io.alw.css.domain.trade.Trade;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.template.domain.TradeMetadata;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /// All amendmentSubjectContexts are held in an ArrayList to ensure strict sequential encounter order(FIFO) when retrieving them.
@@ -14,20 +16,23 @@ import java.util.function.Function;
 /// It is the responsibility of the user to add the elements in the proper simple sequential order using [TradeAmendmentContext#addNextTradeLegAmndCtx]
 public final class TradeAmendmentContext {
     private final Set<AmendableField> tradeLevelAmendmentFields;
+    private final Consumer<Trade> callback;
     private final TradeEventActionPair tradeEventActionPair;
     private final List<TradeLegAmendmentContext> tradeLegAmendmentContexts;
     private Id firstAmendedSubjectUpdatedId;
 
     public TradeAmendmentContext(TradeEventActionPair tradeEventActionPair) {
-        this(tradeEventActionPair, new HashSet<>());
+        this(tradeEventActionPair, new HashSet<>(), _ -> {
+        });
     }
 
-    public TradeAmendmentContext(TradeEventActionPair tradeEventActionPair, Set<AmendableField> tradeLevelAmendmentFields) {
-        if (tradeEventActionPair == null || tradeLevelAmendmentFields == null) {
+    public TradeAmendmentContext(TradeEventActionPair tradeEventActionPair, Set<AmendableField> tradeLevelAmendmentFields, Consumer<Trade> callback) {
+        if (tradeEventActionPair == null || tradeLevelAmendmentFields == null || callback == null) {
             throw new RuntimeException("tradeEventActionPair and tradeLevelAmendmentFields cannot be null");
         }
         this.tradeEventActionPair = tradeEventActionPair;
         this.tradeLevelAmendmentFields = tradeLevelAmendmentFields;
+        this.callback = callback;
         this.tradeLegAmendmentContexts = new ArrayList<>();
     }
 

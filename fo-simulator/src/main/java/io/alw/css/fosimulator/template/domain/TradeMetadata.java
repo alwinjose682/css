@@ -3,10 +3,15 @@ package io.alw.css.fosimulator.template.domain;
 import io.alw.css.domain.common.TradeEventType;
 import io.alw.css.domain.trade.Trade;
 import io.alw.css.domain.trade.TradeLeg;
+import io.alw.css.domain.trade.TradeLegBuilder;
 import io.alw.datagen.TestDataGeneratable;
 
 public sealed interface TradeMetadata extends TestDataGeneratable permits FxTradeContext, MmTradeContext {
     int nextTradeLegId();
+
+    int resetTradeLegIdProvider();
+
+    void setTrade(Trade trade);
 
     TradeLeg rootTradeLeg();
 
@@ -26,5 +31,7 @@ public sealed interface TradeMetadata extends TestDataGeneratable permits FxTrad
         return trade().tradeEventType();
     }
 
-    Iterable<TradeLeg> allTradeLegs();
+    Iterable<TradeLeg> allTradeLegsInOrderOfImportance();
+
+    TradeLegBuilder getSuitableBuilderFrom(TradeLeg trdLeg);
 }

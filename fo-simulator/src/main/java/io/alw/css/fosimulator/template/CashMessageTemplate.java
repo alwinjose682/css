@@ -4,7 +4,10 @@ import io.alw.css.domain.common.TradeEventAction;
 import io.alw.css.domain.common.TradeEventType;
 import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.common.TransactionType;
-import io.alw.css.domain.trade.*;
+import io.alw.css.domain.trade.Trade;
+import io.alw.css.domain.trade.TradeBuilder;
+import io.alw.css.domain.trade.TradeLeg;
+import io.alw.css.domain.trade.TradeLegBuilder;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
@@ -38,7 +41,7 @@ sealed abstract class CashMessageTemplate<M extends TradeMetadata>
     private TradeBuilder bdr;
 
     // Constant values for each instance of CashMessageTemplate
-    private final String entityCode;
+    protected final String entityCode;
     protected final String currCode;
     protected final TradeType tradeType;
     private final TransactionType transactionType;
@@ -98,7 +101,7 @@ sealed abstract class CashMessageTemplate<M extends TradeMetadata>
         return this;
     }
 
-    /// This method is used to create root [MutableTradeBuilder]. The builder for grouped or related items are created using [CashMessageTemplate#createBuilderFrom(Trade , String)]
+    /// This method is used to create root [TradeBuilder]. The builder for grouped or related items are created using [CashMessageTemplate#createBuilderFrom(Trade , String)]
     /// NOTE: New [CashMessageTemplate] instances are not created by this method.
     /// Instead, the existing [TradeBuilder] (`bdr`) is just replaced with a new one and then new values are assigned.
     protected TradeBuilder getBaseCashMsgBuilder(M trd) {
@@ -106,10 +109,8 @@ sealed abstract class CashMessageTemplate<M extends TradeMetadata>
         this.bdr = TradeBuilder.builder(); // MutableTradeBuilder.class, not the default TradeBuilder.class
         this.trd = trd;
 
-        final String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionType();
         return bdr
                 // Fixed value for this template
-                .entityCode(this.entityCode)
                 .tradeType(tradeType)
                 .transactionType(transactionType)
                 // Id values
@@ -118,19 +119,13 @@ sealed abstract class CashMessageTemplate<M extends TradeMetadata>
                 // Always a new trade
                 .tradeEventType(TradeEventType.NEW_TRADE)
                 .tradeEventAction(TradeEventAction.ADD)
-                // Entity dependent fields. Book codes are dummy for now
-                .bookCode(refDataService.dummyBookCode())
-                .counterBookCode(msgTemplateHelper.isInterbookTransaction() ? refDataService.dummyCounterBookCode() : null) // Also a TransactionType dependent
-                // TransactionType dependent fields
-                .counterpartyCode(counterpartyCode)
-
         ;
     }
 
     /// This method is used to create [TradeBuilder] for grouped or related cashMessages.
     ///
     /// NOTE: The [CashMessageTemplateHelper#counter] is NOTE incremented by this method
-    protected TradeLegBuilder createBuilderFrom(TradeLeg referenceTradeLeg) {
+    protected TradeLegBuilder createBuilderFrom123(TradeLeg referenceTradeLeg) {
         return TradeLegBuilder
                 .builder(referenceTradeLeg);
     }

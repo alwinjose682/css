@@ -3,7 +3,7 @@ package io.alw.css.fosimulator.template.model;
 public enum AmendableFoCashMessageFieldType {
     VALUE_DATE(AmendmentTarget.TRADE_LEG),
     AMOUNT(AmendmentTarget.TRADE_LEG),
-    COUNTERPARTY_CODE(AmendmentTarget.TRADE);
+    COUNTERPARTY_CODE(AmendmentTarget.TRADE_LEG);
 
     private final AmendmentTarget amendmentTarget;
 

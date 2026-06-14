@@ -24,7 +24,7 @@ public class MutableTradeBuilder extends TradeBuilder {
     @Override
     public Trade build() {
         var tradeLegs = tradeLegBuilders.stream().map(TradeLegBuilder::build).collect(Collectors.toSet());
-        return new Trade(tradeID(), tradeVersion(), tradeType(), bookCode(), counterBookCode(), transactionType(), entityCode(), counterpartyCode(), tradeLinks(),
+        return new Trade(tradeID(), tradeVersion(), tradeType(), transactionType(), tradeLinks(),
                 tradeLegs,
                 tradeEventType(), tradeEventAction());
     }
