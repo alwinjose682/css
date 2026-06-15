@@ -13,11 +13,13 @@ import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.template.domain.TradeMetadata;
 import io.alw.css.fosimulator.template.model.*;
 import io.alw.datagen.template.AggregateTemplateBuilderResult;
+import io.alw.datagen.template.BuildItem;
 
 import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 
@@ -102,24 +104,38 @@ sealed abstract class CashMessageAmendmentTemplate<T extends TradeMetadata>
         }
 
         // Trade level amendment if applicable
+        final Supplier<TradeBuilder> trdBdrFunc;
+        final Supplier<? extends TradeMetadata> trdSupplierFunc;
         var trdLevelAmndFields = trdAmndCtx.tradeLevelAmendmentFields();
         if (trdLevelAmndFields != null && !trdLevelAmndFields.isEmpty()) {
-            this.withRelatedItem(() -> buildTradeAmendment(trdAmndCtx, trd));
+            trdBdrFunc = () -> buildTradeAmendment(trdAmndCtx, trd);
+            trdSupplierFunc = null;
+        } else {
+            trdBdrFunc = null;
+            trdSupplierFunc = () -> trd;
         }
 
         // TradeLeg level amendment
-        buildTradeLegAmendment(trdAmndCtx, trd);
+        var trdLegBuildItems = buildTradeLegAmendment(trdAmndCtx, trd);
     }
 
-    private void buildTradeLegAmendment(TradeAmendmentContext trdAmndCtx, T trd) {
+    private List<BuildItem<>> buildTradeLegAmendment(TradeAmendmentContext trdAmndCtx, T trd) {
+        List<BuildItem<>> buildItems = new ArrayList<>();
+
         var trdLegAmndCtxs = trdAmndCtx.tradeLegAmendmentContexts();
         for (TradeLegAmendmentContext trdLegAmndCtx : trdLegAmndCtxs) {
             switch (trdLegAmndCtx) {
-                case TradeLegAmendmentContextEager subCtxEager -> this.withRelatedItem(
-                        subCtxEager.callback(),
-                        () -> applyFutureAmendmentInclusion(trd),
-                        () -> buildTradeLegAmendment(trdAmndCtx, subCtxEager, trd));
-                case TradeLegAmendmentContextLazy subCtxLazy -> this.withRelatedItem(() -> buildTradeLegAmendment(trdAmndCtx, subCtxLazy, trd));
+                case TradeLegAmendmentContextEager trdLegAmndCtxEager -> {
+                    var callback = trdLegAmndCtxEager.callback();
+                    var runnableAfterCallback = () -> applyFutureAmendmentInclusion(trd);
+                    var buildStep = () -> buildTradeLegAmendment(trdAmndCtx, trdLegAmndCtxEager, trd);
+                    var bi = new BuildItem<>(callback, runnableAfterCallback, buildStep);
+                    buildItems.add(bi);
+                }
+                case TradeLegAmendmentContextLazy subCtxLazy -> {
+                    var bi = buildTradeLegAmendment(trdAmndCtx, subCtxLazy, trd);
+                    buildItems.add(bi);
+                }
             }
         }
     }
@@ -192,12 +208,13 @@ sealed abstract class CashMessageAmendmentTemplate<T extends TradeMetadata>
         trd.resetTradeLegIdProvider();
 
         // 5. Create rebooked TradeLegs only for those trade legs present in trdAmndCtx which are explicitly selected by implementation class to be valid for rebooked trade
-        buildTradeLegAmendment(trdAmndCtx, trd);
+        var trdLegBuildItems = buildTradeLegAmendment(trdAmndCtx, trd);
     }
 
-    private void buildTradeLegAmendment(TradeAmendmentContext trdAmndCtx, TradeLegAmendmentContextLazy trdLegAmndCtxLazy, T trd) {
-        Set<AmendableField> concreteAmendableFields = new HashSet<>();
+    private List<BuildItem<>> buildTradeLegAmendment(TradeAmendmentContext trdAmndCtx, TradeLegAmendmentContextLazy trdLegAmndCtxLazy, T trd) {
+        List<BuildItem<>> buildItems = new ArrayList<>();
 
+        Set<AmendableField> concreteAmendableFields = new HashSet<>();
         for (AmendableField amendableField : trdLegAmndCtxLazy.amendableFields()) {
             switch (amendableField) {
                 case AmendableFieldSupplier fieldSupplier -> {
@@ -216,10 +233,12 @@ sealed abstract class CashMessageAmendmentTemplate<T extends TradeMetadata>
                                 // 2. Create the amendment subject context with the above derived values
                                 var trdLegAmndCtxEager = new TradeLegAmendmentContextEager(tradeLeg.tradeLegType(), tradeLeg, trdLegAmndCtxLazy.callbackProvider().apply(tradeLeg), amendableFields);
                                 // 4. Register the build step with the templateBuilder
-                                this.withRelatedItem(
-                                        trdLegAmndCtxEager.callback(),
-                                        () -> applyFutureAmendmentInclusion(trd),
-                                        () -> buildTradeLegAmendment(trdAmndCtx, trdLegAmndCtxEager, trd));
+                                var callback = trdLegAmndCtxEager.callback();
+                                var runnableAfterCallback = () -> applyFutureAmendmentInclusion(trd);
+                                var buildStep = () -> buildTradeLegAmendment(trdAmndCtx, trdLegAmndCtxEager, trd);
+
+                                var bi = new BuildItem<>(callback, runnableAfterCallback, buildStep);
+                                buildItems.add(bi);
                             }
                         }
                         case AmendableFieldSupplier.SupplierWithMessageSelector supplier -> {
@@ -236,10 +255,12 @@ sealed abstract class CashMessageAmendmentTemplate<T extends TradeMetadata>
                                 // 3. Create the amendment subject context with the above derived values
                                 var trdLegAmndCtxEager = new TradeLegAmendmentContextEager(tradeLeg.tradeLegType(), tradeLeg, trdLegAmndCtxLazy.callbackProvider().apply(tradeLeg), amendableFields);
                                 // 4. Register the build step with the templateBuilder
-                                this.withRelatedItem(
-                                        trdLegAmndCtxEager.callback(),
-                                        () -> applyFutureAmendmentInclusion(trd),
-                                        () -> buildTradeLegAmendment(trdAmndCtx, trdLegAmndCtxEager, trd));
+                                var callback = trdLegAmndCtxEager.callback();
+                                var runnableAfterCallback = () -> applyFutureAmendmentInclusion(trd);
+                                var buildStep = () -> buildTradeLegAmendment(trdAmndCtx, trdLegAmndCtxEager, trd);
+
+                                var bi = new BuildItem<>(callback, runnableAfterCallback, buildStep);
+                                buildItems.add(bi);
                             }
                         }
                     }
@@ -259,13 +280,16 @@ sealed abstract class CashMessageAmendmentTemplate<T extends TradeMetadata>
             var callback = trdLegAmndCtxLazy.callbackProvider().apply(tradeLeg);
 
             // Create the amendment subject context
-            var amndSubCtxEager = new TradeLegAmendmentContextEager(tradeLeg.tradeLegType(), tradeLeg, callback, concreteAmendableFields);
+            var trdLegAmndCtxEager = new TradeLegAmendmentContextEager(tradeLeg.tradeLegType(), tradeLeg, callback, concreteAmendableFields);
             // Register the build step with the templateBuilder
-            this.withRelatedItem(
-                    amndSubCtxEager.callback(),
-                    () -> applyFutureAmendmentInclusion(trd),
-                    () -> buildTradeLegAmendment(trdAmndCtx, amndSubCtxEager, trd));
+            var runnableAfterCallback = () -> applyFutureAmendmentInclusion(trd);
+            var buildStep = () -> buildTradeLegAmendment(trdAmndCtx, trdLegAmndCtxEager, trd);
+
+            var bi = new BuildItem<>(trdLegAmndCtxEager.callback(), runnableAfterCallback, buildStep);
+            buildItems.add(bi);
         }
+
+        return buildItems;
     }
 
     private TradeLegBuilder buildTradeLegAmendment(TradeAmendmentContext trdAmndCtx, TradeLegAmendmentContextEager trdLegAmndCtx, T trd) {
