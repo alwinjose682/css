@@ -2,7 +2,7 @@ package io.alw.css.fosimulator.template.model;
 
 import io.alw.css.domain.trade.Trade;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
-import io.alw.css.fosimulator.template.domain.TradeMetadata;
+import io.alw.css.fosimulator.template.domain.ExtendedTrade;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -36,7 +36,7 @@ public final class TradeAmendmentContext {
         this.tradeLegAmendmentContexts = new ArrayList<>();
     }
 
-    public Id computeFirstAmendedCashMessageIdsIfAbsent(TradeMetadata amendmentSubject, Function<TradeMetadata, Id> computeFunc) {
+    public Id computeFirstAmendedCashMessageIdsIfAbsent(ExtendedTrade amendmentSubject, Function<ExtendedTrade, Id> computeFunc) {
         if (firstAmendedSubjectUpdatedId == null) {
             firstAmendedSubjectUpdatedId = computeFunc.apply(amendmentSubject);
             return firstAmendedSubjectUpdatedId;

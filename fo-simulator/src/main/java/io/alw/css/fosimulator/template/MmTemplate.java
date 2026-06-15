@@ -4,10 +4,7 @@ import io.alw.css.domain.common.TradeEventAction;
 import io.alw.css.domain.common.TradeEventType;
 import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.common.TransactionType;
-import io.alw.css.domain.trade.TradeBuilder;
-import io.alw.css.domain.trade.TradeLeg;
-import io.alw.css.domain.trade.TradeLegBuilder;
-import io.alw.css.domain.trade.TradeLegType;
+import io.alw.css.domain.trade.*;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
@@ -15,10 +12,7 @@ import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.store.CashMessageStore;
 import io.alw.css.fosimulator.store.InMemoryCashMessageStore;
-import io.alw.css.fosimulator.template.domain.InterestBasis;
-import io.alw.css.fosimulator.template.domain.InterestPayoutFrequency;
-import io.alw.css.fosimulator.template.domain.InterestTradeLeg;
-import io.alw.css.fosimulator.template.domain.MmTradeContext;
+import io.alw.css.fosimulator.template.domain.*;
 import io.alw.css.fosimulator.template.model.*;
 import io.alw.datagen.template.AggregateTemplateBuilder;
 
@@ -35,18 +29,16 @@ import java.util.random.RandomGenerator;
 import static io.alw.css.domain.common.PayOrReceive.PAY;
 import static io.alw.css.domain.common.PayOrReceive.RECEIVE;
 import static io.alw.css.domain.common.RateType.FLOAT;
-import static io.alw.css.domain.common.TradeType.MM_CALL;
-import static io.alw.css.domain.common.TradeType.MM_TERM;
 import static io.alw.css.domain.trade.TradeLegType.*;
 import static io.alw.css.fosimulator.template.MmTemplateConstants.*;
 
-public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContext> {
-    private final CashMessageStoreHelper<MmTradeContext> msgStoreHelper;
+public final class MmTemplate extends CashMessageAmendmentTemplate<MmTrade> {
+    private final CashMessageStoreHelper<MmTrade> msgStoreHelper;
 
     public MmTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
         super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMsgTemplateProps);
 
-        CashMessageStore<MmTradeContext> msgStore = new InMemoryCashMessageStore<>();
+        CashMessageStore<MmTrade> msgStore = new InMemoryCashMessageStore<>();
         this.msgStoreHelper = new CashMessageStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
     }
 
@@ -54,7 +46,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
     @Override
     public MmTemplate withRootTemplateValues() {
         // Create MessageContext
-        MmTradeContext trd = createMmTrade();
+        MmTrade trd = createMmTrade();
         // Create MoneyMarket trade builder with base values
         TradeBuilder bdr = getBaseCashMsgBuilder(trd);
         // Build PRINCIPAL leg
@@ -106,7 +98,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
     }
 
     @Override
-    protected void buildCashMessageAmendmentContext(Consumer<TradeAmendmentContext> amendmentMessageBuilderFunc, MmTradeContext trdForAmendment) {
+    protected void buildCashMessageAmendmentContext(Consumer<TradeAmendmentContext> amendmentMessageBuilderFunc, MmTrade trdForAmendment) {
         switch (cyclicAmendableMmLegProvider.get()) {
             case MM_PRINCIPAL -> {
                 var msgAmendCtx = buildCashMessageAmendmentContextStep2(trdForAmendment.principalLeg(), trdForAmendment);
@@ -125,7 +117,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
         }
     }
 
-    private TradeAmendmentContext buildCashMessageAmendmentContextStep2(TradeLeg primaryAmendmentSubject, MmTradeContext trd) {
+    private TradeAmendmentContext buildCashMessageAmendmentContextStep2(TradeLeg primaryAmendmentSubject, MmTrade trd) {
         var nextTradeEventAction = determineNextTradeEventAndAction(trd.trade().tradeEventType(), trd.trade().tradeEventAction());
         var nextEventType = nextTradeEventAction.event();
         return switch (nextEventType) {
@@ -147,7 +139,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
     }
 
     /// NOTE: This method is used to handle common amendment events, [TradeEventType#AMEND] and [TradeEventType#REBOOK], for both [TradeLegType#MM_PRINCIPAL] and [TradeLegType#MM_MATURITY]
-    private TradeAmendmentContext buildAmendmentContextForCommonAmendEvents(TradeLegType primaryAmendmentSubjectTradeLegType, MmTradeContext trd, TradeEventActionPair nextTradeEventAction) {
+    private TradeAmendmentContext buildAmendmentContextForCommonAmendEvents(TradeLegType primaryAmendmentSubjectTradeLegType, MmTrade trd, TradeEventActionPair nextTradeEventAction) {
         var principalLeg = trd.principalLeg();
         var maturityLeg = trd.maturityLeg(); // NOTE: MaturityLeg could be null for MM CALL trades
 
@@ -155,7 +147,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
         var amendableFields = new AmendableFieldsCollection();
         // NOTE: To determine new amount for InterestLeg, the amended amount and amended valueDate of both *principalLeg* and *maturityLeg* are needed, although they may not be computed yet during execution
         // One of the `AmendableFoCashMessageFieldSupplier` type is used to lazily obtain the amendable fields after the amended principalLeg and maturityLeg are built.
-        var intLegAmndFieldSupplier = new AmendableFieldSupplier.SupplierWithMessageSelector(trd, givenTrd -> ((MmTradeContext) givenTrd).interestLegs().stream().filter(tl -> tl.valueDate().isAfter(msgTemplateHelper.currentDateForMsgTemplate())).toList());
+        var intLegAmndFieldSupplier = new AmendableFieldSupplier.SupplierWithMessageSelector(trd, extTrd -> ((MmTrade) extTrd).interestLegs().stream().filter(itl -> itl.interestLeg().valueDate().isAfter(msgTemplateHelper.currentDateForMsgTemplate())).toList());
         for (var ft : amendableFieldTypes) {
             switch (ft.amendmentTarget()) {
                 case TRADE -> {
@@ -196,9 +188,9 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
                                 // Conditionally apply new valueDate for maturityLeg
                                 if (maturityLeg != null) {
                                     // Condition
-                                    Predicate<TradeLeg> matLegVdAmendmentCondition = ml ->
+                                    Predicate<TradeDetail> matLegVdAmendmentCondition = ml ->
                                             ml != null
-                                                    && principalLeg.valueDate().until(ml.valueDate(), ChronoUnit.DAYS) < 10;
+                                                    && principalLeg.valueDate().until(((TradeLeg) ml).valueDate(), ChronoUnit.DAYS) < 10;
 
                                     // Create conditional valueDate supplier for maturityLeg and add to the collection
                                     var matLegVdConditionalSupplier = new AmendableFieldSupplier
@@ -207,7 +199,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
                                                 // Determine new valueDate for maturityLeg
                                                 var principalLegOldVd = principalLeg.valueDate();
                                                 long daysDiff = principalLegOldVd.until(principalLegNewVd.date(), ChronoUnit.DAYS);
-                                                LocalDate newMatValueDate = givenMatCashLeg.valueDate().plusDays(daysDiff);
+                                                LocalDate newMatValueDate = ((TradeLeg) givenMatCashLeg).valueDate().plusDays(daysDiff);
                                                 return new AmendableField.ValueDate(newMatValueDate);
                                             });
 
@@ -232,32 +224,32 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
         // Amendment context for PrincipalLeg
         var fieldsForPrincipalLeg = amendableFields.getForTradeLeg(MM_PRINCIPAL);
         if (fieldsForPrincipalLeg != null) {
-            var principalAmndCtx = new TradeLegAmendmentContextEager(principalLeg, trd::setRootTradeLeg, fieldsForPrincipalLeg);
+            var principalAmndCtx = new TradeLegAmendmentContextEager(principalLeg, ExtendedTrade::setRootTradeLeg, fieldsForPrincipalLeg);
             amndCtx.addNextTradeLegAmndCtx(principalAmndCtx);
         } else if (nextTradeEventAction.event() == TradeEventType.REBOOK) {
             // In case of a REBOOK event, the PRINCIPAL and MATURITY leg must be rebooked. So add a dummy amendment to include the PRINCIPAL leg
             var valueDate = new AmendableField.ValueDate(principalLeg.valueDate());
             var fieldSet = new HashSet<AmendableField>();
             fieldSet.add(valueDate);
-            var principalAmndCtx = new TradeLegAmendmentContextEager(principalLeg, trd::setRootTradeLeg, fieldSet);
+            var principalAmndCtx = new TradeLegAmendmentContextEager(principalLeg, ExtendedTrade::setRootTradeLeg, fieldSet);
             amndCtx.addNextTradeLegAmndCtx(principalAmndCtx);
         }
         // Amendment context for MaturityLeg(could be null for CALL trades)
         var fieldsForMaturityLeg = amendableFields.getForTradeLeg(MM_MATURITY);
         if (fieldsForMaturityLeg != null) {
-            var maturityAmndCtx = new TradeLegAmendmentContextLazy(maturityLeg, _ -> trd::setMaturityLeg, fieldsForMaturityLeg);
+            var maturityAmndCtx = new TradeLegAmendmentContextLazy(maturityLeg, _ -> (extTrd, tradeLeg) -> ((MmTrade) extTrd).setMaturityLeg(tradeLeg), fieldsForMaturityLeg);
             amndCtx.addNextTradeLegAmndCtx(maturityAmndCtx);
         } else if (maturityLeg != null && nextTradeEventAction.event() == TradeEventType.REBOOK) {
             // In case of a REBOOK event, the PRINCIPAL and MATURITY leg must be rebooked. So add a dummy amendment to include the MATURITY leg
             var valueDate = new AmendableField.ValueDate(maturityLeg.valueDate());
             var fieldSet = new HashSet<AmendableField>();
             fieldSet.add(valueDate);
-            var maturityAmndCtx = new TradeLegAmendmentContextEager(maturityLeg, trd::setMaturityLeg, fieldSet);
+            var maturityAmndCtx = new TradeLegAmendmentContextEager(maturityLeg, (tr, trl) -> ((MmTrade) tr).setMaturityLeg(trl), fieldSet);
             amndCtx.addNextTradeLegAmndCtx(maturityAmndCtx);
         }
         // Amendment context for InterestLegs
         var fieldsForInterestLegs = amendableFields.getForTradeLeg(MM_INTEREST);
-        var interestAmndCtx = new TradeLegAmendmentContextLazy(_ -> trd::addInterestLeg, fieldsForInterestLegs);
+        var interestAmndCtx = new TradeLegAmendmentContextLazy(trdDetail -> (_, trdLeg) -> ((InterestTradeLeg)trdDetail).setInterestLeg(trdLeg), fieldsForInterestLegs);
         amndCtx.addNextTradeLegAmndCtx(interestAmndCtx);
 
         return amndCtx;
@@ -266,7 +258,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
     /// IMPORTANT NOTE: The order here is important.
     /// MaturityLeg must be built before InterestLeg because building InterestLeg requires maturityLegValueDate.
     /// The lambdas added via [AggregateTemplateBuilder#withGroupedItem(Consumer, Supplier)] method will be executed strictly in the same order as they are inserted in the queue
-    private void buildMaturityAndInterestLeg(MmTradeContext trd, Id maturityLegId, Id interestLegId, TradeEventActionPair trdEventAndAction) {
+    private void buildMaturityAndInterestLeg(MmTrade trd, Id maturityLegId, Id interestLegId, TradeEventActionPair trdEventAndAction) {
         // 1. Add building function of MATURITY leg
         this.withGroupedItem(trd::setMaturityLeg, () -> buildMaturityLeg(trd, maturityLegId, trdEventAndAction));
         // 2. Add building function of INTEREST leg
@@ -275,10 +267,10 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
 
     /// NOTE: The 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
     /// This method is intended to be used not only for the first interest leg but also for future interest legs. Therefor Ids are received as a parameter. The same pattern is followed to build maturity leg although there can be only one maturityLeg
-    private TradeLegBuilder buildInterestLeg(MmTradeContext trd, Id interestLegId, TradeEventActionPair trdEventAndAction) {
+    private TradeLegBuilder buildInterestLeg(MmTrade trd, Id interestLegId, TradeEventActionPair trdEventAndAction) {
         var principalLeg = trd.principalLeg();
         var maturityLeg = trd.maturityLeg(); // NOTE: the 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
-        InterestTradeLeg interestLeg = trd.interestLegs().getFirst();
+        InterestTradeLeg interestLeg = trd.interestLegs() == null ? null : trd.interestLegs().getFirst();
 
         // Build the INTEREST leg
         var bdr = trd.getSuitableBuilderFrom(principalLeg)
@@ -306,7 +298,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
     /// - principalAmount, interest basis, interest payout frequency, rate type and maturity date
     ///
     /// This is done solely to avoid calculations using BigDecimal. Actual amount is not required.
-    private BigDecimal determineInterestLegAmount(MmTradeContext trd, TradeLeg principalLeg, TradeLeg maturityLeg, InterestTradeLeg interestLeg) {
+    private BigDecimal determineInterestLegAmount(MmTrade trd, TradeLeg principalLeg, TradeLeg maturityLeg, InterestTradeLeg interestLeg) {
         final LocalDate maturityLegValueDate;
         if (maturityLeg == null) {
             maturityLegValueDate = principalLeg.valueDate().plusDays(msgTemplateHelper.currentDayForMsgTemplate() + 360);
@@ -315,8 +307,9 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
         }
 
         // Re-use the interest amount if it was already determined, but only if the values used to determine has not changed
-        var intrLegCtx = interestLeg.interestLegContext();
-        if (intrLegCtx != null) {
+
+        if (interestLeg != null && interestLeg.interestLegContext() != null) {
+            var intrLegCtx = interestLeg.interestLegContext();
             var lastUsedInterestAmount = intrLegCtx.lastUsedInterestAmount();
             var lastUsedPrincipalAmount = intrLegCtx.lastUsedPrincipalAmount();
             var lastUsedPrincipalValueDate = intrLegCtx.lastUsedPrincipalValueDate();
@@ -334,6 +327,8 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
                     }
                 };
             }
+        } else {
+            //TODO
         }
 
         // Determine the interest amount
@@ -360,7 +355,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
     }
 
     /// NOTE: The 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
-    private LocalDate determineInterestLegValueDate(MmTradeContext trd, TradeLeg principalLeg, TradeLeg maturityLeg) {
+    private LocalDate determineInterestLegValueDate(MmTrade trd, TradeLeg principalLeg, TradeLeg maturityLeg) {
         final LocalDate principalLegValueDate = principalLeg.valueDate();
         final LocalDate maturityLegValueDate;
         if (maturityLeg == null) {
@@ -381,7 +376,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
         };
     }
 
-    private TradeLegBuilder buildMaturityLeg(MmTradeContext trd, Id maturityLegId, TradeEventActionPair trdEventAndAction) {
+    private TradeLegBuilder buildMaturityLeg(MmTrade trd, Id maturityLegId, TradeEventActionPair trdEventAndAction) {
         var principalLeg = trd.principalLeg();
         var maturityLegValueDate = determineMaturityLegValueDate(principalLeg);
 
@@ -413,20 +408,19 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
     /// Interest Basis is always assigned a constant: InterestBasis.ThirtyBy360. Corresponding calculation for other basis types are not implemented.
     /// Interest cashflow should be generated based on [InterestPayoutFrequency]
     /// Returns message contexts for cashflow version 1. The method parameter `principalLegBuilder` must be of cashflow version 1
-    private MmTradeContext createMmTrade() {
+    private MmTrade createMmTrade() {
         var rateType = cyclicRateTypeProvider.get();
         var ipFrequency = cyclicIpFrequencyProvider.get();
         var basis = InterestBasis.ThirtyBy360;
 
         return switch (this.tradeType) {
-            case MM_TERM -> new MmTradeContext(MM_TERM, rateType, ipFrequency, basis);
-            case MM_CALL -> new MmTradeContext(MM_CALL, rateType, ipFrequency, basis);
+            case MM_TERM, MM_CALL -> new MmTrade(rateType, ipFrequency, basis);
             default -> throw new IllegalStateException("Invalid TradeType: " + this.tradeType + " for an MmTemplate");
         };
     }
 
     @Override
-    protected Predicate<MmTradeContext> tradeContextAmendmentFrequency() {
+    protected Predicate<MmTrade> tradeContextAmendmentFrequency() {
         return _ -> rndm.nextInt(0, 100) > 80;
     }
 
@@ -436,7 +430,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
     }
 
     @Override
-    protected CashMessageStoreHelper<MmTradeContext> msgStoreHelper() {
+    protected CashMessageStoreHelper<MmTrade> msgStoreHelper() {
         return msgStoreHelper;
     }
 
@@ -454,7 +448,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTradeContex
             }
 
             private static final class PrincipalLeg {
-                private static AmendableField.ValueDate forValueDate(TradeLeg principalLeg, CashMessageTemplateHelper msgTemplateHelper, MmTradeContext trdCtx) {
+                private static AmendableField.ValueDate forValueDate(TradeLeg principalLeg, CashMessageTemplateHelper msgTemplateHelper, MmTrade trdCtx) {
 
                     var currentDate = msgTemplateHelper.currentDateForMsgTemplate();
                     var maturityLeg = trdCtx.maturityLeg();

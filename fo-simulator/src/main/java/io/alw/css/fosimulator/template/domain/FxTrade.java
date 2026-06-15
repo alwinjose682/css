@@ -6,13 +6,13 @@ import io.alw.css.domain.trade.TradeLeg;
 
 import java.util.List;
 
-public final class FxTradeContext extends Trade implements TradeMetadata {
+public final class FxTrade extends Trade implements ExtendedTrade {
     private int nextTradeLegId;
     private TradeLeg side1Msg;
     private TradeLeg side2Msg;
     private Trade trade;
 
-    public FxTradeContext(TradeType tradeType) {
+    public FxTrade(TradeType tradeType) {
         super();
         this.nextTradeLegId = resetTradeLegIdProvider();
     }
@@ -49,7 +49,7 @@ public final class FxTradeContext extends Trade implements TradeMetadata {
     }
 
     @Override
-    public Iterable<TradeLeg> allTradeLegsInOrderOfImportance() {
+    public Iterable<TradeLeg> allTradeLegs() {
         return List.of(side1Msg, side2Msg);
     }
 

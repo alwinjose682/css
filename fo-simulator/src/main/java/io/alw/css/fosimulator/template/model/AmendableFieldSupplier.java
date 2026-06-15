@@ -1,8 +1,9 @@
 package io.alw.css.fosimulator.template.model;
 
+import io.alw.css.domain.trade.TradeDetail;
 import io.alw.css.domain.trade.TradeLeg;
 import io.alw.css.fosimulator.template.MmTemplate;
-import io.alw.css.fosimulator.template.domain.TradeMetadata;
+import io.alw.css.fosimulator.template.domain.ExtendedTrade;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,55 +18,55 @@ import java.util.function.Predicate;
 public sealed interface AmendableFieldSupplier extends AmendableField {
 
     sealed abstract class AmendableFieldSupplierBase implements AmendableFieldSupplier {
-        private final List<Function<TradeLeg, AmendableField>> amendableFieldSuppliers;
+        private final List<Function<TradeDetail, AmendableField>> amendableFieldSuppliers;
 
         private AmendableFieldSupplierBase() {
             this.amendableFieldSuppliers = new ArrayList<>();
         }
 
-        public AmendableFieldSupplier add(Function<TradeLeg, AmendableField> amendableFieldSupplier) {
+        public AmendableFieldSupplier add(Function<TradeDetail, AmendableField> amendableFieldSupplier) {
             amendableFieldSuppliers.add(amendableFieldSupplier);
             return this;
         }
 
-        public List<Function<TradeLeg, AmendableField>> amendableFieldSupplierFunctions() {
+        public List<Function<TradeDetail, AmendableField>> amendableFieldSupplierFunctions() {
             return amendableFieldSuppliers;
         }
     }
 
     final class ConditionalSupplier extends AmendableFieldSupplierBase {
         private final TradeLeg conditionSubject;
-        private final Predicate<TradeLeg> condition;
+        private final Predicate<TradeDetail> condition;
 
-        public ConditionalSupplier(TradeLeg conditionSubject, Predicate<TradeLeg> condition) {
+        public ConditionalSupplier(TradeLeg conditionSubject, Predicate<TradeDetail> condition) {
             this.conditionSubject = conditionSubject;
             this.condition = condition;
         }
 
-        public Predicate<TradeLeg> condition() {
+        public Predicate<TradeDetail> condition() {
             return condition;
         }
 
-        public TradeLeg conditionSubject() {
+        public TradeDetail conditionSubject() {
             return conditionSubject;
         }
     }
 
     final class SupplierWithMessageSelector extends AmendableFieldSupplierBase {
-        private final TradeMetadata trdCtx;
-        private final Function<TradeMetadata, List<? extends TradeLeg>> amendmentSubjectSelector;
+        private final ExtendedTrade trdCtx;
+        private final Function<ExtendedTrade, List<? extends TradeDetail>> amendmentSubjectSelector;
 
 
-        public SupplierWithMessageSelector(TradeMetadata trdCtx, Function<TradeMetadata, List<? extends TradeLeg>> amendmentSubjectSelector) {
+        public SupplierWithMessageSelector(ExtendedTrade trdCtx, Function<ExtendedTrade, List<? extends TradeDetail>> amendmentSubjectSelector) {
             this.trdCtx = trdCtx;
             this.amendmentSubjectSelector = amendmentSubjectSelector;
         }
 
-        public Function<TradeMetadata, List<? extends TradeLeg>> amendmentSubjectSelector() {
+        public Function<ExtendedTrade, List<? extends TradeDetail>> amendmentSubjectSelector() {
             return amendmentSubjectSelector;
         }
 
-        public TradeMetadata trdCtx() {
+        public ExtendedTrade trdCtx() {
             return trdCtx;
         }
     }

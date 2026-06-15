@@ -2,13 +2,14 @@ package io.alw.css.fosimulator.template.domain;
 
 import io.alw.css.domain.common.RateType;
 import io.alw.css.domain.trade.Trade;
+import io.alw.css.domain.trade.TradeDetail;
 import io.alw.css.domain.trade.TradeLeg;
 import io.alw.css.domain.trade.TradeLegBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public final class MmTradeContext implements TradeMetadata {
+public final class MmTrade implements ExtendedTrade {
     private final RateType rateType;
     private final InterestPayoutFrequency ipFrequency;
     private final InterestBasis interestBasis;
@@ -19,12 +20,11 @@ public final class MmTradeContext implements TradeMetadata {
     private TradeLeg maturityLeg;
     private final List<InterestTradeLeg> interestLegs;
 
-    public MmTradeContext(RateType rateType, InterestPayoutFrequency ipFrequency, InterestBasis interestBasis, Trade trade, List<InterestTradeLeg> interestLegs) {
+    public MmTrade(RateType rateType, InterestPayoutFrequency ipFrequency, InterestBasis interestBasis) {
         this.rateType = rateType;
         this.ipFrequency = ipFrequency;
         this.interestBasis = interestBasis;
-        this.trade = trade;
-        this.interestLegs = interestLegs;
+        this.interestLegs = new ArrayList<>();
         this.nextTradeLegId = resetTradeLegIdProvider();
     }
 
@@ -67,7 +67,7 @@ public final class MmTradeContext implements TradeMetadata {
         this.maturityLeg = maturityLeg;
     }
 
-    public void addInterestLeg(TradeLeg trdLeg) {
+    public void addInterestLeg(TradeDetail trdLeg) {
         if (trdLeg instanceof InterestTradeLeg intTrdLeg) {
             interestLegs.add(intTrdLeg);
         } else {
@@ -97,8 +97,8 @@ public final class MmTradeContext implements TradeMetadata {
     }
 
     @Override
-    public Iterable<TradeLeg> allTradeLegsInOrderOfImportance() {
-        var allTradeLegs = new ArrayList<TradeLeg>();
+    public Iterable<TradeDetail> allTradeLegs() {
+        var allTradeLegs = new ArrayList<TradeDetail>();
         allTradeLegs.add(principalLeg);
         allTradeLegs.add(maturityLeg);
         allTradeLegs.addAll(interestLegs);

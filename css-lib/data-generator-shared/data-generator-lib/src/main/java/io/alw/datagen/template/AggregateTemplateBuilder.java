@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, B1, B2, I> extends TemplateBuilder<T, AggregateTemplateBuilderResult<T, I>> {
-    private final Deque<BuildItem<B1, I>> groupedItemBuilders;
-    private final Deque<BuildItem<B2, I>> relatedItemBuilders;
+public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, U, TB, UB> extends TemplateBuilder<T, AggregateTemplateBuilderResult<T, U>> {
+    private final Deque<ChildBuildItem<TB, T>> groupedItemBuilders;
+    private final Deque<ChildBuildItem<TB, T>> relatedItemBuilders;
 
     protected AggregateTemplateBuilder(T parent) {
         super(parent);
@@ -19,39 +19,15 @@ public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, B1
         this.relatedItemBuilders = new LinkedList<>();
     }
 
-    protected abstract I buildGroupedItem(B1 relatedObjectBuilder);
+    protected abstract T buildGroupedItem(TB relatedObjectBuilder);
 
-    protected abstract I buildRelatedItem(B2 relatedObjectBuilder);
+    protected abstract T buildRelatedItem(TB relatedObjectBuilder);
 
-    /// This method should be used if the final build output`R` needs to be associated with the root result `T`.
-    /// The association is made by the implementation of the abstract method [AggregateTemplateBuilder#buildGroupedItem(B1)].
-    ///
     /// This method can be called recursively
     ///
     /// NOTE: The items inserted in the queue will be removed in the same order as they are inserted
-    public AggregateTemplateBuilder<T, B1, I> withGroupedItem(Consumer<I> callback, Supplier<B1> buildStep) {
-        groupedItemBuilders.addFirst(new BuildItem<>(callback, buildStep));
-        return this;
-    }
-
-    /// The final build output`R` from items added to this method is NOT intended to be associated with the root result `T`.
-    /// The association is made by the implementation of the abstract method [AggregateTemplateBuilder#buildGroupedItem(B1)].
-    ///
-    /// This method can be called recursively
-    ///
-    /// NOTE: The items inserted in the queue will be removed in the same order as they are inserted
-    public AggregateTemplateBuilder<T, B1, I> withRelatedItem(Consumer<I> callback, Runnable runnableAfterCallback, Supplier<B2> buildStep) {
-        relatedItemBuilders.addFirst(new BuildItem<>(callback, runnableAfterCallback, buildStep));
-        return this;
-    }
-
-    public AggregateTemplateBuilder<T, B1, I> withRelatedItem(Supplier<B2> buildStep) {
-        relatedItemBuilders.addFirst(new BuildItem<>(buildStep));
-        return this;
-    }
-
-    public AggregateTemplateBuilder<T, B1, I> withRelatedItem(Runnable buildStep) {
-        relatedItemBuilders.addFirst(new BuildItem<>(buildStep));
+    public AggregateTemplateBuilder<T, U, TB, UB> withGroupedItem(Consumer<U> callback, Supplier<UB> buildStep) {
+        groupedItemBuilders.addFirst(new ChildBuildItem<>(callback, buildStep));
         return this;
     }
 
@@ -60,24 +36,24 @@ public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, B1
     ///
     /// NOTE: The grouped and related items will be removed(retrieved for build) in the same order as they were inserted
     ///
-    /// see also {@link AggregateTemplateBuilder#buildItem(BuildItem, List)}
+    /// see also {@link AggregateTemplateBuilder#buildItem(ChildBuildItem, List)}
     @Override
-    public AggregateTemplateBuilderResult<T, I> build() {
+    public AggregateTemplateBuilderResult<T, U> build() {
         // 1. Build the template
         final T root = buildRootTemplate();
 
         // 2. Build items that need to be grouped together with parent/root item
-        final List<I> groupedItems = new ArrayList<>();
+        final List<U> groupedItems = new ArrayList<>();
         while (!groupedItemBuilders.isEmpty()) {
-            BuildItem<B1, I> buildItem = groupedItemBuilders.removeLast();
-            buildItem(buildItem, groupedItems);
+            ChildBuildItem<UB, U> childBuildItem = groupedItemBuilders.removeLast();
+            buildItem(childBuildItem, groupedItems);
         }
 
         final List<I> relatedItems = new ArrayList<>();
         // 3. Build items that do NOT need to be grouped together with parent/root item
         while (!relatedItemBuilders.isEmpty()) {
-            BuildItem<B1, I> buildItem = relatedItemBuilders.removeLast();
-            buildItem(buildItem, relatedItems);
+            ChildBuildItem<B1, I> childBuildItem = relatedItemBuilders.removeLast();
+            buildItem(childBuildItem, relatedItems);
         }
 
         return new AggregateTemplateBuilderResult<>(root, groupedItems, relatedItems);
@@ -92,8 +68,8 @@ public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, B1
     /// If the item is just a runnable, just execute the runnable. There is no build result in this case.
     ///
     /// NOTE: The buildItem cannot be both a runnable and buildable item. It is ensured so
-    private void buildItem(BuildItem<B1, I> buildItem, final List<I> resultList) {
-        Supplier<B1> buildStep = buildItem.buildStep();
+    private void buildItem(ChildBuildItem<B1, I> childBuildItem, final List<I> resultList) {
+        Supplier<B1> buildStep = childBuildItem.buildStep();
 
         // If a buildable item:
         if (buildStep != null) {
@@ -101,13 +77,13 @@ public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, B1
             I result = buildGroupedItem(resultBuilder);
 
             // callback
-            Consumer<I> callback = buildItem.callback();
+            Consumer<I> callback = childBuildItem.callback();
             if (callback != null) {
                 callback.accept(result);
             }
 
             // runnableAfterCallback
-            Runnable runnableAfterCallback = buildItem.runnableAfterCallback();
+            Runnable runnableAfterCallback = childBuildItem.runnableAfterCallback();
             if (runnableAfterCallback != null) {
                 runnableAfterCallback.run();
             }
@@ -116,8 +92,8 @@ public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, B1
             resultList.add(result);
         }
         // If note a buildable item:
-        else if (buildItem.runnable() != null) {
-            buildItem.runnable().run();
+        else if (childBuildItem.runnable() != null) {
+            childBuildItem.runnable().run();
         }
     }
 }

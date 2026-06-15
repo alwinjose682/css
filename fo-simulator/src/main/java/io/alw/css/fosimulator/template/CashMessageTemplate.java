@@ -13,7 +13,7 @@ import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
-import io.alw.css.fosimulator.template.domain.TradeMetadata;
+import io.alw.css.fosimulator.template.domain.ExtendedTrade;
 import io.alw.css.fosimulator.template.model.Id;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
 import io.alw.datagen.template.AggregateTemplateBuilder;
@@ -29,15 +29,15 @@ import java.util.random.RandomGenerator;
 ///
 /// [CashMessageTemplate] instances are both a trade type template and a supplier of the build output of the template
 /// Each instance of this class is supposed to be exclusive for a single thread
-sealed abstract class CashMessageTemplate<M extends TradeMetadata>
-        extends AggregateTemplateBuilder<M, TradeLegBuilder, TradeLeg>
+sealed abstract class CashMessageTemplate<T extends ExtendedTrade>
+        extends AggregateTemplateBuilder<T, TradeLeg, TradeBuilder, TradeLegBuilder>
         implements Supplier<List<Trade>>
         permits CashMessageAmendmentTemplate {
 
     /// Variable values for each template build. These values remain un-modified for each template build.
-    /// After each build of the template, the [TradeMetadata] (trdCtx) and [TradeBuilder] (`bdr`) references are just assigned with new instances
+    /// After each build of the template, the [ExtendedTrade] (trdCtx) and [TradeBuilder] (`bdr`) references are just assigned with new instances
     // Message Context and FoCashMessage builder
-    private M trd;
+    private T trd;
     private TradeBuilder bdr;
 
     // Constant values for each instance of CashMessageTemplate
@@ -60,7 +60,7 @@ sealed abstract class CashMessageTemplate<M extends TradeMetadata>
         this(null, entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMsgTemplateProps);
     }
 
-    private CashMessageTemplate(M parent, Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
+    private CashMessageTemplate(T parent, Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
         super(parent);
         this.entityCode = entity.entityCode();
         this.currCode = entity.currCode();
@@ -76,7 +76,7 @@ sealed abstract class CashMessageTemplate<M extends TradeMetadata>
 
     /// Build the grouped or related cash message associated with the cashMessage template being built
     /// tradeLinks of grouped and related items are set when creating a cashMessage builder via [CashMessageTemplate#createBuilderFrom(Trade , String)]
-    /// The resultant [Trade] is already associated with the [TradeMetadata] in prior steps(using callbacks when creating new trade, amendments and new grouped cashMessages)
+    /// The resultant [Trade] is already associated with the [ExtendedTrade] in prior steps(using callbacks when creating new trade, amendments and new grouped cashMessages)
     @Override
     protected TradeLeg buildGroupedItem(TradeLegBuilder trdLegBdr) {
         TradeLeg trdLeg = trdLegBdr.build();
@@ -87,16 +87,16 @@ sealed abstract class CashMessageTemplate<M extends TradeMetadata>
     /// Builds the cashMessage template
     ///
     /// **tradeLinks of root FoCashMessage**:
-    /// tradeLinks of rootFoCashMessage are set when creating a cashMessage builder with the default values via the method: [CashMessageTemplate#getNewCashMsgBuilder(Id , TradeMetadata)]
+    /// tradeLinks of rootFoCashMessage are set when creating a cashMessage builder with the default values via the method: [CashMessageTemplate#getNewCashMsgBuilder(Id , ExtendedTrade)]
     @Override
-    public M buildRootTemplate() {
+    public T buildRootTemplate() {
         trd.setRootTradeLeg(bdr.build());
         return trd;
     }
 
     /// This method is the starting point to start a new build cycle
     /// This method ensures that the same [DayTicker#day()] is used at all points of building multiple cash messages in current cycle
-    protected CashMessageTemplate<M> newBuildCycle() {
+    protected CashMessageTemplate<T> newBuildCycle() {
         msgTemplateHelper.setDayForMsgTemplate(dayTicker.day());
         return this;
     }
@@ -104,9 +104,9 @@ sealed abstract class CashMessageTemplate<M extends TradeMetadata>
     /// This method is used to create root [TradeBuilder]. The builder for grouped or related items are created using [CashMessageTemplate#createBuilderFrom(Trade , String)]
     /// NOTE: New [CashMessageTemplate] instances are not created by this method.
     /// Instead, the existing [TradeBuilder] (`bdr`) is just replaced with a new one and then new values are assigned.
-    protected TradeBuilder getBaseCashMsgBuilder(M trd) {
+    protected TradeBuilder getBaseCashMsgBuilder(T trd) {
         msgTemplateHelper.incrementCounter();
-        this.bdr = TradeBuilder.builder(); // MutableTradeBuilder.class, not the default TradeBuilder.class
+        this.bdr = TradeBuilder.builder();
         this.trd = trd;
 
         return bdr
@@ -119,7 +119,7 @@ sealed abstract class CashMessageTemplate<M extends TradeMetadata>
                 // Always a new trade
                 .tradeEventType(TradeEventType.NEW_TRADE)
                 .tradeEventAction(TradeEventAction.ADD)
-        ;
+                ;
     }
 
     /// This method is used to create [TradeBuilder] for grouped or related cashMessages.
