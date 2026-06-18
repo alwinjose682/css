@@ -11,7 +11,7 @@ import io.alw.css.refdtgtr.model.EntityAndDependentData;
 import io.alw.css.refdtgtr.model.GeneratedReferenceData;
 import io.alw.css.refdtgtr.provider.RefDataCollection;
 import io.alw.css.refdtgtr.templates.*;
-import io.alw.datagen.TestDataGeneratable;
+import io.alw.datagen.DataGeneratable;
 import io.alw.datagen.tokengenerator.AlphaNumericTokenGenerator;
 
 import java.util.ArrayList;
@@ -211,7 +211,7 @@ public class RefDataGenerator {
         return counterpartyAndDependentDataList;
     }
 
-    private <T extends TestDataGeneratable> void printAsJson(T testData) {
+    private <T extends DataGeneratable> void printAsJson(T testData) {
         try {
             String ftd = Json.mapper().writerWithDefaultPrettyPrinter().writeValueAsString(testData);
             System.out.println(ftd);
@@ -220,8 +220,8 @@ public class RefDataGenerator {
         }
     }
 
-    private <T extends TestDataGeneratable> void printAsJson(List<T> testDataList) {
-        for (TestDataGeneratable tdg : testDataList) {
+    private <T extends DataGeneratable> void printAsJson(List<T> testDataList) {
+        for (DataGeneratable tdg : testDataList) {
             try {
                 String ftd = Json.mapper().writerWithDefaultPrettyPrinter().writeValueAsString(tdg);
                 System.out.println(ftd);

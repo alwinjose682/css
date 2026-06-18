@@ -1,7 +1,7 @@
 package io.alw.css.domain.cashflow;
 
 import io.alw.css.domain.common.*;
-import io.alw.datagen.TestDataGeneratable;
+import io.alw.datagen.DataGeneratable;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -35,5 +35,5 @@ public record FoCashMessage(
         @NotNull PayOrReceive payOrReceive,
         @NotNull BigDecimal amount,
         @NotBlank @Size(min = 3, max = 3) String currCode
-) implements TestDataGeneratable {
+) implements DataGeneratable {
 }

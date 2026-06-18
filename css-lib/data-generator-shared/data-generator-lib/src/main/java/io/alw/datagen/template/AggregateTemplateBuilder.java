@@ -1,6 +1,6 @@
 package io.alw.datagen.template;
 
-import io.alw.datagen.TestDataGeneratable;
+import io.alw.datagen.DataGeneratable;
 
 import java.util.ArrayList;
 import java.util.Deque;
@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, U extends TestDataGeneratable, TB, UB> extends TemplateBuilder<T, AggregateTemplateBuilderResult<T, U>> {
+public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U extends DataGeneratable, TB, UB> extends TemplateBuilder<T, AggregateTemplateBuilderResult<T, U>> {
     private final Deque<ChildBuildItem<U, UB>> groupedItemBuilders;
     private final Deque<ParentBuildItem<T, U, TB>> relatedItemBuilders;
 

@@ -9,7 +9,7 @@ import io.alw.css.refdtgtr.domain.CounterpartyType;
 import io.alw.css.refdtgtr.domain.PreDefinedTestData;
 import io.alw.css.refdtgtr.model.CountryStateCurrency;
 import io.alw.css.refdtgtr.model.EntityCurrencyState;
-import io.alw.datagen.TestDataGeneratable;
+import io.alw.datagen.DataGeneratable;
 import io.alw.datagen.provider.CyclicStringDataProvider;
 import io.alw.datagen.provider.CyclicTestDataProvider;
 
@@ -17,23 +17,23 @@ import java.util.*;
 
 public final class RefDataCollection {
     private static RefDataCollection refDataCollection;
-    public final List<TestDataGeneratable> entities;
-    public final List<TestDataGeneratable> countries;
-    public final List<TestDataGeneratable> currencies;
+    public final List<DataGeneratable> entities;
+    public final List<DataGeneratable> countries;
+    public final List<DataGeneratable> currencies;
     public final List<String> counterpartyTypeNames;
     public final List<String> productNames;
     public final List<String> cssNettingTypeNames;
     public final List<String> genericStateOrCityNames;
     public final Map<String, Currency> currencyMap;
     //
-    public final List<TestDataGeneratable> countryStateCurrencyList;
+    public final List<DataGeneratable> countryStateCurrencyList;
     public final List<EntityCurrencyState> entityCurrencyStateList;
 
     private RefDataCollection() {
         PreDefinedTestData preDefinedTestData = PreDefinedTestData.singleton();
-        this.entities = preDefinedTestData.entities.stream().map(e -> (TestDataGeneratable) e).toList();
-        this.countries = preDefinedTestData.countries.stream().map(c -> (TestDataGeneratable) c).toList();
-        this.currencies = preDefinedTestData.currencies.stream().map(c -> (TestDataGeneratable) c).toList();
+        this.entities = preDefinedTestData.entities.stream().map(e -> (DataGeneratable) e).toList();
+        this.countries = preDefinedTestData.countries.stream().map(c -> (DataGeneratable) c).toList();
+        this.currencies = preDefinedTestData.currencies.stream().map(c -> (DataGeneratable) c).toList();
         this.genericStateOrCityNames = new ArrayList<>();
         this.counterpartyTypeNames = Arrays.stream(CounterpartyType.values()).map(Enum::name).toList();
         this.productNames = Arrays.stream(TradeType.values()).map(Enum::name).toList();
@@ -48,7 +48,7 @@ public final class RefDataCollection {
         List<EntityCurrencyState> entityCurrencyStateList = new ArrayList<>();
         CyclicStringDataProvider cyclicCityOrStateNameProvider = new CyclicStringDataProvider(this.genericStateOrCityNames);
 
-        for (TestDataGeneratable tdg : this.entities) {
+        for (DataGeneratable tdg : this.entities) {
             Entity entity = (Entity) tdg;
             var currency = (Currency) currencies.stream()
                     .filter(curr -> ((Currency) curr).currCode().equalsIgnoreCase(entity.currCode()))
@@ -81,8 +81,8 @@ public final class RefDataCollection {
         return Collections.unmodifiableMap(currCodeToCurrencyMap);
     }
 
-    private List<TestDataGeneratable> getCountryStateCurrencyList(List<TestDataGeneratable> entities, List<TestDataGeneratable> countries, List<TestDataGeneratable> currencies) {
-        List<TestDataGeneratable> countryStateCurrencyList = new ArrayList<>();
+    private List<DataGeneratable> getCountryStateCurrencyList(List<DataGeneratable> entities, List<DataGeneratable> countries, List<DataGeneratable> currencies) {
+        List<DataGeneratable> countryStateCurrencyList = new ArrayList<>();
         CyclicTestDataProvider entityTestDataProvider = new CyclicTestDataProvider(entities);
         Map<String, Country> countryMap = new HashMap<>();
         countries.forEach(td -> {

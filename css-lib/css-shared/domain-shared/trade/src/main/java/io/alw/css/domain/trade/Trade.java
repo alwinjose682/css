@@ -1,7 +1,7 @@
 package io.alw.css.domain.trade;
 
 import io.alw.css.domain.common.*;
-import io.alw.datagen.TestDataGeneratable;
+import io.alw.datagen.DataGeneratable;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.constraints.NotNull;
 
@@ -19,7 +19,7 @@ public record Trade(
         Set<TradeLeg> tradeLegs,
         TradeEventType tradeEventType,
         TradeEventAction tradeEventAction
-) implements TestDataGeneratable {
+) implements DataGeneratable {
     public static MutableTradeBuilder builder() {
         return new MutableTradeBuilder();
     }

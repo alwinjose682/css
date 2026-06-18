@@ -5,9 +5,9 @@ import io.alw.css.domain.trade.Trade;
 import io.alw.css.domain.trade.TradeDetail;
 import io.alw.css.domain.trade.TradeLeg;
 import io.alw.css.domain.trade.TradeLegBuilder;
-import io.alw.datagen.TestDataGeneratable;
+import io.alw.datagen.DataGeneratable;
 
-public sealed interface ExtendedTrade extends TestDataGeneratable permits FxTrade, MmTrade {
+public sealed interface ExtendedTrade extends DataGeneratable permits FxTrade, MmTrade {
     int nextTradeLegId();
 
     int resetTradeLegIdProvider();

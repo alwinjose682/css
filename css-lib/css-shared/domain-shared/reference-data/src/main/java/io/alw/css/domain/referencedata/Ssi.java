@@ -1,7 +1,7 @@
 package io.alw.css.domain.referencedata;
 
 import io.alw.css.domain.common.TradeType;
-import io.alw.datagen.TestDataGeneratable;
+import io.alw.datagen.DataGeneratable;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
 import java.time.LocalDateTime;
@@ -25,5 +25,5 @@ public record Ssi(
         String corrLine1,
         boolean active,
         LocalDateTime entryTime
-) implements TestDataGeneratable {
+) implements DataGeneratable {
 }

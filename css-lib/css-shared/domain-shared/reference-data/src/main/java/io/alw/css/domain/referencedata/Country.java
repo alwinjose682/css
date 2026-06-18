@@ -1,6 +1,6 @@
 package io.alw.css.domain.referencedata;
 
-import io.alw.datagen.TestDataGeneratable;
+import io.alw.datagen.DataGeneratable;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
 import java.time.LocalDateTime;
@@ -11,5 +11,5 @@ public record Country(
         String countryName,
         String region,
         LocalDateTime entryTime
-) implements TestDataGeneratable {
+) implements DataGeneratable {
 }

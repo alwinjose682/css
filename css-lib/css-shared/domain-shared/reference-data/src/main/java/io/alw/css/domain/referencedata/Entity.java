@@ -1,6 +1,6 @@
 package io.alw.css.domain.referencedata;
 
-import io.alw.datagen.TestDataGeneratable;
+import io.alw.datagen.DataGeneratable;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.constraints.NotNull;
 
@@ -17,5 +17,5 @@ public record Entity(
         String bicCode,
         boolean active,
         LocalDateTime entryTime
-) implements TestDataGeneratable {
+) implements DataGeneratable {
 }

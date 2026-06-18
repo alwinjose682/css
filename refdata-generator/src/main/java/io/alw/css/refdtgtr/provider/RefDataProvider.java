@@ -1,6 +1,6 @@
 package io.alw.css.refdtgtr.provider;
 
-import io.alw.datagen.TestDataGeneratable;
+import io.alw.datagen.DataGeneratable;
 import io.alw.css.refdtgtr.model.TestDataType;
 import io.alw.datagen.provider.CyclicTestDataProvider;
 
@@ -23,11 +23,11 @@ public final class RefDataProvider {
         testDataMap.put(TestDataType.DATA_SET__COUNTRY_STATE_CURRENCY, new CyclicTestDataProvider(tdc.countryStateCurrencyList));
     }
 
-    public TestDataGeneratable next(TestDataType testDataType) {
+    public DataGeneratable next(TestDataType testDataType) {
         return getTestData(testDataType).next();
     }
 
-    public TestDataGeneratable current(TestDataType testDataType) {
+    public DataGeneratable current(TestDataType testDataType) {
         return getTestData(testDataType).current();
     }
 

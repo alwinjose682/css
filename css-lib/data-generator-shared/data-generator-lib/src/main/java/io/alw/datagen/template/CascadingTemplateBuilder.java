@@ -1,12 +1,12 @@
 package io.alw.datagen.template;
 
-import io.alw.datagen.TestDataGeneratable;
+import io.alw.datagen.DataGeneratable;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public abstract class CascadingTemplateBuilder<T extends TestDataGeneratable> extends TemplateBuilder<T, List<T>> {
+public abstract class CascadingTemplateBuilder<T extends DataGeneratable> extends TemplateBuilder<T, List<T>> {
     private int numOfChildTemplates;
 
     protected CascadingTemplateBuilder(T parent) {

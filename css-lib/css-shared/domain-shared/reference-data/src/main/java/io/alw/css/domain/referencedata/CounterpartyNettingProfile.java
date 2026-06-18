@@ -2,7 +2,7 @@ package io.alw.css.domain.referencedata;
 
 import io.alw.css.domain.common.CssNettingType;
 import io.alw.css.domain.common.TradeType;
-import io.alw.datagen.TestDataGeneratable;
+import io.alw.datagen.DataGeneratable;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
@@ -22,5 +22,5 @@ public record CounterpartyNettingProfile(
         @Nullable String entityCode, // if 'netForAnyEntity' is 'N'/false, then 'entityCode' must have a value
         boolean active,
         LocalDateTime entryTime
-) implements TestDataGeneratable {
+) implements DataGeneratable {
 }
