@@ -1,4 +1,6 @@
 package io.alw.css.domain.trade;
 
-public interface TradeDetail {
+import io.alw.datagen.TestDataGeneratable;
+
+public interface TradeDetail extends TestDataGeneratable {
 }

@@ -23,4 +23,12 @@ public record Trade(
     public static MutableTradeBuilder builder() {
         return new MutableTradeBuilder();
     }
+
+    public Trade clearAndAddTradeLegs(Set<TradeLeg> trdLegs){
+        if (!tradeLegs.isEmpty()) {
+            tradeLegs.clear();
+        }
+        tradeLegs.addAll(trdLegs);
+        return this;
+    }
 }

@@ -11,6 +11,7 @@ import io.alw.css.fosimulator.template.domain.ExtendedTrade;
 import io.alw.css.fosimulator.template.model.*;
 import io.alw.datagen.template.AggregateTemplateBuilderResult;
 import io.alw.datagen.template.ChildBuildItem;
+import io.alw.datagen.template.ParentBuildItem;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -111,57 +112,11 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
         }
 
         // TradeLeg level amendment
-        var trdLegBuildItems = buildTradeLegAmendment(trdAmndCtx, extTrd);
+        List<ChildBuildItem<TradeLeg, TradeLegBuilder>> trdLegBuildItems = buildTradeLegAmendment(trdAmndCtx, extTrd);
+        // Trade and TradeLegs association function
+        BiFunction<Trade, Set<TradeLeg>, Trade> tradeAndTradeLegAssociationFunc = Trade::clearAndAddTradeLegs;
 
-        BiFunction<Trade, List<TradeLeg>, Trade> tradeAndTradeLegAssociationFunc = (trdParam, trdLegsParam) -> {
-            trdParam.tradeLegs().addAll(trdLegsParam);
-            return trdParam;
-        };
-
-        new ParentBuildItem(trdBdrFunc, tradeAndTradeLegAssociationFunc, trdLegBuildItems);
-    }
-
-    private List<ChildBuildItem<>> buildTradeLegAmendment(TradeAmendmentContext trdAmndCtx, T extTrd) {
-        List<ChildBuildItem<>> buildItems = new ArrayList<>();
-
-        var trdLegAmndCtxs = trdAmndCtx.tradeLegAmendmentContexts();
-        for (TradeLegAmendmentContext trdLegAmndCtx : trdLegAmndCtxs) {
-            switch (trdLegAmndCtx) {
-                case TradeLegAmendmentContextEager trdLegAmndCtxEager -> {
-                    var callback = trdLegAmndCtxEager.callback();
-                    Runnable runnableAfterCallback = () -> applyFutureAmendmentInclusion(extTrd);
-                    Supplier<TradeLegBuilder> buildStep = () -> buildTradeLegAmendment(trdAmndCtx, trdLegAmndCtxEager, extTrd);
-                    var bi = new ChildBuildItem<>(callback, runnableAfterCallback, buildStep);
-                    buildItems.add(bi);
-                }
-                case TradeLegAmendmentContextLazy subCtxLazy -> {
-                    var bi = buildTradeLegAmendment(trdAmndCtx, subCtxLazy, extTrd);
-                    buildItems.addAll(bi);
-                }
-            }
-        }
-    }
-
-    private TradeBuilder buildTradeAmendment(TradeAmendmentContext trdAmndCtx, T extTrd) {
-        TradeEventActionPair nextEventAndAction = trdAmndCtx.tradeEventActionPair();
-        TradeBuilder amndTrdBdr = createBuilderFrom(extTrd.trade());
-        // Set new TradeEvent and TradeEventAction
-        amndTrdBdr
-                .tradeVersion(extTrd.tradeVersion() + 1)
-                .tradeEventType(nextEventAndAction.event())
-                .tradeEventAction(nextEventAndAction.action());
-
-        // Set amended values
-        for (AmendableField amendableField : trdAmndCtx.tradeLevelAmendmentFields()) {
-            switch (amendableField) {
-                case AmendableField.CounterpartyCode _, AmendableField.ValueDate _, AmendableField.Amount _ ->
-                        throw new RuntimeException("CounterpartyCode, Amount and ValueDate amendment cannot be done on Trade level. Instead it must be done on the TradeLeg level");
-                case AmendableFieldSupplier _ ->
-                        throw new RuntimeException("Incorrect use of `AmendableFoCashMessageFieldSupplier` type. `AmendableFoCashMessageFieldSupplier` type should be used only when the values are NOT known at the time of constructing the object");
-            }
-        }
-
-        return amndTrdBdr;
+        var buildItem = new ParentBuildItem.ParentBuildItemType1<>(trdBdrFunc, trdLegBuildItems, tradeAndTradeLegAssociationFunc);
     }
 
     private void handleTradeRebookEvent(TradeAmendmentContext trdAmndCtx, T extTrd) {
@@ -192,7 +147,8 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
         };
 
         // create build Item. There is no need to associate cancelled trade and trade legs to the TradeContext/TradeMetadata/ExtendedTrade. It just needs to be send to downstream system
-        var canTrdBuildItem = new BuildItem(canTrdBdrFunc, canTrdLegBdrFunc, (trd, trdLegs) -> trd.setTradeLegs(trdLegs));
+        BiFunction<Trade, Set<TradeLeg>, Trade> associationFunc = Trade::clearAndAddTradeLegs;
+        var canTrdBuildItem = new ParentBuildItem.ParentBuildItemType2<>(canTrdBdrFunc, canTrdLegBdrFunc, associationFunc);
 
         // 3. Create rebooked Trade
         final Supplier<TradeBuilder> newTrdBdrFunc = () -> {
@@ -206,7 +162,7 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
                     .tradeEventAction(newTrdEventAndAction.action())
                     ;
         };
-        final Supplier<List<ChildBuildItem<>>> newTrdLegBdrFunc = () -> {
+        final Supplier<List<ChildBuildItem<TradeLeg, TradeLegBuilder>>> newTrdLegBdrFunc = () -> {
             // 4. Reset nextTradeLegId provider so that rebooked trade will have TradeLegs with ids starting from 1
             extTrd.resetTradeLegIdProvider();
 
@@ -214,12 +170,58 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
             return buildTradeLegAmendment(trdAmndCtx, extTrd);
         };
 
-        var newTrdBuildItem = new BuildItem(newTrdBdrFunc, newTrdLegBdrFunc, (trdParam, trdLegs) -> trdParam.setTradeLegs(trdLegs), extTrd::setTrade);
-
+        BiFunction<Trade, Set<TradeLeg>, Trade> newTrdAndTrdLegAssociationFunc = Trade::clearAndAddTradeLegs;
+        Consumer<Trade> trdAndExtTrdAssociationFunc = extTrd::setTrade;
+        var tutbubParentBuildItemType3 = new ParentBuildItem.ParentBuildItemType3<>(newTrdBdrFunc, newTrdLegBdrFunc, newTrdAndTrdLegAssociationFunc, trdAndExtTrdAssociationFunc);
     }
 
-    private List<ChildBuildItem<>> buildTradeLegAmendment(TradeAmendmentContext trdAmndCtx, TradeLegAmendmentContextLazy trdLegAmndCtxLazy, T extTrd) {
-        List<ChildBuildItem<>> buildItems = new ArrayList<>();
+    private TradeBuilder buildTradeAmendment(TradeAmendmentContext trdAmndCtx, T extTrd) {
+        TradeEventActionPair nextEventAndAction = trdAmndCtx.tradeEventActionPair();
+        TradeBuilder amndTrdBdr = createBuilderFrom(extTrd.trade());
+        // Set new TradeEvent and TradeEventAction
+        amndTrdBdr
+                .tradeVersion(extTrd.tradeVersion() + 1)
+                .tradeEventType(nextEventAndAction.event())
+                .tradeEventAction(nextEventAndAction.action());
+
+        // Set amended values
+        for (AmendableField amendableField : trdAmndCtx.tradeLevelAmendmentFields()) {
+            switch (amendableField) {
+                case AmendableField.CounterpartyCode _, AmendableField.ValueDate _, AmendableField.Amount _ ->
+                        throw new RuntimeException("CounterpartyCode, Amount and ValueDate amendment cannot be done on Trade level. Instead it must be done on the TradeLeg level");
+                case AmendableFieldSupplier _ ->
+                        throw new RuntimeException("Incorrect use of `AmendableFoCashMessageFieldSupplier` type. `AmendableFoCashMessageFieldSupplier` type should be used only when the values are NOT known at the time of constructing the object");
+            }
+        }
+
+        return amndTrdBdr;
+    }
+
+    private List<ChildBuildItem<TradeLeg, TradeLegBuilder>> buildTradeLegAmendment(TradeAmendmentContext trdAmndCtx, T extTrd) {
+        var buildItems = new ArrayList<ChildBuildItem<TradeLeg, TradeLegBuilder>>();
+
+        var trdLegAmndCtxs = trdAmndCtx.tradeLegAmendmentContexts();
+        for (TradeLegAmendmentContext trdLegAmndCtx : trdLegAmndCtxs) {
+            switch (trdLegAmndCtx) {
+                case TradeLegAmendmentContextEager trdLegAmndCtxEager -> {
+                    var callback = trdLegAmndCtxEager.callback();
+                    Runnable runnableAfterCallback = () -> applyFutureAmendmentInclusion(extTrd);
+                    Supplier<TradeLegBuilder> buildStep = () -> buildTradeLegAmendment(trdAmndCtx, trdLegAmndCtxEager, extTrd);
+                    var bi = new ChildBuildItem<>(callback, runnableAfterCallback, buildStep);
+                    buildItems.add(bi);
+                }
+                case TradeLegAmendmentContextLazy subCtxLazy -> {
+                    var bi = buildTradeLegAmendment(trdAmndCtx, subCtxLazy, extTrd);
+                    buildItems.addAll(bi);
+                }
+            }
+        }
+
+        return buildItems;
+    }
+
+    private List<ChildBuildItem<TradeLeg, TradeLegBuilder>> buildTradeLegAmendment(TradeAmendmentContext trdAmndCtx, TradeLegAmendmentContextLazy trdLegAmndCtxLazy, T extTrd) {
+        var buildItems = new ArrayList<ChildBuildItem<TradeLeg, TradeLegBuilder>>();
 
         Set<AmendableField> concreteAmendableFields = new HashSet<>();
         for (AmendableField amendableField : trdLegAmndCtxLazy.amendableFields()) {

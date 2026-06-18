@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, U, TB, UB> extends TemplateBuilder<T, AggregateTemplateBuilderResult<T, U>> {
-    private final Deque<ChildBuildItem<TB, T>> groupedItemBuilders;
-    private final Deque<ChildBuildItem<TB, T>> relatedItemBuilders;
+public abstract class AggregateTemplateBuilder<T extends TestDataGeneratable, U extends TestDataGeneratable, TB, UB> extends TemplateBuilder<T, AggregateTemplateBuilderResult<T, U>> {
+    private final Deque<ChildBuildItem<U, UB>> groupedItemBuilders;
+    private final Deque<ParentBuildItem<T, U, TB>> relatedItemBuilders;
 
     protected AggregateTemplateBuilder(T parent) {
         super(parent);

@@ -1,6 +1,7 @@
 package io.alw.css.fosimulator.template;
 
 import io.alw.css.domain.common.*;
+import io.alw.css.domain.trade.TradeLegBuilder;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
@@ -64,7 +65,7 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTrade> {
     }
 
     /// Builds the counter side(side 2) of the fx message
-    private TradeBuilder buildFxSide2(FxTrade trdCtx, Id id) {
+    private TradeLegBuilder buildFxSide2(FxTrade trdCtx, Id id) {
         var fxSide1Msg = trdCtx.side1Msg();
         String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(fxSide1Msg.counterpartyCode());
         Entity entity = refDataService.entityOtherThan(rndm, fxSide1Msg.entityCode());

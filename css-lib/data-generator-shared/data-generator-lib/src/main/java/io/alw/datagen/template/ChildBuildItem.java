@@ -1,26 +1,12 @@
 package io.alw.datagen.template;
 
-import java.util.function.Consumer;
+import io.alw.datagen.TestDataGeneratable;
+
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-public record ChildBuildItem<B, R>(
-        Consumer<R> callback,
+public record ChildBuildItem<U extends TestDataGeneratable, UB>(
+        BiConsumer<? extends TestDataGeneratable, U> callback,
         Runnable runnableAfterCallback,
-        Supplier<B> buildStep,
-        Runnable runnable) {
-    public ChildBuildItem(Consumer<R> callback, Supplier<B> buildStep) {
-        this(callback, null, buildStep, null);
-    }
-
-    public ChildBuildItem(Supplier<B> buildStep) {
-        this(null, null, buildStep, null);
-    }
-
-    public ChildBuildItem(Consumer<R> callback, Runnable runnableAfterCallback, Supplier<B> buildStep) {
-        this(callback, runnableAfterCallback, buildStep, null);
-    }
-
-    public ChildBuildItem(Runnable runnable) {
-        this(null, null, null, runnable);
-    }
+        Supplier<UB> buildStep) {
 }
