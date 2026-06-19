@@ -2,11 +2,12 @@ package io.alw.css.fosimulator.template.domain;
 
 import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.trade.Trade;
+import io.alw.css.domain.trade.TradeDetail;
 import io.alw.css.domain.trade.TradeLeg;
 
 import java.util.List;
 
-public final class FxTrade extends Trade implements ExtendedTrade {
+public final class FxTrade implements ExtendedTrade {
     private int nextTradeLegId;
     private TradeLeg side1Msg;
     private TradeLeg side2Msg;
@@ -49,7 +50,7 @@ public final class FxTrade extends Trade implements ExtendedTrade {
     }
 
     @Override
-    public Iterable<TradeLeg> allTradeLegs() {
+    public Iterable<TradeDetail> allTradeLegs() {
         return List.of(side1Msg, side2Msg);
     }
 

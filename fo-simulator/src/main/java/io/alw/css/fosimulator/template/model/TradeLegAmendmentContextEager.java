@@ -2,19 +2,18 @@ package io.alw.css.fosimulator.template.model;
 
 import io.alw.css.domain.trade.TradeLeg;
 import io.alw.css.domain.trade.TradeLegType;
-import io.alw.css.fosimulator.template.domain.ExtendedTrade;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public record TradeLegAmendmentContextEager(
         TradeLegType tradeLegType,
         TradeLeg tradeLeg,
-        BiConsumer<? extends ExtendedTrade,TradeLeg> callback,
+        Consumer<TradeLeg> callback,
         Set<AmendableField> amendableFields) implements TradeLegAmendmentContext {
 
-    public TradeLegAmendmentContextEager(TradeLeg tradeLeg, BiConsumer<? extends ExtendedTrade, TradeLeg> callback, Set<AmendableField> amendableFields) {
+    public TradeLegAmendmentContextEager(TradeLeg tradeLeg, Consumer<TradeLeg> callback, Set<AmendableField> amendableFields) {
         this(tradeLeg == null ? null : tradeLeg.tradeLegType(),
                 tradeLeg,
                 callback,

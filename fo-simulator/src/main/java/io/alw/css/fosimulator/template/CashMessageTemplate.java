@@ -14,7 +14,6 @@ import io.alw.css.fosimulator.model.TradeEventActionPair;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.template.domain.ExtendedTrade;
-import io.alw.css.fosimulator.template.model.Id;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
 import io.alw.datagen.template.AggregateTemplateBuilder;
 
@@ -22,6 +21,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 
@@ -30,14 +31,14 @@ import java.util.random.RandomGenerator;
 /// [CashMessageTemplate] instances are both a trade type template and a supplier of the build output of the template
 /// Each instance of this class is supposed to be exclusive for a single thread
 sealed abstract class CashMessageTemplate<T extends ExtendedTrade>
-        extends AggregateTemplateBuilder<T, TradeLeg, TradeBuilder, TradeLegBuilder>
-        implements Supplier<List<Trade>>
+        extends AggregateTemplateBuilder<Trade, TradeLeg, TradeBuilder, TradeLegBuilder>
+        implements Supplier<Set<Trade>>
         permits CashMessageAmendmentTemplate {
 
     /// Variable values for each template build. These values remain un-modified for each template build.
     /// After each build of the template, the [ExtendedTrade] (trdCtx) and [TradeBuilder] (`bdr`) references are just assigned with new instances
     // Message Context and FoCashMessage builder
-    private T trd;
+    protected T extTrd;
     private TradeBuilder bdr;
 
     // Constant values for each instance of CashMessageTemplate
@@ -60,7 +61,7 @@ sealed abstract class CashMessageTemplate<T extends ExtendedTrade>
         this(null, entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMsgTemplateProps);
     }
 
-    private CashMessageTemplate(T parent, Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
+    private CashMessageTemplate(Trade parent, Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
         super(parent);
         this.entityCode = entity.entityCode();
         this.currCode = entity.currCode();
@@ -74,26 +75,6 @@ sealed abstract class CashMessageTemplate<T extends ExtendedTrade>
 
     protected abstract TradeEventActionPair determineNextTradeEventAndAction(TradeEventType amendMsgEvt, TradeEventAction amendMsgAct);
 
-    /// Build the grouped or related cash message associated with the cashMessage template being built
-    /// tradeLinks of grouped and related items are set when creating a cashMessage builder via [CashMessageTemplate#createBuilderFrom(Trade , String)]
-    /// The resultant [Trade] is already associated with the [ExtendedTrade] in prior steps(using callbacks when creating new trade, amendments and new grouped cashMessages)
-    @Override
-    protected TradeLeg buildGroupedItem(TradeLegBuilder trdLegBdr) {
-        TradeLeg trdLeg = trdLegBdr.build();
-        bdr.tradeLegs().add(trdLeg); // Add to the trade's set of tradeLegs
-        return trdLeg;
-    }
-
-    /// Builds the cashMessage template
-    ///
-    /// **tradeLinks of root FoCashMessage**:
-    /// tradeLinks of rootFoCashMessage are set when creating a cashMessage builder with the default values via the method: [CashMessageTemplate#getNewCashMsgBuilder(Id , ExtendedTrade)]
-    @Override
-    public T buildRootTemplate() {
-        trd.setRootTradeLeg(bdr.build());
-        return trd;
-    }
-
     /// This method is the starting point to start a new build cycle
     /// This method ensures that the same [DayTicker#day()] is used at all points of building multiple cash messages in current cycle
     protected CashMessageTemplate<T> newBuildCycle() {
@@ -101,13 +82,13 @@ sealed abstract class CashMessageTemplate<T extends ExtendedTrade>
         return this;
     }
 
-    /// This method is used to create root [TradeBuilder]. The builder for grouped or related items are created using [CashMessageTemplate#createBuilderFrom(Trade , String)]
+    /// This method is used to create result [TradeBuilder]. The builder for grouped or related items are created using [CashMessageTemplate#createBuilderFrom(Trade , String)]
     /// NOTE: New [CashMessageTemplate] instances are not created by this method.
     /// Instead, the existing [TradeBuilder] (`bdr`) is just replaced with a new one and then new values are assigned.
     protected TradeBuilder getBaseCashMsgBuilder(T trd) {
         msgTemplateHelper.incrementCounter();
         this.bdr = TradeBuilder.builder();
-        this.trd = trd;
+        this.extTrd = trd;
 
         return bdr
                 // Fixed value for this template
@@ -128,6 +109,34 @@ sealed abstract class CashMessageTemplate<T extends ExtendedTrade>
     protected TradeLegBuilder createBuilderFrom123(TradeLeg referenceTradeLeg) {
         return TradeLegBuilder
                 .builder(referenceTradeLeg);
+    }
+
+    /// Builds the result/root template
+    @Override
+    public Trade buildParentTemplate() {
+        Trade trd = bdr.build();
+        extTrd.setTrade(trd);
+        return trd;
+    }
+
+    @Override
+    protected Trade buildRelatedParentTemplate(TradeBuilder parentBdr) {
+        return parentBdr.build();
+    }
+
+    @Override
+    protected TradeLeg buildChildTemplate(TradeLegBuilder bdr) {
+        return bdr.build();
+    }
+
+    @Override
+    protected TradeLeg buildRelatedChildTemplate(TradeLegBuilder bdr) {
+        return bdr.build();
+    }
+
+    @Override
+    protected BiConsumer<Trade, Set<TradeLeg>> parentAndChildAssociationFunc() {
+        return Trade::clearAndAddTradeLegs;
     }
 
     private static List<BigDecimal> getRateList() {

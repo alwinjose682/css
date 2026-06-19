@@ -6,6 +6,7 @@ import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @RecordBuilder
@@ -30,5 +31,17 @@ public record Trade(
         }
         tradeLegs.addAll(trdLegs);
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Trade trade = (Trade) o;
+        return tradeID == trade.tradeID && tradeVersion == trade.tradeVersion;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(tradeID, tradeVersion);
     }
 }

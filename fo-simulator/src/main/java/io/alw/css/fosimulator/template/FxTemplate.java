@@ -59,7 +59,7 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTrade> {
                 .amount(BigDecimal.valueOf(rndm.nextDouble(2, 95036)))
         ;
 
-        this.withGroupedItem(trdCtx::setSide2Msg, () -> buildFxSide2(trdCtx, fxSide2Ids));
+        this.withChildTemplateDirective(trdCtx::setSide2Msg, () -> buildFxSide2(trdCtx, fxSide2Ids));
 
         return this;
     }

@@ -2,11 +2,11 @@ package io.alw.datagen.template;
 
 import io.alw.datagen.DataGeneratable;
 
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public record ChildBuildItem<U extends DataGeneratable, UB>(
-        BiConsumer<? extends DataGeneratable, U> callback,
+public record ChildBuildDirective<U extends DataGeneratable, UB>(
+        Consumer<U> callback,
         Runnable runnableAfterCallback,
         Supplier<UB> buildStep) {
 }

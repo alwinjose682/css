@@ -22,8 +22,8 @@ public abstract class CascadingTemplateBuilder<T extends DataGeneratable> extend
         return this;
     }
 
-    /// Builds the parent template and its related templates, if any.
-    /// The first element in the list is ALWAYS the parent. Rest of the elements build results of related templates.
+    /// Builds the result template and its related templates, if any.
+    /// The first element in the list is ALWAYS the result. Rest of the elements build results of related templates.
     ///
     /// The related templates can access the build output, T, during their builds.
     /// Values of parentType such as io.alw.css.domain.referencedata.Counterparty#entityCode are required during the build of related templates

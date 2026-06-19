@@ -4,7 +4,6 @@ import io.alw.css.domain.common.RateType;
 import io.alw.css.domain.trade.Trade;
 import io.alw.css.domain.trade.TradeDetail;
 import io.alw.css.domain.trade.TradeLeg;
-import io.alw.css.domain.trade.TradeLegBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -103,14 +102,5 @@ public final class MmTrade implements ExtendedTrade {
         allTradeLegs.add(maturityLeg);
         allTradeLegs.addAll(interestLegs);
         return allTradeLegs;
-    }
-
-    @Override
-    public TradeLegBuilder getSuitableBuilderFrom(TradeLeg trdLeg) {
-        return switch (trdLeg) {
-            case InterestTradeLeg itl -> InterestTradeLegBuilder.builder(itl);
-            case TradeLeg tl -> TradeLegBuilder.builder(trdLeg);
-            default -> throw new RuntimeException("The given TradeLeg of type: " + trdLeg.tradeLegType() + " is not an MM Trade leg");
-        };
     }
 }
