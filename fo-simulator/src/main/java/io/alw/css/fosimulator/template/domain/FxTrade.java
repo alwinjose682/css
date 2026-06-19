@@ -1,6 +1,5 @@
 package io.alw.css.fosimulator.template.domain;
 
-import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.trade.Trade;
 import io.alw.css.domain.trade.TradeDetail;
 import io.alw.css.domain.trade.TradeLeg;
@@ -9,12 +8,11 @@ import java.util.List;
 
 public final class FxTrade implements ExtendedTrade {
     private int nextTradeLegId;
-    private TradeLeg side1Msg;
-    private TradeLeg side2Msg;
     private Trade trade;
+    private TradeLeg tradeLeg1;
+    private TradeLeg tradeLeg2;
 
-    public FxTrade(TradeType tradeType) {
-        super();
+    public FxTrade() {
         this.nextTradeLegId = resetTradeLegIdProvider();
     }
 
@@ -36,12 +34,12 @@ public final class FxTrade implements ExtendedTrade {
 
     @Override
     public TradeLeg rootTradeLeg() {
-        return side1Msg;
+        return tradeLeg1;
     }
 
     @Override
     public void setRootTradeLeg(TradeLeg rootFoCashMessage) {
-        this.side1Msg = rootFoCashMessage;
+        this.tradeLeg1 = rootFoCashMessage;
     }
 
     @Override
@@ -51,22 +49,22 @@ public final class FxTrade implements ExtendedTrade {
 
     @Override
     public Iterable<TradeDetail> allTradeLegs() {
-        return List.of(side1Msg, side2Msg);
+        return List.of(tradeLeg1, tradeLeg2);
     }
 
-    public TradeLeg side2Msg() {
-        return side2Msg;
+    public TradeLeg tradeLeg2() {
+        return tradeLeg2;
     }
 
-    public void setSide2Msg(TradeLeg side2Msg) {
-        this.side2Msg = side2Msg;
+    public void setTradeLeg2(TradeLeg tradeLeg2) {
+        this.tradeLeg2 = tradeLeg2;
     }
 
-    public TradeLeg side1Msg() {
-        return side1Msg;
+    public TradeLeg tradeLeg1() {
+        return tradeLeg1;
     }
 
-    public void setSide1Msg(TradeLeg side1Msg) {
-        this.side1Msg = side1Msg;
+    public void setTradeLeg1(TradeLeg tradeLeg1) {
+        this.tradeLeg1 = tradeLeg1;
     }
 }

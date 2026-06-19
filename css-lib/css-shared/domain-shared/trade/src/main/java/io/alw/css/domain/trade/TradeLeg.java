@@ -41,6 +41,3 @@ public record TradeLeg(
         return Objects.hash(tradeLegId, tradeLegVersion);
     }
 }
-
-
-

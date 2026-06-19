@@ -10,7 +10,6 @@ import java.util.Objects;
 import java.util.Set;
 
 @RecordBuilder
-@RecordBuilder.Options(publicBuilderConstructors = true)
 public record Trade(
         long tradeID,
         int tradeVersion,
@@ -21,9 +20,6 @@ public record Trade(
         TradeEventType tradeEventType,
         TradeEventAction tradeEventAction
 ) implements DataGeneratable {
-    public static MutableTradeBuilder builder() {
-        return new MutableTradeBuilder();
-    }
 
     public Trade clearAndAddTradeLegs(Set<TradeLeg> trdLegs){
         if (!tradeLegs.isEmpty()) {

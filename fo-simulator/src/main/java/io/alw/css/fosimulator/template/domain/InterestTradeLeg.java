@@ -5,15 +5,15 @@ import io.alw.css.domain.trade.TradeLeg;
 import io.alw.css.fosimulator.template.model.InterestLegContext;
 
 public final class InterestTradeLeg implements TradeDetail {
-    private InterestLegContext interestLegContext;
+    private final InterestLegContext interestLegContext;
     private TradeLeg interestLeg;
+
+    public InterestTradeLeg(InterestLegContext interestLegContext) {
+        this.interestLegContext = interestLegContext;
+    }
 
     public InterestLegContext interestLegContext() {
         return interestLegContext;
-    }
-
-    public void setInterestLegContext(InterestLegContext interestLegContext) {
-        this.interestLegContext = interestLegContext;
     }
 
     public TradeLeg interestLeg() {

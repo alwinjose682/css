@@ -4,10 +4,7 @@ import io.alw.css.domain.common.TradeEventAction;
 import io.alw.css.domain.common.TradeEventType;
 import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.common.TransactionType;
-import io.alw.css.domain.trade.Trade;
-import io.alw.css.domain.trade.TradeBuilder;
-import io.alw.css.domain.trade.TradeLeg;
-import io.alw.css.domain.trade.TradeLegBuilder;
+import io.alw.css.domain.trade.*;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
@@ -20,6 +17,8 @@ import io.alw.datagen.template.AggregateTemplateBuilder;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -37,14 +36,14 @@ sealed abstract class CashMessageTemplate<T extends ExtendedTrade>
 
     /// Variable values for each template build. These values remain un-modified for each template build.
     /// After each build of the template, the [ExtendedTrade] (trdCtx) and [TradeBuilder] (`bdr`) references are just assigned with new instances
-    // Message Context and FoCashMessage builder
-    protected T extTrd;
+    // ExtendedTrade object and Trade builder
+    private T extTrd;
     private TradeBuilder bdr;
 
     // Constant values for each instance of CashMessageTemplate
-    protected final String entityCode;
-    protected final String currCode;
-    protected final TradeType tradeType;
+    private final String entityCode;
+    private final String currCode;
+    private final TradeType tradeType;
     private final TransactionType transactionType;
     protected final RandomGenerator rndm;
     protected final CashMessageTemplateHelper msgTemplateHelper;
@@ -73,6 +72,8 @@ sealed abstract class CashMessageTemplate<T extends ExtendedTrade>
         this.refDataService = refDataService;
     }
 
+    protected abstract T createExtendedTrade();
+
     protected abstract TradeEventActionPair determineNextTradeEventAndAction(TradeEventType amendMsgEvt, TradeEventAction amendMsgAct);
 
     /// This method is the starting point to start a new build cycle
@@ -85,7 +86,7 @@ sealed abstract class CashMessageTemplate<T extends ExtendedTrade>
     /// This method is used to create result [TradeBuilder]. The builder for grouped or related items are created using [CashMessageTemplate#createBuilderFrom(Trade , String)]
     /// NOTE: New [CashMessageTemplate] instances are not created by this method.
     /// Instead, the existing [TradeBuilder] (`bdr`) is just replaced with a new one and then new values are assigned.
-    protected TradeBuilder getBaseCashMsgBuilder(T trd) {
+    protected TradeBuilder createNewTradeWithDefaultValues(T trd) {
         msgTemplateHelper.incrementCounter();
         this.bdr = TradeBuilder.builder();
         this.extTrd = trd;
@@ -100,15 +101,36 @@ sealed abstract class CashMessageTemplate<T extends ExtendedTrade>
                 // Always a new trade
                 .tradeEventType(TradeEventType.NEW_TRADE)
                 .tradeEventAction(TradeEventAction.ADD)
+                // Ensuring below fields are not null
+                .tradeLinks(new ArrayList<>())
+                .tradeLegs(new HashSet<>())
                 ;
     }
 
-    /// This method is used to create [TradeBuilder] for grouped or related cashMessages.
-    ///
-    /// NOTE: The [CashMessageTemplateHelper#counter] is NOTE incremented by this method
-    protected TradeLegBuilder createBuilderFrom123(TradeLeg referenceTradeLeg) {
-        return TradeLegBuilder
-                .builder(referenceTradeLeg);
+    protected TradeLegBuilder createNewTradeLegWithDefaultValues(ExtendedTrade extTrd, TradeLegType tradeLegType) {
+        final String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionType();
+
+        return TradeLegBuilder.builder()
+                .tradeLegId(extTrd.nextTradeLegId())
+                .tradeLegVersion(VERSION_ONE)
+                .tradeLegType(tradeLegType)
+                // Entity dependent fields. Book codes are dummy for now
+                .entityCode(this.entityCode)
+                .currCode(this.currCode)
+                .bookCode(refDataService.dummyBookCode())
+                .counterBookCode(msgTemplateHelper.isInterbookTransaction() ? refDataService.dummyCounterBookCode() : null) // Also a TransactionType dependent
+                // TransactionType dependent fields
+                .counterpartyCode(counterpartyCode)
+                // Event type and event action
+                .tradeEventType(TradeEventType.NEW_TRADE)
+                .tradeEventAction(TradeEventAction.ADD)
+                //
+                .rate(cyclicRateProvider.get()) // rate is just a constant from a list of multiple rate constants. No rate dependent calculation is done in CSS
+                ;
+    }
+
+    protected T extTrd() {
+        return extTrd;
     }
 
     /// Builds the result/root template

@@ -4,7 +4,10 @@ import io.alw.css.domain.common.TradeEventAction;
 import io.alw.css.domain.common.TradeEventType;
 import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.common.TransactionType;
-import io.alw.css.domain.trade.*;
+import io.alw.css.domain.trade.TradeDetail;
+import io.alw.css.domain.trade.TradeLeg;
+import io.alw.css.domain.trade.TradeLegBuilder;
+import io.alw.css.domain.trade.TradeLegType;
 import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
@@ -12,7 +15,6 @@ import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.store.CashMessageStore;
 import io.alw.css.fosimulator.store.InMemoryCashMessageStore;
-import io.alw.css.fosimulator.template.domain.InterestBasis;
 import io.alw.css.fosimulator.template.domain.InterestPayoutFrequency;
 import io.alw.css.fosimulator.template.domain.InterestTradeLeg;
 import io.alw.css.fosimulator.template.domain.MmTrade;
@@ -34,6 +36,7 @@ import static io.alw.css.domain.common.PayOrReceive.RECEIVE;
 import static io.alw.css.domain.common.RateType.FLOAT;
 import static io.alw.css.domain.trade.TradeLegType.*;
 import static io.alw.css.fosimulator.template.MmTemplateConstants.*;
+import static io.alw.css.fosimulator.template.domain.InterestBasis.ThirtyBy360;
 
 public final class MmTemplate extends CashMessageAmendmentTemplate<MmTrade> {
     private final CashMessageStoreHelper<MmTrade> msgStoreHelper;
@@ -49,51 +52,33 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTrade> {
     @Override
     public MmTemplate withRootTemplateValues() {
         // Create MessageContext
-        MmTrade trd = createMmTrade();
+        MmTrade extTrd = createExtendedTrade();
         // Create MoneyMarket trade builder with base values
-        TradeBuilder bdr = getBaseCashMsgBuilder(trd);
+        createNewTradeWithDefaultValues(extTrd);
         // Build PRINCIPAL leg
-        var newTrdEventAndAction = new TradeEventActionPair(TradeEventType.NEW_TRADE, TradeEventAction.ADD);
-        var principalLegId = new Id(trd.nextTradeLegId(), VERSION_ONE);
-        this.withChildTemplateDirective(trd::setRootTradeLeg, () -> buildPrincipalLeg(principalLegId, newTrdEventAndAction));
+        this.withChildTemplateDirective(extTrd::setRootTradeLeg, this::buildPrincipalLeg);
 
         // IMPORTANT NOTE: The order here is important.
         // MaturityLeg must be built before InterestLeg because building InterestLeg requires maturityLegValueDate.
         // The lambdas added via [io.alw.datagen.template.AggregateTemplateBuilder#withGroupedItem(Supplier)] method will be executed strictly in the same order as they are inserted in the queue
-        switch (trd.trade().tradeType()) {
+        var newTrdEventAndAction = new TradeEventActionPair(TradeEventType.NEW_TRADE, TradeEventAction.ADD);
+        switch (extTrd.trade().tradeType()) {
             case MM_TERM -> {
-                var interestLegIds = new Id(trd.nextTradeLegId(), VERSION_ONE);
-                var maturityLegIds = new Id(trd.nextTradeLegId(), VERSION_ONE);
-                buildMaturityAndInterestLeg(trd, maturityLegIds, interestLegIds, newTrdEventAndAction);
+                var interestLegIds = new Id(extTrd.nextTradeLegId(), VERSION_ONE);
+                var maturityLegIds = new Id(extTrd.nextTradeLegId(), VERSION_ONE);
+                buildMaturityAndInterestLeg(extTrd, maturityLegIds, interestLegIds, newTrdEventAndAction);
             }
             case MM_CALL -> {
-                var interestLegIds = new Id(trd.nextTradeLegId(), VERSION_ONE);
-                this.withChildTemplateDirective(trd::addInterestLeg, () -> buildInterestLeg(trd, interestLegIds, newTrdEventAndAction));
+                var interestLegIds = new Id(extTrd.nextTradeLegId(), VERSION_ONE);
+                this.withChildTemplateDirective(extTrd::addInterestLeg, () -> buildInterestLeg(extTrd, interestLegIds, newTrdEventAndAction));
             }
             default -> throw new RuntimeException("Invalid TradeType for MmTemplate");
         }
         return this;
     }
 
-    private TradeLegBuilder buildPrincipalLeg(Id id, TradeEventActionPair trdEventAndAction) {
-        final String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionType();
-
-        return TradeLegBuilder.builder()
-                .tradeLegId(id.Id())
-                .tradeLegVersion(id.version())
-                .tradeLegType(MM_PRINCIPAL)
-                // Entity dependent fields. Book codes are dummy for now
-                .entityCode(this.entityCode)
-                .currCode(this.currCode)
-                .bookCode(refDataService.dummyBookCode())
-                .counterBookCode(msgTemplateHelper.isInterbookTransaction() ? refDataService.dummyCounterBookCode() : null) // Also a TransactionType dependent
-                // TransactionType dependent fields
-                .counterpartyCode(counterpartyCode)
-                // Event type and event action
-                .tradeEventType(trdEventAndAction.event())
-                .tradeEventAction(trdEventAndAction.action())
-                //
-                .rate(cyclicRateProvider.get()) // rate is just a constant from a list of multiple rate constants. No rate dependent calculation is done in CSS
+    private TradeLegBuilder buildPrincipalLeg() {
+        return createNewTradeLegWithDefaultValues(extTrd(), MM_PRINCIPAL)
                 .valueDate(msgTemplateHelper.getRndmValueDate(30))
                 .payOrReceive(rndm.nextBoolean() ? PAY : RECEIVE)
                 .amount(BigDecimal.valueOf(rndm.nextDouble(principalLegAmountOrigin, principalLegAmountBound)))
@@ -261,21 +246,22 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTrade> {
     /// IMPORTANT NOTE: The order here is important.
     /// MaturityLeg must be built before InterestLeg because building InterestLeg requires maturityLegValueDate.
     /// The lambdas added via [AggregateTemplateBuilder#withGroupedItem(Consumer, Supplier)] method will be executed strictly in the same order as they are inserted in the queue
-    private void buildMaturityAndInterestLeg(MmTrade trd, Id maturityLegId, Id interestLegId, TradeEventActionPair trdEventAndAction) {
+    private void buildMaturityAndInterestLeg(MmTrade extTrade, Id maturityLegId, Id interestLegId, TradeEventActionPair trdEventAndAction) {
         // 1. Add building function of MATURITY leg
-        this.withChildTemplateDirective(trd::setMaturityLeg, () -> buildMaturityLeg(trd, maturityLegId, trdEventAndAction));
+        this.withChildTemplateDirective(extTrade::setMaturityLeg, () -> buildMaturityLeg(extTrade, maturityLegId, trdEventAndAction));
         // 2. Add building function of INTEREST leg
-        this.withChildTemplateDirective(trd::addInterestLeg, () -> buildInterestLeg(trd, interestLegId, trdEventAndAction));
+        this.withChildTemplateDirective(extTrade::addInterestLeg, () -> buildInterestLeg(extTrade, interestLegId, trdEventAndAction));
     }
 
     /// NOTE: The 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
     /// This method is intended to be used not only for the first interest leg but also for future interest legs. Therefor Ids are received as a parameter. The same pattern is followed to build maturity leg although there can be only one maturityLeg
-    private TradeLegBuilder buildInterestLeg(MmTrade trd, Id interestLegId, TradeEventActionPair trdEventAndAction) {
-        var principalLeg = trd.principalLeg();
-        var maturityLeg = trd.maturityLeg(); // NOTE: the 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
-        InterestTradeLeg interestLeg = trd.interestLegs() == null ? null : trd.interestLegs().getFirst();
+    private TradeLegBuilder buildInterestLeg(MmTrade extTrd, Id interestLegId, TradeEventActionPair trdEventAndAction) {
+        var principalLeg = extTrd.principalLeg();
+        var maturityLeg = extTrd.maturityLeg(); // NOTE: the 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
+        // Create InterestTradeLeg object
+        InterestTradeLeg newIntrTrdLegObj = createInterestTradeLegAndAssociateWithMmTrade(extTrd, principalLeg, maturityLeg);
 
-        // Build the INTEREST leg
+        // Create the INTEREST leg builder
         var bdr = TradeLegBuilder.builder(principalLeg)
                 .tradeLegId(interestLegId.Id())
                 .tradeLegVersion(interestLegId.version())
@@ -283,66 +269,53 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTrade> {
                 .tradeEventType(trdEventAndAction.event())
                 .tradeEventAction(trdEventAndAction.action())
                 // Values that differ from PRINCIPAL leg
-                .valueDate(determineInterestLegValueDate(trd, principalLeg, maturityLeg))
+                .valueDate(determineInterestLegValueDate(extTrd, principalLeg, maturityLeg))
                 .payOrReceive(principalLeg.payOrReceive() == PAY ? RECEIVE : PAY)
-                .amount(determineInterestLegAmount(trd, principalLeg, maturityLeg, interestLeg))
+                .amount(newIntrTrdLegObj.interestLegContext().lastUsedInterestAmount())
                 // no change for currCode
                 ;
 
-        if (trd.rateType() == FLOAT && (VERSION_ONE != bdr.tradeLegVersion() || VERSION_ONE != trd.tradeVersion())) {
+        if (extTrd.rateType() == FLOAT && (VERSION_ONE != bdr.tradeLegVersion() || VERSION_ONE != extTrd.tradeVersion())) {
             bdr.rate(cyclicRateProvider.get());
         }
 
         return bdr;
     }
 
-    /// NOTE: The amount returned is not a result of a proper calculation based on rate.
-    /// It is just a meaningful enough number for an interest leg when the following parameters are taken into consideration:
-    /// - principalAmount, interest basis, interest payout frequency, rate type and maturity date
-    ///
-    /// This is done solely to avoid calculations using BigDecimal. Actual amount is not required.
-    private BigDecimal determineInterestLegAmount(MmTrade trd, TradeLeg principalLeg, TradeLeg maturityLeg, InterestTradeLeg interestLeg) {
-        final LocalDate maturityLegValueDate;
-        if (maturityLeg == null) {
-            maturityLegValueDate = principalLeg.valueDate().plusDays(msgTemplateHelper.currentDayForMsgTemplate() + 360);
+    private InterestTradeLeg createInterestTradeLegAndAssociateWithMmTrade(MmTrade extTrd, TradeLeg principalLeg, TradeLeg maturityLeg) {
+        final BigDecimal interestAmount;
+        final InterestTradeLeg mostRecentInterestLeg = extTrd.interestLegs().getLast();
+        if (mostRecentInterestLeg != null) {
+            interestAmount = determineInterestLegAmount(extTrd, principalLeg, maturityLeg, mostRecentInterestLeg);
         } else {
-            maturityLegValueDate = maturityLeg.valueDate();
+            interestAmount = createInterestLegAmount(extTrd, principalLeg, maturityLeg);
         }
 
-        // Re-use the interest amount if it was already determined, but only if the values used to determine has not changed
+        BigDecimal principalAmount = principalLeg.amount();
+        LocalDate principalValueDate = principalLeg.valueDate();
+        LocalDate maturityLegValueDate = getRealOrPotentialMaturityLegValueDate(principalLeg, maturityLeg);
 
-        if (interestLeg != null && interestLeg.interestLegContext() != null) {
-            var intrLegCtx = interestLeg.interestLegContext();
-            var lastUsedInterestAmount = intrLegCtx.lastUsedInterestAmount();
-            var lastUsedPrincipalAmount = intrLegCtx.lastUsedPrincipalAmount();
-            var lastUsedPrincipalValueDate = intrLegCtx.lastUsedPrincipalValueDate();
-            var lastUsedMaturityValueDate = intrLegCtx.lastUsedMaturityValueDate();
+        // Create the InterestLegContext with the above created interest amount
+        var interestLegCtx = new InterestLegContext(interestAmount, principalAmount, principalValueDate, maturityLegValueDate);
+        // Create the InterestTradeLeg object and associate with the MMTrade
+        var intTrdLeg = new InterestTradeLeg(interestLegCtx);
+        extTrd.addInterestLeg(intTrdLeg);
 
-            if (lastUsedPrincipalAmount.equals(principalLeg.amount())
-                    && lastUsedPrincipalValueDate.equals(principalLeg.valueDate())
-                    && lastUsedMaturityValueDate.equals(maturityLegValueDate)) {
-                return switch (trd.rateType()) {
-                    case FIXED -> lastUsedInterestAmount;
-                    case FLOAT -> {
-                        BigDecimal newIntAmt = BigDecimal.valueOf(lastUsedInterestAmount.doubleValue() + 158);// Even though rate decrease the amount increases. This is ok! Actual amount is not required
-                        intrLegCtx.setLastUsedInterestAmount(newIntAmt);
-                        yield newIntAmt;
-                    }
-                };
-            }
-        } else {
-            //TODO
-        }
+        return intTrdLeg;
+    }
+
+    private BigDecimal createInterestLegAmount(MmTrade extTrd, TradeLeg principalLeg, TradeLeg maturityLeg) {
+        LocalDate maturityLegValueDate = getRealOrPotentialMaturityLegValueDate(principalLeg, maturityLeg);
 
         // Determine the interest amount
         var principalAmount = principalLeg.amount();
         var principalValueDate = principalLeg.valueDate();
-        var newInterestAmount = switch (trd.interestBasis()) {
+        return switch (extTrd.interestBasis()) {
             case ThirtyBy360 -> {
                 long numOfDays = ChronoUnit.DAYS.between(principalValueDate, maturityLegValueDate);
                 double tenPercentOfPrincipal = (principalAmount.doubleValue() / 100) * 10;
 
-                yield switch (trd.ipFrequency()) {
+                yield switch (extTrd.ipFrequency()) {
                     case DAY -> BigDecimal.valueOf(tenPercentOfPrincipal / (double) numOfDays);
                     case MONTHLY -> BigDecimal.valueOf(tenPercentOfPrincipal / ((double) numOfDays / 30));
                     case QUARTERLY -> BigDecimal.valueOf(tenPercentOfPrincipal / ((double) numOfDays / 90));
@@ -352,9 +325,49 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTrade> {
                 };
             }
         };
+    }
 
-        interestLeg.setInterestLegContext(new InterestLegContext(newInterestAmount, principalAmount, principalValueDate, maturityLegValueDate));
-        return newInterestAmount;
+    /// NOTE: The amount returned is not a result of a proper calculation based on rate.
+    /// It is just a meaningful enough number for an interest leg when the following parameters are taken into consideration:
+    /// - principalAmount, interest basis, interest payout frequency, rate type and maturity date
+    ///
+    /// This is done solely to avoid calculations using BigDecimal. Actual amount is not required.
+    private BigDecimal determineInterestLegAmount(MmTrade extTrd, TradeLeg principalLeg, TradeLeg maturityLeg, InterestTradeLeg interestLeg) {
+        LocalDate maturityLegValueDate = getRealOrPotentialMaturityLegValueDate(principalLeg, maturityLeg);
+
+        // Re-use the interest amount if it was already determined, but only if the values used to determine has not changed
+        var intrLegCtx = interestLeg.interestLegContext();
+        var lastUsedInterestAmount = intrLegCtx.lastUsedInterestAmount();
+        var lastUsedPrincipalAmount = intrLegCtx.lastUsedPrincipalAmount();
+        var lastUsedPrincipalValueDate = intrLegCtx.lastUsedPrincipalValueDate();
+        var lastUsedMaturityValueDate = intrLegCtx.lastUsedMaturityValueDate();
+
+        if (lastUsedPrincipalAmount.equals(principalLeg.amount())
+                && lastUsedPrincipalValueDate.equals(principalLeg.valueDate())
+                && (maturityLeg == null || lastUsedMaturityValueDate.equals(maturityLegValueDate))) {
+            return switch (extTrd.rateType()) {
+                case FIXED -> lastUsedInterestAmount;
+                case FLOAT -> {
+                    BigDecimal newIntAmt = BigDecimal.valueOf(lastUsedInterestAmount.doubleValue() + 158);// Even though rate decrease the amount increases. This is ok! Actual amount is not required
+                    intrLegCtx.setLastUsedInterestAmount(newIntAmt);
+                    yield newIntAmt;
+                }
+            };
+        } else {
+            return createInterestLegAmount(extTrd, principalLeg, maturityLeg);
+        }
+    }
+
+    /// If MATURITY leg exists, returns the actual maturityLeg valueDate. If not, returns a potential valueDate as the maturityLeg valueDate
+    private LocalDate getRealOrPotentialMaturityLegValueDate(TradeLeg principalLeg, TradeLeg maturityLeg) {
+        final LocalDate maturityLegValueDate;
+        if (maturityLeg == null) {
+            maturityLegValueDate = principalLeg.valueDate().plusDays(msgTemplateHelper.currentDayForMsgTemplate() + 360);
+        } else {
+            maturityLegValueDate = maturityLeg.valueDate();
+        }
+
+        return maturityLegValueDate;
     }
 
     /// NOTE: The 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
@@ -383,7 +396,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTrade> {
         var principalLeg = trd.principalLeg();
         var maturityLegValueDate = determineMaturityLegValueDate(principalLeg);
 
-        // Build the MATURITY leg
+        // Create MATURITY leg builder
         var bdr = TradeLegBuilder.builder(principalLeg)
                 .tradeLegId(maturityLegId.Id())
                 .tradeLegVersion(maturityLegId.version())
@@ -411,15 +424,13 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTrade> {
     /// Interest Basis is always assigned a constant: InterestBasis.ThirtyBy360. Corresponding calculation for other basis types are not implemented.
     /// Interest cashflow should be generated based on [InterestPayoutFrequency]
     /// Returns message contexts for cashflow version 1. The method parameter `principalLegBuilder` must be of cashflow version 1
-    private MmTrade createMmTrade() {
+    @Override
+    protected MmTrade createExtendedTrade() {
         var rateType = cyclicRateTypeProvider.get();
         var ipFrequency = cyclicIpFrequencyProvider.get();
-        var basis = InterestBasis.ThirtyBy360;
+        var basis = ThirtyBy360;
 
-        return switch (this.tradeType) {
-            case MM_TERM, MM_CALL -> new MmTrade(rateType, ipFrequency, basis);
-            default -> throw new IllegalStateException("Invalid TradeType: " + this.tradeType + " for an MmTemplate");
-        };
+        return new MmTrade(rateType, ipFrequency, basis);
     }
 
     @Override

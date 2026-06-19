@@ -68,8 +68,9 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
                         .withRootTemplateValues()
                         .build();
 
-        // Store the newly created tradeContext for future amendments if the selection criteria allows to do so
-        applyFutureAmendmentInclusion(extTrd);
+        // Store the newly created trade(ExtendedTrade) for future amendments if the selection criteria allows to do so
+        // The same for amended trades(ExtendedTrade) are already done during the 'related template' build process, via a runnable in the build directive, prior to reaching this point.
+        applyFutureAmendmentInclusion(extTrd());
 
         // Return messages(new+amends) which can be consumed by the TradeGenerators
         var tradeGeneratorInput = new HashSet<>(buildResult.childResults());
@@ -111,8 +112,9 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
         List<ChildBuildDirective<TradeLeg, TradeLegBuilder>> trdLegBuildItems = buildTradeLegAmendment(trdAmndCtx, extTrd);
         // Trade and TradeLegs association function
         BiFunction<Trade, Set<TradeLeg>, Trade> tradeAndTradeLegAssociationFunc = Trade::clearAndAddTradeLegs;
-
-        var buildItem = new ParentBuildDirective.ParentBuildDirectiveType1<>(trdBdrFunc, trdLegBuildItems, tradeAndTradeLegAssociationFunc);
+        Runnable finalAction = () -> applyFutureAmendmentInclusion(extTrd);
+        var buildDirective = new ParentBuildDirective.ParentBuildDirectiveType1<>(trdBdrFunc, trdLegBuildItems, tradeAndTradeLegAssociationFunc, finalAction);
+        this.withRelatedTemplateDirective(buildDirective);
     }
 
     private void handleTradeRebookEvent(TradeAmendmentContext trdAmndCtx, T extTrd) {
@@ -144,7 +146,9 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
 
         // create build directive. There is no need to associate cancelled trade and trade legs to the TradeContext/TradeMetadata/ExtendedTrade. It just needs to be send to downstream system
         BiFunction<Trade, Set<TradeLeg>, Trade> associationFunc = Trade::clearAndAddTradeLegs;
-        var canTrdBuildDirective = new ParentBuildDirective.ParentBuildDirectiveType2<>(canTrdBdrFunc, canTrdLegBdrFunc, associationFunc);
+        Runnable finalAction = () -> applyFutureAmendmentInclusion(extTrd);
+        var canTrdBuildDirective = new ParentBuildDirective.ParentBuildDirectiveType2<>(canTrdBdrFunc, canTrdLegBdrFunc, associationFunc, finalAction);
+        this.withRelatedTemplateDirective(canTrdBuildDirective);
 
         // 3. Create rebooked Trade
         final Supplier<TradeBuilder> newTrdBdrFunc = () -> {
@@ -168,7 +172,9 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
 
         BiFunction<Trade, Set<TradeLeg>, Trade> newTrdAndTrdLegAssociationFunc = Trade::clearAndAddTradeLegs;
         Consumer<Trade> trdAndExtTrdAssociationFunc = extTrd::setTrade;
-        var newTrdBuildDirective = new ParentBuildDirective.ParentBuildDirectiveType3<>(newTrdBdrFunc, newTrdLegBdrFunc, newTrdAndTrdLegAssociationFunc, trdAndExtTrdAssociationFunc);
+        Runnable newTrdBuildDirectiveFinalAction = () -> applyFutureAmendmentInclusion(extTrd);
+        var newTrdBuildDirective = new ParentBuildDirective.ParentBuildDirectiveType3<>(newTrdBdrFunc, newTrdLegBdrFunc, newTrdAndTrdLegAssociationFunc, trdAndExtTrdAssociationFunc, newTrdBuildDirectiveFinalAction);
+        this.withRelatedTemplateDirective(newTrdBuildDirective);
     }
 
     private TradeBuilder buildTradeAmendment(TradeAmendmentContext trdAmndCtx, T extTrd) {
@@ -201,9 +207,8 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
             switch (trdLegAmndCtx) {
                 case TradeLegAmendmentContextEager trdLegAmndCtxEager -> {
                     var callback = trdLegAmndCtxEager.callback();
-                    Runnable runnableAfterCallback = () -> applyFutureAmendmentInclusion(extTrd);
                     Supplier<TradeLegBuilder> buildStep = () -> buildTradeLegAmendment(trdAmndCtx, trdLegAmndCtxEager, extTrd);
-                    var bi = new ChildBuildDirective<>(callback, runnableAfterCallback, buildStep);
+                    var bi = new ChildBuildDirective<>(callback, buildStep);
                     buildItems.add(bi);
                 }
                 case TradeLegAmendmentContextLazy subCtxLazy -> {
@@ -240,10 +245,9 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
                                 var trdLegAmndCtxEager = new TradeLegAmendmentContextEager(tradeLeg.tradeLegType(), tradeLeg, trdLegAmndCtxLazy.callbackProvider().apply(tradeDetail), amendableFields);
                                 // 4. Register the build step with the templateBuilder
                                 var callback = trdLegAmndCtxEager.callback();
-                                Runnable runnableAfterCallback = () -> applyFutureAmendmentInclusion(extTrd);
                                 Supplier<TradeLegBuilder> buildStep = () -> buildTradeLegAmendment(trdAmndCtx, trdLegAmndCtxEager, extTrd);
 
-                                var bi = new ChildBuildDirective<>(callback, runnableAfterCallback, buildStep);
+                                var bi = new ChildBuildDirective<>(callback, buildStep);
                                 buildItems.add(bi);
                             }
                         }
@@ -263,10 +267,9 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
                                 var trdLegAmndCtxEager = new TradeLegAmendmentContextEager(tradeLeg.tradeLegType(), tradeLeg, trdLegAmndCtxLazy.callbackProvider().apply(tradeDetail), amendableFields);
                                 // 4. Register the build step with the templateBuilder
                                 var callback = trdLegAmndCtxEager.callback();
-                                Runnable runnableAfterCallback = () -> applyFutureAmendmentInclusion(extTrd);
                                 Supplier<TradeLegBuilder> buildStep = () -> buildTradeLegAmendment(trdAmndCtx, trdLegAmndCtxEager, extTrd);
 
-                                var bi = new ChildBuildDirective<>(callback, runnableAfterCallback, buildStep);
+                                var bi = new ChildBuildDirective<>(callback, buildStep);
                                 buildItems.add(bi);
                             }
                         }
@@ -289,10 +292,9 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
             // Create the amendment subject context
             var trdLegAmndCtxEager = new TradeLegAmendmentContextEager(tradeLeg.tradeLegType(), tradeLeg, callbackProvider.apply(tradeLeg), concreteAmendableFields);
             // Register the build step with the templateBuilder
-            Runnable runnableAfterCallback = () -> applyFutureAmendmentInclusion(extTrd);
             Supplier<TradeLegBuilder> buildStep = () -> buildTradeLegAmendment(trdAmndCtx, trdLegAmndCtxEager, extTrd);
 
-            var bi = new ChildBuildDirective<>(trdLegAmndCtxEager.callback(), runnableAfterCallback, buildStep);
+            var bi = new ChildBuildDirective<>(trdLegAmndCtxEager.callback(), buildStep);
             buildItems.add(bi);
         }
 

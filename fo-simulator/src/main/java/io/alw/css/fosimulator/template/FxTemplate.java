@@ -42,49 +42,48 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTrade> {
         return _ -> rndm.nextInt(0, 100) > 80;
     }
 
-    /// Build side 1 of the fx message
     @Override
     public FxTemplate withRootTemplateValues() {
-        // Create Ids for FX-Side-1 and Fx-Side-2
-        var fxSide1Ids = new Id(trd.nextTradeLegId(),VERSION_ONE);
-        var fxSide2Ids = new Id(trd.nextTradeLegId(),VERSION_ONE);
         // Create message context and all tradeLinks
-        var trdCtx = new FxTrade(TradeType.FX);
+        var extTrd = createExtendedTrade();
         // Create FoCashMessage builder for new template with default base values
-        TradeBuilder bdr = getBaseCashMsgBuilder(trdCtx);
-        // Set the values specific to the FX trade being built
-        bdr
-                .valueDate(msgTemplateHelper.getRndmValueDate(50))
-                .payOrReceive(rndm.nextBoolean() ? PayOrReceive.PAY : PayOrReceive.RECEIVE)
-                .amount(BigDecimal.valueOf(rndm.nextDouble(2, 95036)))
-        ;
-
-        this.withChildTemplateDirective(trdCtx::setSide2Msg, () -> buildFxSide2(trdCtx, fxSide2Ids));
+        createNewTradeWithDefaultValues(extTrd);
+        // Create Ids for the FXTrade legs, FX-Side-1 and Fx-Side-2
+        // Create FX-Side-1 (rootTradeLeg)
+        this.withChildTemplateDirective(extTrd::setRootTradeLeg, this::buildFxSide1);
+        // Create FX-Side-2
+        this.withChildTemplateDirective(extTrd::setTradeLeg2, this::buildFxSide2);
 
         return this;
     }
 
-    /// Builds the counter side(side 2) of the fx message
-    private TradeLegBuilder buildFxSide2(FxTrade trdCtx, Id id) {
-        var fxSide1Msg = trdCtx.side1Msg();
-        String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(fxSide1Msg.counterpartyCode());
-        Entity entity = refDataService.entityOtherThan(rndm, fxSide1Msg.entityCode());
-        String entityCode = entity.entityCode();
-        String currCode = entity.currCode();
+    /// Builds TradeLeg-1(Fx-Side-1) of the fx message
+    private TradeLegBuilder buildFxSide1() {
+        return createNewTradeLegWithDefaultValues(extTrd(), FX_SIDE1)
+                .valueDate(msgTemplateHelper.getRndmValueDate(50))
+                .payOrReceive(rndm.nextBoolean() ? PayOrReceive.PAY : PayOrReceive.RECEIVE)
+                .amount(BigDecimal.valueOf(rndm.nextDouble(2, 95036)));
+    }
 
-        return createBuilderFrom(trdCtx.rootTradeLeg())
+    /// Builds TradeLeg-2(Fx-Side-2) of the fx message
+    private TradeLegBuilder buildFxSide2() {
+        var tradeLeg1 = extTrd().tradeLeg1();
+        String side2CounterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(tradeLeg1.counterpartyCode());
+        Entity side2Entity = refDataService.entityOtherThan(rndm, tradeLeg1.entityCode());
+        String side2EntityCode = side2Entity.entityCode();
+        String side2CurrCode = side2Entity.currCode();
+
+        return TradeLegBuilder.builder(tradeLeg1)
                 // Id and version of fxSide2 was already determined when fxSide1 was created
-                .cashflowID(id.Id())
-                .cashflowVersion(id.version())
-                .tradeID(id.tradeID())
-                .tradeVersion(id.tradeVersion())
+                .tradeLegId(extTrd().nextTradeLegId())
+                .tradeLegVersion(VERSION_ONE)
                 // Values that differ for counter side of the FX deal
-                .counterpartyCode(counterpartyCode)
-                .entityCode(entityCode)
-                .currCode(currCode)
-                .payOrReceive(fxSide1Msg.payOrReceive() == PayOrReceive.RECEIVE ? PayOrReceive.PAY : PayOrReceive.RECEIVE)
+                .counterpartyCode(side2CounterpartyCode)
+                .entityCode(side2EntityCode)
+                .currCode(side2CurrCode)
+                .payOrReceive(tradeLeg1.payOrReceive() == PayOrReceive.RECEIVE ? PayOrReceive.PAY : PayOrReceive.RECEIVE)
                 // The amount of the other side of FX trade is also NOT calculated based on rate. It is just a random number
-                .amount(BigDecimal.valueOf(getFxSide2Amount(fxSide1Msg.amount().doubleValue())));
+                .amount(BigDecimal.valueOf(getFxSide2Amount(tradeLeg1.amount().doubleValue())));
         // bookCode and counterBookCode are not changed as they are dummy values as of now
     }
 
@@ -114,8 +113,8 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTrade> {
     }
 
     private TradeAmendmentContext buildAmendmentContextForCommonAmendEvents(FxTrade trdCtxForAmendment, TradeEventActionPair nextTradeEventAction) {
-        final var side1Msg = trdCtxForAmendment.side1Msg();
-        final var side2Msg = trdCtxForAmendment.side2Msg();
+        final var side1Msg = trdCtxForAmendment.tradeLeg1();
+        final var side2Msg = trdCtxForAmendment.tradeLeg2();
         Set<AmendableFoCashMessageFieldType> amendableFieldTypes = cyclicAmendableFoCashMessageFieldTypeProvider.get();
         var amendableFields = new AmendableFieldsCollection();
         for (AmendableFoCashMessageFieldType ft : amendableFieldTypes) {
@@ -149,8 +148,8 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTrade> {
             }
         }
 
-        var side1AmndSubCtx = new TradeLegAmendmentContextEager(FX_SIDE1, side1Msg, trdCtxForAmendment::setSide1Msg, amendableFields.getForTradeLeg(FX_SIDE1));
-        var side2AmndSubCtx = new TradeLegAmendmentContextEager(FX_SIDE2, side2Msg, trdCtxForAmendment::setSide2Msg, amendableFields.getForTradeLeg(FX_SIDE2));
+        var side1AmndSubCtx = new TradeLegAmendmentContextEager(FX_SIDE1, side1Msg, trdCtxForAmendment::setTradeLeg1, amendableFields.getForTradeLeg(FX_SIDE1));
+        var side2AmndSubCtx = new TradeLegAmendmentContextEager(FX_SIDE2, side2Msg, trdCtxForAmendment::setTradeLeg2, amendableFields.getForTradeLeg(FX_SIDE2));
         return new TradeAmendmentContext(nextTradeEventAction)
                 .addNextTradeLegAmndCtx(side1AmndSubCtx)
                 .addNextTradeLegAmndCtx(side2AmndSubCtx);
@@ -168,6 +167,11 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTrade> {
                 Set.of(COUNTERPARTY_CODE, AMOUNT),
                 Set.of(VALUE_DATE, AMOUNT, COUNTERPARTY_CODE)
         );
+    }
+
+    @Override
+    protected FxTrade createExtendedTrade() {
+        return new FxTrade();
     }
 
     @Override

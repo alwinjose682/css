@@ -7,6 +7,5 @@ import java.util.function.Supplier;
 
 public record ChildBuildDirective<U extends DataGeneratable, UB>(
         Consumer<U> callback,
-        Runnable runnableAfterCallback,
         Supplier<UB> buildStep) {
 }
