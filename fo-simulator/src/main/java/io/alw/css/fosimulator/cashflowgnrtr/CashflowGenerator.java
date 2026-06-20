@@ -1,11 +1,12 @@
 package io.alw.css.fosimulator.cashflowgnrtr;
 
+import io.alw.css.domain.trade.Trade;
 import io.alw.css.fosimulator.CashMessagePublisher;
 import io.alw.css.fosimulator.model.GeneratorDetail;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
@@ -18,13 +19,13 @@ public final class CashflowGenerator extends Stoppable implements Runnable {
      */
 
     private final static Logger log = LoggerFactory.getLogger(CashflowGenerator.class);
-    private final Supplier<List<Trade>> cashMessageSupplier;
-    private final Consumer<List<Trade>> cashMessageConsumer;
+    private final Supplier<Set<Trade>> cashMessageSupplier;
+    private final Consumer<Set<Trade>> cashMessageConsumer;
     private final GeneratorDetail generatorDetail;
     private final long pauseIntervalSeconds;
     private final RandomGenerator rndm;
 
-    public CashflowGenerator(GeneratorDetail generatorDetail, Supplier<List<Trade>> cashMessageSupplier, CashMessagePublisher cashMessageConsumer) {
+    public CashflowGenerator(GeneratorDetail generatorDetail, Supplier<Set<Trade>> cashMessageSupplier, CashMessagePublisher cashMessageConsumer) {
         super();
         this.generatorDetail = generatorDetail;
         this.cashMessageSupplier = cashMessageSupplier;
@@ -41,7 +42,7 @@ public final class CashflowGenerator extends Stoppable implements Runnable {
             Thread.sleep(pauseTimeBeforeActualStart);
             // Start
             while (!isStopSignalled()) {
-                List<Trade> trades = cashMessageSupplier.get();
+                Set<Trade> trades = cashMessageSupplier.get();
                 cashMessageConsumer.accept(trades);
                 Thread.sleep(pauseIntervalSeconds);
             }

@@ -1,7 +1,6 @@
 package io.alw.css.cashflowconsumer.model.jpa;
 
 import jakarta.persistence.*;
-import org.hibernate.proxy.HibernateProxy;
 
 import java.util.Objects;
 
@@ -149,7 +148,7 @@ public class TradeLinkEntity {
                 ", relatedReference='" + relatedReference + '\'' +
                 ", relatedFoCashflowID=" + relatedFoCashflowID +
                 ", relatedFoCashflowVersion=" + relatedFoCashflowVersion +
-                ", relatedTradeID=" + relatedTradeID +
+                ", relatedTradeId=" + relatedTradeID +
                 ", relatedTradeVersion=" + relatedTradeVersion +
                 '}';
     }

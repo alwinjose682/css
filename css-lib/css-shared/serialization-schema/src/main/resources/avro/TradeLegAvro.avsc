@@ -1,8 +1,7 @@
 {
   "type": "record",
-  "name": "FoCashMessageAvro",
-  "namespace": "io.alw.css.serialization.cashflow",
-  "doc": "Schema for FoCashMessage",
+  "name": "TradeLegAvro",
+  "namespace": "io.alw.css.serialization.trade",
   "fields": [
     {
       "name": "amount",
@@ -13,27 +12,11 @@
     },
     {
       "name": "bookCode",
-      "type": [
-        "null",
-        "string"
-      ],
-      "default": null
-    },
-    {
-      "name": "cashflowID",
-      "type": "long"
-    },
-    {
-      "name": "cashflowVersion",
-      "type": "int"
+      "type": ["null","string"]
     },
     {
       "name": "counterBookCode",
-      "type": [
-        "null",
-        "string"
-      ],
-      "default": null
+      "type": ["null","string"]
     },
     {
       "name": "counterpartyCode",
@@ -52,6 +35,7 @@
       "type": {
         "type": "enum",
         "name": "PayOrReceive",
+        "namespace": "io.alw.css.serialization.common",
         "symbols": [
           "PAY",
           "RECEIVE"
@@ -70,6 +54,7 @@
       "type": {
         "type": "enum",
         "name": "TradeEventAction",
+        "namespace": "io.alw.css.serialization.common",
         "symbols": [
           "ADD",
           "MODIFY",
@@ -80,49 +65,59 @@
     {
       "name": "tradeEventType",
       "type": {
+        "type": "enum",
         "name": "TradeEventType",
-        "type": "string"
+        "namespace": "io.alw.css.serialization.common",
+        "symbols": [
+          "NEW_TRADE",
+          "REBOOK",
+          "AMEND",
+          "CORRECTION",
+          "BOOK_MOVE",
+          "CANCEL",
+          "EXERCISE",
+          "KNOCK_OUT",
+          "EXPIRE",
+          "INTEREST_ACTION",
+          "ROLL",
+          "TERMINATE",
+          "FIX",
+          "UN_FIX",
+          "COUPON",
+          "MATURE"
+        ]
       }
     },
     {
-      "name": "tradeID",
+      "name": "tradeLegId",
       "type": "long"
     },
     {
-      "name": "tradeLinks",
-      "type": [
-        "null",
-        {
-          "type": "array",
-          "items": "io.alw.css.serialization.cashflow.TradeLinkAvro"
-        }
-      ],
-      "default": null
-    },
-    {
-      "name": "tradeType",
+      "name": "tradeLegType",
       "type": {
-        "name": "TradeType",
-        "type": "string"
+        "type": "enum",
+        "name": "TradeLegType",
+        "symbols": [
+          "FX_SIDE1",
+          "FX_SIDE2",
+          "MM_PRINCIPAL",
+          "MM_MATURITY",
+          "MM_INTEREST",
+          "PARENT_TRADE",
+          "CHILD_TRADE"
+        ]
       }
     },
     {
-      "name": "tradeVersion",
+      "name": "tradeLegVersion",
       "type": "int"
     },
     {
-      "name": "transactionType",
-      "type": {
-        "name": "TransactionType",
-        "type": "string"
-      }
-    },
-    {
       "name": "valueDate",
-      "type": [
-        "null",
-        "string"
-      ]
+      "type": {
+        "type": "int",
+        "logicalType":"date"
+      }
     }
   ]
 }

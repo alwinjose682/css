@@ -11,9 +11,7 @@ public record TradeLink(
         @NotNull
         String linkType, // Can be any value or one of the enum of type io.alw.css.domain.common.TradeLinkType
         String relatedReference,
-        long relatedFoCashflowID,
-        int relatedFoCashflowVersion,
-        long relatedTradeID,
+        long relatedTradeId,
         int relatedTradeVersion
 ) {
 }

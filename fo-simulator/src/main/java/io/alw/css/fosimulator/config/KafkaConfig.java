@@ -1,6 +1,6 @@
 package io.alw.css.fosimulator.config;
 
-import io.alw.css.serialization.cashflow.FoCashMessageAvro;
+import io.alw.css.serialization.trade.TradeAvro;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,9 +13,9 @@ import org.springframework.kafka.core.KafkaTemplate;
 public class KafkaConfig {
 
     @Bean("kafkaTemplateCashMessage")
-    public KafkaTemplate<String, FoCashMessageAvro> kafkaTemplate(KafkaProperties kafkaProperties) {
+    public KafkaTemplate<String, TradeAvro> kafkaTemplate(KafkaProperties kafkaProperties) {
         var producerPropMap = kafkaProperties.buildProducerProperties(null);
-        var producerFactory = new DefaultKafkaProducerFactory<String, FoCashMessageAvro>(producerPropMap);
+        var producerFactory = new DefaultKafkaProducerFactory<String, TradeAvro>(producerPropMap);
         return new KafkaTemplate<>(producerFactory);
     }
 }

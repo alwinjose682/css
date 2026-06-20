@@ -1,8 +1,11 @@
 package io.alw.css.fosimulator.mapper;
 
 import io.alw.css.domain.common.TradeLink;
-import io.alw.css.serialization.cashflow.FoCashMessageAvro;
-import io.alw.css.serialization.cashflow.TradeLinkAvro;
+import io.alw.css.domain.trade.Trade;
+import io.alw.css.domain.trade.TradeLeg;
+import io.alw.css.serialization.trade.TradeAvro;
+import io.alw.css.serialization.trade.TradeLegAvro;
+import io.alw.css.serialization.trade.TradeLinkAvro;
 import org.mapstruct.InheritInverseConfiguration;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -12,22 +15,32 @@ import org.mapstruct.factory.Mappers;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Set;
 
 @Mapper
-public interface FoCashMessageAvroMapper {
+public interface TradeAvroMapper {
     //NOTE: MapStruct does correctly map between the two types of enum values such as 'PayOrReceive' and 'TradeEventAction'
-    static FoCashMessageAvroMapper instance() {
-        return Mappers.getMapper(FoCashMessageAvroMapper.class);
+    static TradeAvroMapper instance() {
+        return Mappers.getMapper(TradeAvroMapper.class);
     }
 
-    @Mapping(source = "valueDate", target = "valueDate", qualifiedByName = "mapJavaTimeDateToString")
     @Mapping(source = "tradeLinks", target = "tradeLinks", qualifiedByName = "mapTradeLinksToAvro")
-    FoCashMessageAvro domainToAvro(Trade trade);
+    TradeAvro domainToAvro(Trade trade);
 
-    @Mapping(target = "valueDate", source = "valueDate", qualifiedByName = "mapStringToJavaTimeDate")
     @Mapping(target = "tradeLinks", source = "tradeLinks", qualifiedByName = "mapAvroToTradeLinks")
     @InheritInverseConfiguration
-    Trade avroToDomain(FoCashMessageAvro foCashMessageAvro);
+    Trade avroToDomain(TradeAvro tradeAvro);
+
+
+    List<TradeLegAvro> tradeLegToAvro(Set<TradeLeg> tradeLegs);
+
+    Set<TradeLeg> tradeLegAvroToDomain(List<TradeLegAvro> tradeLegs);
+
+    @Mapping(source = "valueDate", target = "valueDate", qualifiedByName = "mapJavaTimeDateToString")
+    TradeLegAvro tradeLegToAvro(TradeLeg tradeLeg);
+
+    @Mapping(target = "valueDate", source = "valueDate", qualifiedByName = "mapStringToJavaTimeDate")
+    TradeLeg tradeLegAvroToDomain(TradeLegAvro tradeLeg);
 
     @Named("mapTradeLinksToAvro")
     static List<TradeLinkAvro> mapTradeLinksToAvro(List<TradeLink> tradeLinks) {
@@ -36,9 +49,7 @@ public interface FoCashMessageAvroMapper {
                 : tradeLinks.stream().map(tl -> new TradeLinkAvro(
                 tl.linkType(),
                 tl.relatedReference(),
-                tl.relatedFoCashflowID(),
-                tl.relatedFoCashflowVersion(),
-                tl.relatedTradeID(),
+                tl.relatedTradeId(),
                 tl.relatedTradeVersion()
         )).toList();
     }
@@ -50,9 +61,7 @@ public interface FoCashMessageAvroMapper {
                 : tradeLinksAvro.stream().map(tla -> new TradeLink(
                 tla.getLinkType(),
                 tla.getRelatedReference(),
-                tla.getRelatedFoCashflowID(),
-                tla.getRelatedFoCashflowVersion(),
-                tla.getRelatedTradeID(),
+                tla.getRelatedTradeId(),
                 tla.getRelatedTradeVersion()
         )).toList();
     }

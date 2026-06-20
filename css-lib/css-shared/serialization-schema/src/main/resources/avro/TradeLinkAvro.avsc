@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "TradeLinkAvro",
-  "namespace": "io.alw.css.serialization.cashflow",
+  "namespace": "io.alw.css.serialization.trade",
   "fields": [
     {
       "name": "linkType",
@@ -12,15 +12,7 @@
       "type": ["null","string"]
     },
     {
-      "name": "relatedFoCashflowID",
-      "type": ["null","long"]
-    },
-    {
-      "name": "relatedFoCashflowVersion",
-      "type": ["null","int"]
-    },
-    {
-      "name": "relatedTradeID",
+      "name": "relatedTradeId",
       "type": ["null","long"]
     },
     {

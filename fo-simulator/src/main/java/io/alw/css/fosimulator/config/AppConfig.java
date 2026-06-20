@@ -5,11 +5,11 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.alw.css.fosimulator.CashMessagePublisher;
 import io.alw.css.fosimulator.CssTaskExecutor;
 import io.alw.css.fosimulator.cashflowgnrtr.CashflowGeneratorHandler;
-import io.alw.css.fosimulator.model.properties.CashflowGeneratorProperties;
 import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
+import io.alw.css.fosimulator.model.properties.CashflowGeneratorProperties;
 import io.alw.css.fosimulator.model.properties.KafkaTopicProperties;
 import io.alw.css.fosimulator.service.RefDataService;
-import io.alw.css.serialization.cashflow.FoCashMessageAvro;
+import io.alw.css.serialization.trade.TradeAvro;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -35,7 +35,7 @@ public class AppConfig {
     }
 
     @Bean
-    public CashMessagePublisher cashMessagePublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, FoCashMessageAvro> kafkaTemplateCashMessage, CssTaskExecutor cssTaskExecutor) {
+    public CashMessagePublisher cashMessagePublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, TradeAvro> kafkaTemplateCashMessage, CssTaskExecutor cssTaskExecutor) {
         return new CashMessagePublisher(kafkaTopicProperties, kafkaTemplateCashMessage, cssTaskExecutor);
     }
 }

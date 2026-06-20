@@ -1,0 +1,103 @@
+{
+  "type": "record",
+  "name": "TradeAvro",
+  "namespace": "io.alw.css.serialization.trade",
+  "fields": [
+    {
+      "name": "tradeEventAction",
+      "type": {
+        "type": "enum",
+        "name": "TradeEventAction",
+        "namespace": "io.alw.css.serialization.common",
+        "symbols": [
+          "ADD",
+          "MODIFY",
+          "REMOVE"
+        ]
+      }
+    },
+    {
+      "name": "tradeEventType",
+      "type": {
+        "type": "enum",
+        "name": "TradeEventType",
+        "namespace": "io.alw.css.serialization.common",
+        "symbols": [
+          "NEW_TRADE",
+          "REBOOK",
+          "AMEND",
+          "CORRECTION",
+          "BOOK_MOVE",
+          "CANCEL",
+          "EXERCISE",
+          "KNOCK_OUT",
+          "EXPIRE",
+          "INTEREST_ACTION",
+          "ROLL",
+          "TERMINATE",
+          "FIX",
+          "UN_FIX",
+          "COUPON",
+          "MATURE"
+        ]
+      }
+    },
+    {
+      "name": "tradeID",
+      "type": "long"
+    },
+    {
+      "name": "tradeType",
+      "type": {
+        "type": "enum",
+        "name": "TradeType",
+        "namespace": "io.alw.css.serialization.common",
+        "symbols": [
+          "FX",
+          "MM_TERM",
+          "MM_CALL",
+          "PAYMENT",
+          "FX_NDF",
+          "BOND",
+          "REPO",
+          "MM",
+          "OPTION"
+        ]
+      }
+    },
+    {
+      "name": "tradeVersion",
+      "type": "int"
+    },
+    {
+      "name": "transactionType",
+      "type": {
+        "type": "enum",
+        "name": "TransactionType",
+        "namespace": "io.alw.css.serialization.common",
+        "symbols": [
+          "CLIENT",
+          "MARKET",
+          "INTER_BOOK",
+          "INTER_BRANCH",
+          "INTER_COMPANY",
+          "CORPORATE_ACTION"
+        ]
+      }
+    },
+    {
+      "name": "tradeLegs",
+      "type": {
+        "type": "array",
+        "items": "io.alw.css.serialization.trade.TradeLegAvro"
+      }
+    },
+    {
+      "name": "tradeLinks",
+      "type": {
+        "type": "array",
+        "items": "io.alw.css.serialization.trade.TradeLinkAvro"
+      }
+    }
+  ]
+}

@@ -126,7 +126,7 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
         // 1. Cancellation for Trade
         final Supplier<TradeBuilder> canTrdBdrFunc = () -> createBuilderFrom(extTrd.trade())
                 .tradeVersion(canTrdVer)
-                .tradeLinks(List.of(new TradeLink(CHILD_TRADE.name, null, 0, 0, newTrdId, newTrdVer)))
+                .tradeLinks(List.of(new TradeLink(CHILD_TRADE.name, null, newTrdId, newTrdVer)))
                 .tradeEventType(TradeEventType.CANCEL)
                 .tradeEventAction(TradeEventAction.ADD);
 
@@ -157,7 +157,7 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
             return newTrdBdr
                     .tradeID(newTrdId)
                     .tradeVersion(newTrdVer)
-                    .tradeLinks(List.of(new TradeLink(PARENT_TRADE.name, null, 0, 0, extTrd.tradeId(), canTrdVer)))
+                    .tradeLinks(List.of(new TradeLink(PARENT_TRADE.name, null, extTrd.tradeId(), canTrdVer)))
                     .tradeEventType(newTrdEventAndAction.event())
                     .tradeEventAction(newTrdEventAndAction.action())
                     ;

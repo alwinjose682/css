@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U extends DataGeneratable, TB, UB> extends TemplateBuilder<T, AggregateTemplateBuilderResult<T>> {
     private final Deque<ChildBuildDirective<U, UB>> childTemplateDirectives;
-    private final Deque<ParentBuildDirective<T, U, TB>> relatedDirectives;
+    private final Deque<ParentBuildDirective<T, U, TB, UB>> relatedDirectives;
 
     protected AggregateTemplateBuilder(T parent) {
         super(parent);
@@ -46,7 +46,7 @@ public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U exte
         return this;
     }
 
-    public AggregateTemplateBuilder<T, U, TB, UB> withRelatedTemplateDirective(ParentBuildDirective<T, U, TB> parentBuildDirective) {
+    public AggregateTemplateBuilder<T, U, TB, UB> withRelatedTemplateDirective(ParentBuildDirective<T, U, TB, UB> parentBuildDirective) {
         relatedDirectives.add(parentBuildDirective);
         return this;
     }
@@ -76,7 +76,7 @@ public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U exte
         // 4. Build related templates that do NOT need to be grouped together with result/result template
         final Set<T> relatedTemplates = new HashSet<>();
         while (!relatedDirectives.isEmpty()) {
-            ParentBuildDirective<T, U, TB> parentBuildDirective = relatedDirectives.removeLast();
+            ParentBuildDirective<T, U, TB, UB> parentBuildDirective = relatedDirectives.removeLast();
             relatedTemplates.add(buildRelatedTemplate(parentBuildDirective));
         }
 
@@ -84,7 +84,7 @@ public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U exte
     }
 
     /// Builds the related result and its multiple child items
-    private T buildRelatedTemplate(ParentBuildDirective<T, U, TB> parentBuildDirective) {
+    private T buildRelatedTemplate(ParentBuildDirective<T, U, TB, UB> parentBuildDirective) {
         Supplier<TB> parentBuilderFunc = parentBuildDirective.parentBuilderFunc();
         T relatedParentItem = buildRelatedParentTemplate(parentBuilderFunc.get());
         Runnable finalExecutableAction = parentBuildDirective.finalExecutableAction();
