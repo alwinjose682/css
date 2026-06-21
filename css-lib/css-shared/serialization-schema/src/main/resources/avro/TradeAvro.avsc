@@ -5,42 +5,11 @@
   "fields": [
     {
       "name": "tradeEventAction",
-      "type": {
-        "type": "enum",
-        "name": "TradeEventAction",
-        "namespace": "io.alw.css.serialization.common",
-        "symbols": [
-          "ADD",
-          "MODIFY",
-          "REMOVE"
-        ]
-      }
+      "type": "string"
     },
     {
       "name": "tradeEventType",
-      "type": {
-        "type": "enum",
-        "name": "TradeEventType",
-        "namespace": "io.alw.css.serialization.common",
-        "symbols": [
-          "NEW_TRADE",
-          "REBOOK",
-          "AMEND",
-          "CORRECTION",
-          "BOOK_MOVE",
-          "CANCEL",
-          "EXERCISE",
-          "KNOCK_OUT",
-          "EXPIRE",
-          "INTEREST_ACTION",
-          "ROLL",
-          "TERMINATE",
-          "FIX",
-          "UN_FIX",
-          "COUPON",
-          "MATURE"
-        ]
-      }
+      "type": "string"
     },
     {
       "name": "tradeID",
@@ -48,22 +17,7 @@
     },
     {
       "name": "tradeType",
-      "type": {
-        "type": "enum",
-        "name": "TradeType",
-        "namespace": "io.alw.css.serialization.common",
-        "symbols": [
-          "FX",
-          "MM_TERM",
-          "MM_CALL",
-          "PAYMENT",
-          "FX_NDF",
-          "BOND",
-          "REPO",
-          "MM",
-          "OPTION"
-        ]
-      }
+      "type": "string"
     },
     {
       "name": "tradeVersion",
@@ -71,19 +25,7 @@
     },
     {
       "name": "transactionType",
-      "type": {
-        "type": "enum",
-        "name": "TransactionType",
-        "namespace": "io.alw.css.serialization.common",
-        "symbols": [
-          "CLIENT",
-          "MARKET",
-          "INTER_BOOK",
-          "INTER_BRANCH",
-          "INTER_COMPANY",
-          "CORPORATE_ACTION"
-        ]
-      }
+      "type": "string"
     },
     {
       "name": "tradeLegs",
