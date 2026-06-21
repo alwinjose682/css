@@ -12,7 +12,7 @@
     },
     {
       "name": "bookCode",
-      "type": ["null","string"]
+      "type": "string"
     },
     {
       "name": "counterBookCode",
@@ -32,15 +32,7 @@
     },
     {
       "name": "payOrReceive",
-      "type": {
-        "type": "enum",
-        "name": "PayOrReceive",
-        "namespace": "io.alw.css.serialization.common",
-        "symbols": [
-          "PAY",
-          "RECEIVE"
-        ]
-      }
+      "type": "string"
     },
     {
       "name": "rate",
@@ -51,42 +43,11 @@
     },
     {
       "name": "tradeEventAction",
-      "type": {
-        "type": "enum",
-        "name": "TradeEventAction",
-        "namespace": "io.alw.css.serialization.common",
-        "symbols": [
-          "ADD",
-          "MODIFY",
-          "REMOVE"
-        ]
-      }
+      "type": "string"
     },
     {
       "name": "tradeEventType",
-      "type": {
-        "type": "enum",
-        "name": "TradeEventType",
-        "namespace": "io.alw.css.serialization.common",
-        "symbols": [
-          "NEW_TRADE",
-          "REBOOK",
-          "AMEND",
-          "CORRECTION",
-          "BOOK_MOVE",
-          "CANCEL",
-          "EXERCISE",
-          "KNOCK_OUT",
-          "EXPIRE",
-          "INTEREST_ACTION",
-          "ROLL",
-          "TERMINATE",
-          "FIX",
-          "UN_FIX",
-          "COUPON",
-          "MATURE"
-        ]
-      }
+      "type": "string"
     },
     {
       "name": "tradeLegId",
@@ -94,19 +55,7 @@
     },
     {
       "name": "tradeLegType",
-      "type": {
-        "type": "enum",
-        "name": "TradeLegType",
-        "symbols": [
-          "FX_SIDE1",
-          "FX_SIDE2",
-          "MM_PRINCIPAL",
-          "MM_MATURITY",
-          "MM_INTEREST",
-          "PARENT_TRADE",
-          "CHILD_TRADE"
-        ]
-      }
+      "type": "string"
     },
     {
       "name": "tradeLegVersion",
