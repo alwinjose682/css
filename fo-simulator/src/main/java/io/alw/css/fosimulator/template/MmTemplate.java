@@ -62,7 +62,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTrade> {
         // MaturityLeg must be built before InterestLeg because building InterestLeg requires maturityLegValueDate.
         // The lambdas added via [io.alw.datagen.template.AggregateTemplateBuilder#withGroupedItem(Supplier)] method will be executed strictly in the same order as they are inserted in the queue
         var newTrdEventAndAction = new TradeEventActionPair(TradeEventType.NEW_TRADE, TradeEventAction.ADD);
-        switch (extTrd.trade().tradeType()) {
+        switch (tradeType()) {
             case MM_TERM -> {
                 var interestLegIds = new Id(extTrd.nextTradeLegId(), VERSION_ONE);
                 var maturityLegIds = new Id(extTrd.nextTradeLegId(), VERSION_ONE);

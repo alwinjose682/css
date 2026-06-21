@@ -133,6 +133,10 @@ sealed abstract class CashMessageTemplate<T extends ExtendedTrade>
         return extTrd;
     }
 
+    protected TradeType tradeType() {
+        return tradeType;
+    }
+
     /// Builds the result/root template
     @Override
     public Trade buildParentTemplate() {
