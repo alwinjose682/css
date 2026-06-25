@@ -1,31 +1,33 @@
 package io.alw.css.cashflowconsumer.service;
 
+import io.alw.css.cashflowconsumer.model.CashflowRejectionRecord;
 import io.alw.css.cashflowconsumer.model.constants.ExceptionSubCategoryType;
 import io.alw.css.cashflowconsumer.model.jpa.CashflowRejectionEntity;
-import io.alw.css.cashflowconsumer.processor.CFProcessedCheckOutcome;
 import io.alw.css.cashflowconsumer.processor.CashflowEnricher;
 import io.alw.css.cashflowconsumer.processor.CashflowVersionManager;
-import io.alw.css.cashflowconsumer.processor.FoCashMessageMapper;
+import io.alw.css.cashflowconsumer.processor.PreviousCashflowCheckOutcome;
+import io.alw.css.cashflowconsumer.processor.TradeMapper;
 import io.alw.css.cashflowconsumer.repository.CashflowStore;
 import io.alw.css.cashflowconsumer.util.DateUtil;
 import io.alw.css.dbshared.tx.TXRW;
 import io.alw.css.domain.cashflow.Cashflow;
 import io.alw.css.domain.cashflow.CashflowBuilder;
 import io.alw.css.domain.common.InputBy;
-import io.alw.css.domain.common.RevisionType;
 import io.alw.css.domain.common.YesNo;
 import io.alw.css.domain.exception.CategorizedRuntimeException;
 import io.alw.css.domain.exception.ExceptionCategory;
 import io.alw.css.domain.exception.ExceptionType;
-import io.alw.css.serialization.cashflow.FoCashMessageAvro;
+import io.alw.css.serialization.trade.TradeAvro;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
-import static io.alw.css.cashflowconsumer.processor.CFProcessedCheckOutcome.*;
+import static io.alw.css.cashflowconsumer.processor.PreviousCashflowCheckOutcome.*;
 
 @Service
 public class CashflowService {
@@ -42,48 +44,51 @@ public class CashflowService {
         this.txrw = txrw;
     }
 
-    public void process(FoCashMessageAvro foMsg, InputBy inputBy) {
-        long foCashflowID = foMsg.getCashflowID();
-        int foCashflowVersion = foMsg.getCashflowVersion();
-        long tradeID = foMsg.getTradeID();
-        int tradeVersion = foMsg.getTradeVersion();
+    public void process(TradeAvro tradeAvro, InputBy inputBy) {
+        long tradeID = tradeAvro.getTradeID();
+        int tradeVersion = tradeAvro.getTradeVersion();
+        int numOfTradeLegs = tradeAvro.getTradeLegs().size();
 
-        log.info("Received FoCashMessage[foCashflowID: {}, foCashflowVersion: {}, tradeID: {}, tradeVersion: {}]", foCashflowID, foCashflowVersion, tradeID, tradeVersion);
+        log.info("Received FoCashMessage[tradeId: {}, tradeVersion: {}] with {} trade legs", tradeID, tradeVersion, numOfTradeLegs);
         try {
-            CashflowBuilder cashflowBuilder = FoCashMessageMapper.mapToDomain(foMsg);
-            cashflowVersionManager.computeAndSetRevisionType(cashflowBuilder, foMsg);
-            CFProcessedCheckOutcome outcome = cashflowVersionManager.checkAgainstLastProcessedCashflow(foCashflowID, foCashflowVersion, tradeID, tradeVersion);
-            evaluateAndProcessFurther(outcome, cashflowBuilder, foMsg);
+            List<CashflowBuilder> cashflowBuilders = TradeMapper.mapToDomain(tradeAvro, inputBy, inputBy.name());
+
+            List<Cashflow> newCashflows = new ArrayList<>();
+            List<Cashflow> lastProcessedCashflows = new ArrayList<>();
+            for (CashflowBuilder bdr : cashflowBuilders) {
+                PreviousCashflowCheckOutcome outcome = cashflowVersionManager.checkAgainstLastProcessedCashflow(bdr.tradeId(), bdr.tradeVersion(), bdr.tradeLegId(), bdr.tradeLegVersion());
+                validateAndCreateCashflow(outcome, bdr, newCashflows, lastProcessedCashflows, tradeAvro);
+            }
+
+            txrw.executeWithoutResult(_ -> cashflowStore.saveCashflows(newCashflows, lastProcessedCashflows));
+            var cfIds = newCashflows.stream().map(cf -> cf.cashflowId() + "-" + cf.cashflowVersion()).collect(Collectors.joining(", "));
+            log.info("Successfully created and processed cashflow for ALL trade legs. CashflowIds: {{}}", cfIds);
         } catch (CategorizedRuntimeException e) {
-            log.info("Failed to process cashflow. FoCashflowID-Ver: {}-{}. Msg: {}", foCashflowID, foCashflowVersion, e.getMessage(), e);
-            rejectCashflow(foMsg, e, inputBy);
+            log.info("Failed to process trade: {}-{}. Msg: {}", tradeID, tradeVersion, e.getMessage(), e);
+            rejectCashflow(tradeAvro, e, inputBy);
         } catch (Exception e) {
-            log.info("Failed to process cashflow. FoCashflowID-Ver: {}-{}. Msg: {}", foCashflowID, foCashflowVersion, e.getMessage(), e);
-            rejectCashflow(foMsg, CategorizedRuntimeException.UNKNOWN(e.getMessage(), foMsg), inputBy);
+            log.info("Failed to process trade: {}-{}. Msg: {}", tradeID, tradeVersion, e.getMessage(), e);
+            rejectCashflow(tradeAvro, CategorizedRuntimeException.UNKNOWN(e.getMessage(), tradeAvro), inputBy);
         }
     }
 
-    private void evaluateAndProcessFurther(CFProcessedCheckOutcome outcome, CashflowBuilder cashflowBuilder, FoCashMessageAvro foMsg) {
-        long foCashflowID = foMsg.getCashflowID();
-        int foCashflowVersion = foMsg.getCashflowVersion();
-
+    private void validateAndCreateCashflow(PreviousCashflowCheckOutcome outcome, CashflowBuilder bdr, List<Cashflow> newCashflows, List<Cashflow> lastProcessedCashflows, TradeAvro tradeAvro) {
         switch (outcome) {
-            case FirstVersion _ -> {
-                cashflowEnricher.validateAndEnrich(cashflowBuilder);
-                Cashflow cf = cashflowVersionManager.createFirstVersionCF(cashflowBuilder);
-                txrw.executeWithoutResult(_ -> cashflowStore.saveFirstVersionCF(cf));
-                log.info("Successfully processed cashflow. CashflowID-Ver: {}-{}", cf.cashflowID(), cf.cashflowVersion());
+            case InitialVersion _ -> {
+                cashflowEnricher.validateAndEnrich(bdr);
+                var cf = cashflowVersionManager.createInitialVersionCashflow(bdr);
+                newCashflows.add(cf);
             }
-            case NonFirstVersion(var lastProcessedCashflow) -> {
-                cashflowEnricher.validateAndEnrich(cashflowBuilder);
-                Map<RevisionType, Cashflow> cashflows = cashflowVersionManager.createNonFirstVersionCF(lastProcessedCashflow, cashflowBuilder);
-                txrw.executeWithoutResult(_ -> cashflowStore.saveNonFirstVersionCF(cashflows, lastProcessedCashflow));
-                logSuccessfulProcessingOfNonFirstVersion(cashflows);
+            case SubsequentVersion(var lastProcessedCashflow) -> {
+                cashflowEnricher.validateAndEnrich(bdr);
+                List<Cashflow> cashflows = cashflowVersionManager.createSubsequentVersion(lastProcessedCashflow, bdr);
+                newCashflows.addAll(cashflows);
+                lastProcessedCashflows.add(lastProcessedCashflow);
             }
-            case AlreadyProcessed _ -> {
-                log.info("Received duplicate cashflow[foCfID: {}, foCfVer: {}]", foCashflowID, foCashflowVersion);
+            case SameAsPrevCashflow _ -> {
+                log.info("Received duplicate cashflow");
             }
-            case LastCashflowIsCancelled _ -> {
+            case PrevCashflowIsCancelled _ -> {
                 ExceptionType exceptionType = ExceptionType.BUSINESS;
                 ExceptionCategory exceptionCategory = ExceptionCategory.UNRECOVERABLE;
                 String exceptionSubCategory = ExceptionSubCategoryType.LAST_CASHFLOW_IS_CANCELLED;
@@ -93,36 +98,24 @@ public class CashflowService {
                 LocalDateTime createdDateTime = LocalDateTime.now();
                 InputBy inputBy = InputBy.CSS_SYS;
 
-                log.info("Last cashflow is cancelled. No further amendment is permitted. FoCashflowID-Ver: {}-{}", foCashflowID, foCashflowVersion);
-                rejectCashflow(foMsg, exceptionType, exceptionCategory, exceptionSubCategory, msg, replayable, numOfRetries, createdDateTime, inputBy);
+                log.info("Last cashflow is cancelled. No further amendment is permitted. TradeLegID-Ver: {}-{}", bdr.tradeLegId(), bdr.tradeLegVersion());
+                rejectCashflow(tradeAvro, exceptionType, exceptionCategory, exceptionSubCategory, msg, replayable, numOfRetries, createdDateTime, inputBy);
             }
         }
     }
 
-    private void logSuccessfulProcessingOfNonFirstVersion(Map<RevisionType, Cashflow> cashflows) {
-        final Cashflow cf = cashflows.get(RevisionType.COR);
-        if (cf != null) {
-            log.info("Successfully processed cashflow. CashflowID-Ver: {}-{}", cf.cashflowID(), cf.cashflowVersion());
-        } else {
-            final Cashflow cf1 = cashflows.get(RevisionType.CAN);
-            log.info("Successfully processed cashflow. CashflowID-Ver: {}-{}", cf1.cashflowID(), cf1.cashflowVersion());
-        }
-    }
-
-    private void rejectCashflow(FoCashMessageAvro foMsg, CategorizedRuntimeException cre, InputBy inputBy) {
+    private void rejectCashflow(TradeAvro foMsg, CategorizedRuntimeException cre, InputBy inputBy) {
         rejectCashflow(foMsg, cre.type(), cre.category(), cre.subCategory().type(), cre.getMessage(), cre.replayable(), cre.numOfRetries(), cre.createdTime(), inputBy);
     }
 
-    private void rejectCashflow(FoCashMessageAvro foMsg, ExceptionType exceptionType, ExceptionCategory exceptionCategory, String exceptionSubCategory, String msg, boolean replayable, int numOfRetries, LocalDateTime createdDateTime, InputBy inputBy) {
-        long foCashflowID = foMsg.getCashflowID();
-        int foCashflowVersion = foMsg.getCashflowVersion();
+    private void rejectCashflow(CashflowRejectionRecord rec) {
+
         try {
             CashflowRejectionEntity cfr = new CashflowRejectionEntity();
             cfr
-                    .setFoCashflowID(foCashflowID)
-                    .setFoCashflowVersion(foCashflowVersion)
                     .setTradeID(foMsg.getTradeID())
                     .setTradeVersion(foMsg.getTradeVersion())
+
                     .setTradeType(foMsg.getTradeType())
                     .setValueDate(foMsg.getValueDate() == null ? null : DateUtil.formatValueDate(foMsg.getValueDate()))
                     .setEntityCode(foMsg.getEntityCode())
@@ -142,7 +135,7 @@ public class CashflowService {
 
             txrw.executeWithoutResult(_ -> cashflowStore.saveRejection(cfr));
         } catch (Exception e) {
-            log.error("Failed to save cashflow rejection to database. FoCashflowID-Ver: {}-{}", foCashflowID, foCashflowVersion, e);
+            log.error("Failed to save cashflow rejection to database. FoCashflowID-Ver: {}-{}", tradeLegId, tradeLegVersion, e);
             throw new RuntimeException(e);
         }
     }

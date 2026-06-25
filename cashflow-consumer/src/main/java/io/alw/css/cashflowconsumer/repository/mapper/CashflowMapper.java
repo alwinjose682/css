@@ -32,7 +32,7 @@ public interface CashflowMapper {
 
     static List<TradeLinkEntity> mapTradeLinkToTradeLinkEntity(Cashflow cashflow, CashflowEntity cashflowEntity) {
         List<TradeLink> tradeLinks = cashflow.tradeLinks();
-        long cashflowID = cashflow.cashflowID();
+        long cashflowID = cashflow.cashflowId();
         int cashflowVersion = cashflow.cashflowVersion();
 
         return tradeLinks == null
@@ -43,8 +43,6 @@ public interface CashflowMapper {
             tle.setCashflowVersion(cashflowVersion);
             tle.setLinkType(tl.linkType());
             tle.setRelatedReference(tl.relatedReference());
-            tle.setRelatedFoCashflowID(tl.relatedFoCashflowID());
-            tle.setRelatedFoCashflowVersion(tl.relatedFoCashflowVersion());
             tle.setRelatedTradeID(tl.relatedTradeId());
             tle.setRelatedTradeVersion(tl.relatedTradeVersion());
             tle.setCashflow(cashflowEntity);

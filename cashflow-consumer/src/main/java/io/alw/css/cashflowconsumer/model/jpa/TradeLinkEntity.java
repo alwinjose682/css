@@ -7,7 +7,7 @@ import java.util.Objects;
 /// To get the latest version of the linkType for any cashflow, query for the linkType with the max cashflow version.
 /// - A linkType, once assigned is not allowed to be deleted in the FO system
 /// - But the trade itself that the linkType references to can be deleted/cancelled
-/// - CSS does not need to be aware of whether the relatedReference trade is deleted or replaced. CSS only needs to receive [io.alw.css.domain.cashflow.FoCashMessage] when there is an update to the Cash
+/// - CSS does not need to be aware of whether the relatedReference trade is deleted or replaced.
 @Entity
 @Table(name = "TRADE_LINK", schema = "CSS")
 public class TradeLinkEntity {
@@ -142,7 +142,7 @@ public class TradeLinkEntity {
     public String toString() {
         return "TradeLinkEntity{" +
                 "id=" + id +
-                ", cashflowID=" + cashflowID +
+                ", cashflowId=" + cashflowID +
                 ", cashflowVersion=" + cashflowVersion +
                 ", linkType='" + linkType + '\'' +
                 ", relatedReference='" + relatedReference + '\'' +

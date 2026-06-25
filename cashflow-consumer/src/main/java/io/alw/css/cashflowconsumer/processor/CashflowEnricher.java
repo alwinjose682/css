@@ -46,7 +46,7 @@ public class CashflowEnricher {
         setInternalValue(builder, ssiWithCpData);
         setPaymentSuppressionValue(builder);
 
-        log.debug("Successfully Validated and Enriched the cashflow. FoCashflowID-Ver: {}-{}", builder.foCashflowID(), builder.foCashflowVersion());
+        log.debug("Successfully Validated and Enriched the cashflow. TradeLegId-Ver: {}-{}", builder.tradeLegId(), builder.tradeLegVersion());
     }
 
     void validateEntityAndCurrCode(CashflowBuilder builder) {
@@ -71,18 +71,18 @@ public class CashflowEnricher {
             if (overridableNostro != null) {
                 String nostroID = overridableNostro.nostroID();
                 builder.nostroID(nostroID);
-                log.info("Enriched NostroID[{}] by overriding primary nostro with secondary configured in counterparty profile. CounterpartyCode: {}, CurrCode: {}, EntityCode: {}, FoCashflowID-Ver: {}-{}", nostroID, overridableNostro.counterpartyCode(), overridableNostro.currCode(), overridableNostro.entityCode(), builder.foCashflowID(), builder.foCashflowVersion());
+                log.info("Enriched NostroID[{}] by overriding primary nostro with secondary configured in counterparty profile. CounterpartyCode: {}, CurrCode: {}, EntityCode: {}, TradeLegId-Ver: {}-{}", nostroID, overridableNostro.counterpartyCode(), overridableNostro.currCode(), overridableNostro.entityCode(), builder.tradeLegId(), builder.tradeLegVersion());
                 return;
             } else if (primaryNostro != null) {
                 String nostroID = primaryNostro.nostroID();
                 builder.nostroID(nostroID);
-                log.debug("Enriched with nostroID: {}. FoCashflowID-Ver: {}-{}", nostroID, builder.foCashflowID(), builder.foCashflowVersion());
+                log.debug("Enriched with nostroID: {}. TradeLegId-Ver: {}-{}", nostroID, builder.tradeLegId(), builder.tradeLegVersion());
                 return;
             }
         }
 
         var msg = "Nostro is inactive or does not exist. EntityCode: " + entityCode + ", CurrCode: " + currCode;
-        throw CategorizedRuntimeException.BUSINESS_RECOVERABLE(msg, new ExceptionSubCategory(ExceptionSubCategoryType.MISSING_NOSTRO, null));
+        throw CategorizedRuntimeException.BUSINESS_RECOVERABLE(msg, new ExceptionSubCategory(ExceptionSubCategoryType.INACTIVE_OR_MISSING_NOSTRO, null));
     }
 
     void enrichWithSsiID(CashflowBuilder builder, SsiWithCounterpartyData ssiWithCpData) {
@@ -92,11 +92,11 @@ public class CashflowEnricher {
 
         if (ssiWithCpData == null) {
             var msg = "Primary SSI or Counterparty is inactive or does not exist. CounterpartyCode: " + counterpartyCode + ", CurrCode: " + currCode + ", TradeType: " + tradeType;
-            throw CategorizedRuntimeException.BUSINESS_RECOVERABLE(msg, new ExceptionSubCategory(ExceptionSubCategoryType.MISSING_SSI, null));
+            throw CategorizedRuntimeException.BUSINESS_RECOVERABLE(msg, new ExceptionSubCategory(ExceptionSubCategoryType.INACTIVE_OR_MISSING_SSI, null));
         } else {
             String ssiID = ssiWithCpData.ssiId();
             builder.ssiID(ssiID);
-            log.debug("Enriched with ssiID: {}. FoCashflowID-Ver: {}-{}", ssiID, builder.foCashflowID(), builder.foCashflowVersion());
+            log.debug("Enriched with ssiID: {}. TradeLegId-Ver: {}-{}", ssiID, builder.tradeLegId(), builder.tradeLegVersion());
         }
     }
 
@@ -107,7 +107,7 @@ public class CashflowEnricher {
 
         if (suppressionConfig.suppressInterbookTX() && builder.transactionType() == INTER_BOOK) {
             builder.paymentSuppressionCategory(PaymentSuppressionCategory.INTERBOOK);
-            log.info("Cashflow will be suppressed. SuppressionCategory: {}, FoCashflowID-Ver: {}-{}", PaymentSuppressionCategory.INTERBOOK, builder.foCashflowID(), builder.foCashflowVersion());
+            log.info("Cashflow will be suppressed. SuppressionCategory: {}, TradeLegId-Ver: {}-{}", PaymentSuppressionCategory.INTERBOOK, builder.tradeLegId(), builder.tradeLegVersion());
             return;
         } else if (absoluteCfAmt.compareTo(suppressionConfig.highestSuppressibleAmount()) <= 0) {
             for (Map.Entry<String, BigDecimal> entry : suppressionConfig.suppressibleCurrToAmountMap().entrySet()) {
@@ -115,14 +115,14 @@ public class CashflowEnricher {
                 BigDecimal amt = entry.getValue();
                 if (curr.equalsIgnoreCase(cfCurr) && absoluteCfAmt.compareTo(amt) <= 0) {
                     builder.paymentSuppressionCategory(PaymentSuppressionCategory.AMOUNT_TOO_SMALL);
-                    log.info("Cashflow will be suppressed. SuppressionCategory: {}, FoCashflowID-Ver: {}-{}", PaymentSuppressionCategory.AMOUNT_TOO_SMALL, builder.foCashflowID(), builder.foCashflowVersion());
+                    log.info("Cashflow will be suppressed. SuppressionCategory: {}, TradeLegId-Ver: {}-{}", PaymentSuppressionCategory.AMOUNT_TOO_SMALL, builder.tradeLegId(), builder.tradeLegVersion());
                     return;
                 }
             }
         }
 
         builder.paymentSuppressionCategory(PaymentSuppressionCategory.NONE);
-        log.trace("Cashflow is NOT suppressible. FoCashflowID-Ver: {}-{}", builder.foCashflowID(), builder.foCashflowVersion());
+        log.trace("Cashflow is NOT suppressible. TradeLegId-Ver: {}-{}", builder.tradeLegId(), builder.tradeLegVersion());
     }
 
     void setInternalValue(CashflowBuilder builder, SsiWithCounterpartyData ssiWithCpData) {
@@ -133,6 +133,6 @@ public class CashflowEnricher {
 
         boolean internalCounterparty = ssiWithCpData.internal();
         builder.internal(internalTransactionType && internalCounterparty);
-        log.debug("Set internal/external value for the cashflow. FoCashflowID-Ver: {}-{}", builder.foCashflowID(), builder.foCashflowVersion());
+        log.debug("Set internal/external value for the cashflow. TradeLegId-Ver: {}-{}", builder.tradeLegId(), builder.tradeLegVersion());
     }
 }

@@ -14,18 +14,18 @@ public interface CashflowRepository extends JpaRepository<CashflowEntity, Cashfl
 
     @Query(value = """
             select cf from CashflowEntity cf
-            where cf.foCashflowID=:foCashflowID
-            and cf.foCashflowVersion in (select max(cf1.foCashflowVersion) from CashflowEntity cf1 where cf1.foCashflowID=cf.foCashflowID)
+            where cf.tradeId=:tradeId and cf.tradeLegId=:tradeLegId
+            and cf.tradeLegVersion in (select max(cf1.tradeLegVersion) from CashflowEntity cf1 where cf1.tradeId=cf.tradeId and cf1.tradeLegId=cf.tradeLegId)
             """)
-    CashflowEntity findLastProcessedCashflow(long foCashflowID);
+    CashflowEntity findLastProcessedCashflow(long tradeId, long tradeLegId);
 
     @Modifying
     @Query(value = """
             update CashflowEntity cf
             set cf.latest = 'N'
-            where cf.cashflowEntityPK.cashflowID = :cashflowID and cf.cashflowEntityPK.cashflowVersion = :cashflowVersion and cf.latest = 'Y'
+            where cf.cashflowEntityPK.cashflowId = :cashflowId and cf.cashflowEntityPK.cashflowVersion = :cashflowVersion and cf.latest = 'Y'
             """)
-    int updateLastProcessedCashflowToNonLatest(@Param("cashflowID") long cashflowId, @Param("cashflowVersion") int cashflowVersion);
+    int updateLastProcessedCashflowToNonLatest(@Param("cashflowId") long cashflowId, @Param("cashflowVersion") int cashflowVersion);
 
     @Query(value = """
             SELECT new io.alw.css.cashflowconsumer.model.FoCashflowIDAndTradeID(

@@ -8,6 +8,6 @@ import java.util.List;
 public record Rule(
         TradeType tradeType,
         RevisionType result,
-        CashflowOrder cashflowOrder,
+        CashflowSequence cashflowSequence,
         List<TradeEventAndAction> tradeEventAndActionRecords) {
 }

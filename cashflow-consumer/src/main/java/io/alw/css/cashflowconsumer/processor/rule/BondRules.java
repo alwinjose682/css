@@ -4,7 +4,7 @@ import io.alw.css.domain.common.TradeEventType;
 
 import java.util.List;
 
-import static io.alw.css.cashflowconsumer.processor.rule.CashflowOrder.BOTH;
+import static io.alw.css.cashflowconsumer.processor.rule.CashflowSequence.BOTH;
 import static io.alw.css.domain.common.RevisionType.NEW;
 import static io.alw.css.domain.common.TradeEventAction.ADD;
 import static io.alw.css.domain.common.TradeType.BOND;

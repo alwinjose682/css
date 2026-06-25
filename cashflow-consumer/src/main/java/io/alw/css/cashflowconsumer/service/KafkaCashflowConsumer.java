@@ -1,7 +1,7 @@
 package io.alw.css.cashflowconsumer.service;
 
 import io.alw.css.domain.common.InputBy;
-import io.alw.css.serialization.cashflow.FoCashMessageAvro;
+import io.alw.css.serialization.trade.TradeAvro;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Service;
@@ -15,7 +15,7 @@ public class KafkaCashflowConsumer {
     }
 
     @KafkaListener(topics = "${app.kafka.topic.cashflow-input}", groupId = "${spring.kafka.consumer.group-id}", containerFactory = "foCashMessageListenerContainerFactory")
-    public void accept(Message<FoCashMessageAvro> message) {
+    public void accept(Message<TradeAvro> message) {
         cashflowService.process(message.getPayload(), InputBy.CSS_SYS);
     }
 }

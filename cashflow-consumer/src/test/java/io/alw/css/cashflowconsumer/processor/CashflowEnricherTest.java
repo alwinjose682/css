@@ -183,14 +183,14 @@ class CashflowEnricherTest {
 
     private Cashflow genericCashflow() {
         return CashflowBuilder.builder()
-                .cashflowID(16540)
+                .cashflowId(16540)
                 .cashflowVersion(1)
                 .latest(true)
                 .revisionType(RevisionType.NEW)
-                .foCashflowID(15807)
-                .foCashflowVersion(1)
-                .tradeID(13703)
+                .tradeId(13703)
                 .tradeVersion(1)
+                .tradeLegId(1)
+                .tradeLegVersion(1)
                 .tradeType(TradeType.BOND)
                 .bookCode("DUMY")
                 .counterBookCode(null)

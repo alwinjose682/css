@@ -4,8 +4,8 @@ import io.alw.css.domain.common.TradeEventType;
 
 import java.util.List;
 
-import static io.alw.css.cashflowconsumer.processor.rule.CashflowOrder.BOTH;
-import static io.alw.css.cashflowconsumer.processor.rule.CashflowOrder.NON_FIRST;
+import static io.alw.css.cashflowconsumer.processor.rule.CashflowSequence.BOTH;
+import static io.alw.css.cashflowconsumer.processor.rule.CashflowSequence.SUBSEQUENT;
 import static io.alw.css.domain.common.RevisionType.CAN;
 import static io.alw.css.domain.common.RevisionType.NEW;
 import static io.alw.css.domain.common.TradeEventAction.ADD;
@@ -16,7 +16,7 @@ public final class NdfRules implements RuleDefinition {
             new TradeEventAndAction(TradeEventType.FIX, ADD)
     ));
 
-    private final static Rule rule2 = new Rule(FX_NDF, CAN, NON_FIRST, List.of(
+    private final static Rule rule2 = new Rule(FX_NDF, CAN, SUBSEQUENT, List.of(
             new TradeEventAndAction(TradeEventType.UN_FIX, ADD)
     ));
 

@@ -1,6 +1,7 @@
 package io.alw.css.domain.cashflow;
 
 import io.alw.css.domain.common.*;
+import io.alw.css.domain.trade.TradeLegType;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -17,42 +18,43 @@ import java.util.List;
 @RecordBuilder
 public record Cashflow(
         // CSS Cashflow Version Data
-        /*set*/long cashflowID,
-        /*set*/int cashflowVersion,
-        /*set*/boolean latest, // the field 'latest' is intended to be used only by CSS Services that synchronizes Cashflow processing by acquiring a lock
-        /*set*/RevisionType revisionType,
+        long cashflowId,
+        int cashflowVersion,
+        boolean latest, // the field 'latest' is intended to be used only by CSS Services that synchronizes Cashflow processing by acquiring a lock
+        RevisionType revisionType,
 
-        // Fo Cashflow Version Data
-        /*set*/long foCashflowID,
-        /*set*/int foCashflowVersion,
-        /*set*/long tradeID,
-        /*set*/int tradeVersion,
+        // Trade Id and Version
+        long tradeId,
+        int tradeVersion,
+        long tradeLegId,
+        int tradeLegVersion,
 
         // Trade and Cashflow Data
-        /*set*/TradeType tradeType,
-        /*set*/String bookCode,
-        /*set*/String counterBookCode, // Can be null if not an internal trade
-        /*set*/TransactionType transactionType,
-        /*set*/BigDecimal rate,
-        /*set*/@NotNull LocalDate valueDate,
+        TradeType tradeType,
+        TradeLegType tradeLegType,
+        String bookCode,
+        String counterBookCode, // Can be null if not an internal trade
+        TransactionType transactionType,
+        BigDecimal rate,
+        @NotNull LocalDate valueDate,
         // tradeLinks Can be null. Only first version and the version for which there is a change or new tradeLink must have a value, other versions can have this field null
-        /*set*/@Valid List<TradeLink> tradeLinks,
+        @Valid List<TradeLink> tradeLinks,
 
         // ObligationData
-        /*set*/@NotBlank String entityCode,
-        /*set*/@NotBlank String counterpartyCode,
-        /*set*/@NotNull BigDecimal amount,
-        /*set*/@NotBlank @Size(min = 3, max = 3) String currCode,
+        @NotBlank String entityCode,
+        @NotBlank String counterpartyCode,
+        @NotNull BigDecimal amount,
+        @NotBlank @Size(min = 3, max = 3) String currCode,
 
         // EnrichmentData
-        /*--set--*/boolean internal, // interBook, interBranch and interCompany are categorized as internal. Payment should not be generated for interBook CF
+        boolean internal, // interBook, interBranch and interCompany are categorized as internal. Payment should not be generated for interBook CF
         String nostroID,
         String ssiID, // The counterparty's SSI. If an interBook trade and hence no real ssiID, then the dummy ssiID for interBook will be used
-        /*--set--*/@NotNull PaymentSuppressionCategory paymentSuppressionCategory,
+        @NotNull PaymentSuppressionCategory paymentSuppressionCategory,
 
         // Cashflow Entry Audit
-        /*set*/InputBy inputBy, // indicates inputted by system(SYSTEM) or by user(MAN)
-        /*set*/String inputByUserID,
-        /*set*/LocalDateTime inputDateTime
+        InputBy inputBy, // indicates inputted by system(SYSTEM) or by user(MAN)
+        String inputByUserID,
+        LocalDateTime inputDateTime
 ) {
 }
