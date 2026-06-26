@@ -16,11 +16,11 @@ public class TradeLinkEntity {
     @SequenceGenerator(sequenceName = "css_common_seq", allocationSize = 1, name = "tradeLinkEntitySeq")
     Long id;
 
-    @Column(name = "CF_ID", nullable = false)
-    Long cashflowID;
+    @Column(name = "TRADE_ID", nullable = false)
+    Long tradeId;
 
-    @Column(name = "CF_VERSION", nullable = false, length = 10)
-    Integer cashflowVersion;
+    @Column(name = "TRADE_VERSION", nullable = false, length = 10)
+    Integer tradeVersion;
 
     @Column(name = "LINK_TYPE")
     String linkType;
@@ -28,23 +28,11 @@ public class TradeLinkEntity {
     @Column(name = "RELATED_REFERENCE")
     String relatedReference;
 
-    @Column(name = "RELATED_FO_CASHFLOW_ID")
-    Long relatedFoCashflowID;
-
-    @Column(name = "RELATED_FO_CASHFLOW_VERSION")
-    Integer relatedFoCashflowVersion;
-
     @Column(name = "RELATED_TRADE_ID")
-    Long relatedTradeID;
+    Long relatedTradeId;
 
     @Column(name = "RELATED_TRADE_VERSION")
     Integer relatedTradeVersion;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumns({
-            @JoinColumn(referencedColumnName = "CASHFLOW_ID", name = "CF_ID", nullable = false, updatable = false, insertable = false),
-            @JoinColumn(referencedColumnName = "CASHFLOW_VERSION", name = "CF_VERSION", nullable = false, updatable = false, insertable = false)})
-    CashflowEntity cashflow;
 
     public Long getId() {
         return id;
@@ -54,20 +42,20 @@ public class TradeLinkEntity {
         this.id = id;
     }
 
-    public Long getCashflowID() {
-        return cashflowID;
+    public Long getTradeId() {
+        return tradeId;
     }
 
-    public void setCashflowID(Long cashflowID) {
-        this.cashflowID = cashflowID;
+    public void setTradeId(Long tradeId) {
+        this.tradeId = tradeId;
     }
 
-    public Integer getCashflowVersion() {
-        return cashflowVersion;
+    public Integer getTradeVersion() {
+        return tradeVersion;
     }
 
-    public void setCashflowVersion(Integer cashflowVersion) {
-        this.cashflowVersion = cashflowVersion;
+    public void setTradeVersion(Integer tradeVersion) {
+        this.tradeVersion = tradeVersion;
     }
 
     public String getLinkType() {
@@ -86,28 +74,12 @@ public class TradeLinkEntity {
         this.relatedReference = relatedReference;
     }
 
-    public Long getRelatedFoCashflowID() {
-        return relatedFoCashflowID;
+    public Long getRelatedTradeId() {
+        return relatedTradeId;
     }
 
-    public void setRelatedFoCashflowID(Long relatedFoCashflowID) {
-        this.relatedFoCashflowID = relatedFoCashflowID;
-    }
-
-    public Integer getRelatedFoCashflowVersion() {
-        return relatedFoCashflowVersion;
-    }
-
-    public void setRelatedFoCashflowVersion(Integer relatedFoCashflowVersion) {
-        this.relatedFoCashflowVersion = relatedFoCashflowVersion;
-    }
-
-    public Long getRelatedTradeID() {
-        return relatedTradeID;
-    }
-
-    public void setRelatedTradeID(Long relatedTradeID) {
-        this.relatedTradeID = relatedTradeID;
+    public void setRelatedTradeId(Long relatedTradeId) {
+        this.relatedTradeId = relatedTradeId;
     }
 
     public Integer getRelatedTradeVersion() {
@@ -116,14 +88,6 @@ public class TradeLinkEntity {
 
     public void setRelatedTradeVersion(Integer relatedTradeVersion) {
         this.relatedTradeVersion = relatedTradeVersion;
-    }
-
-    public CashflowEntity getCashflow() {
-        return cashflow;
-    }
-
-    public void setCashflow(CashflowEntity cashflow) {
-        this.cashflow = cashflow;
     }
 
     @Override
@@ -142,13 +106,11 @@ public class TradeLinkEntity {
     public String toString() {
         return "TradeLinkEntity{" +
                 "id=" + id +
-                ", cashflowId=" + cashflowID +
-                ", cashflowVersion=" + cashflowVersion +
+                ", cashflowId=" + tradeId +
+                ", cashflowVersion=" + tradeVersion +
                 ", linkType='" + linkType + '\'' +
                 ", relatedReference='" + relatedReference + '\'' +
-                ", relatedFoCashflowID=" + relatedFoCashflowID +
-                ", relatedFoCashflowVersion=" + relatedFoCashflowVersion +
-                ", relatedTradeId=" + relatedTradeID +
+                ", relatedTradeId=" + relatedTradeId +
                 ", relatedTradeVersion=" + relatedTradeVersion +
                 '}';
     }

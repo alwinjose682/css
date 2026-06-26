@@ -1,5 +1,6 @@
 package io.alw.css.cashflowconsumer.processor;
 
+import io.alw.css.cashflowconsumer.model.jpa.TradeLinkEntity;
 import io.alw.css.cashflowconsumer.processor.rule.RevisionTypeResolver;
 import io.alw.css.cashflowconsumer.util.CashflowUtil;
 import io.alw.css.domain.cashflow.Cashflow;
@@ -82,7 +83,6 @@ public final class TradeMapper {
                 .tradeVersion(trd.getTradeVersion())
                 .tradeType(mapTradeType(trd))
                 .transactionType(mapTransactionType(trd))
-                .tradeLinks(mapTradeLinks(trd))
                 // Trade Leg Data
                 .tradeLegId(trdLeg.getTradeLegId())
                 .tradeLegVersion(trdLeg.getTradeLegVersion())
@@ -103,13 +103,19 @@ public final class TradeMapper {
         return bdr;
     }
 
-    private static List<TradeLink> mapTradeLinks(TradeAvro trd) {
+    public static List<TradeLinkEntity> mapTradeLinksToEntity(TradeAvro trd) {
         List<io.alw.css.serialization.trade.TradeLinkAvro> tradeLinks = trd.getTradeLinks();
         if (tradeLinks != null) {
-            return tradeLinks.stream().map(tla -> TradeLinkBuilder.TradeLink(
-                    tla.getLinkType(), tla.getRelatedReference(),
-                    tla.getRelatedTradeId(), tla.getRelatedTradeVersion()
-            )).toList();
+            return tradeLinks.stream().map(tla -> {
+                var tle = new TradeLinkEntity();
+                tle.setTradeId(trd.getTradeID());
+                tle.setTradeVersion(trd.getTradeVersion());
+                tle.setLinkType(tla.getLinkType());
+                tle.setRelatedReference(tla.getRelatedReference());
+                tle.setRelatedTradeId(tla.getRelatedTradeId());
+                tle.setRelatedTradeVersion(tla.getRelatedTradeVersion());
+                return tle;
+            }).toList();
         } else {
             return null;
         }

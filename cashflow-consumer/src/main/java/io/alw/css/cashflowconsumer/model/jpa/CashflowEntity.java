@@ -6,7 +6,6 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Table(name = "CASHFLOW", schema = "CSS")
@@ -24,22 +23,24 @@ public class CashflowEntity {
     @Enumerated(EnumType.STRING)
     RevisionType revisionType;
 
-    // Fo Cashflow Version Data
-    @Column(name = "FO_CASHFLOW_ID", nullable = false)
-    Long foCashflowID;
-
-    @Column(name = "FO_CASHFLOW_VERSION", nullable = false)
-    Integer foCashflowVersion;
-
     @Column(name = "TRADE_ID")
-    Long tradeID;
+    Long tradeId;
 
-    @Column(name = "trade_version")
+    @Column(name = "TRADE_VERSION")
     Integer tradeVersion;
+
+    @Column(name = "TRADE_LEG_ID")
+    Long tradeLegId;
+
+    @Column(name = "TRADE_LEG_VERSION")
+    Integer tradeLegVersion;
 
     // Trade and Cashflow Data
     @Column(name = "TRADE_TYPE")
     String tradeType;
+
+    @Column(name = "TRADE_LEG_TYPE")
+    String tradeLegType;
 
     @Column(name = "BOOK_CODE")
     String bookCode;
@@ -55,9 +56,6 @@ public class CashflowEntity {
 
     @Column(name = "VALUE_DATE")
     LocalDate valueDate;
-
-    @OneToMany(mappedBy = "cashflow", fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    List<TradeLinkEntity> tradeLinks;
 
     // ObligationData
     @Column(name = "ENTITY_CODE")
@@ -122,28 +120,12 @@ public class CashflowEntity {
         this.revisionType = revisionType;
     }
 
-    public Long getFoCashflowID() {
-        return foCashflowID;
+    public Long getTradeId() {
+        return tradeId;
     }
 
-    public void setFoCashflowID(Long foCashflowID) {
-        this.foCashflowID = foCashflowID;
-    }
-
-    public Integer getFoCashflowVersion() {
-        return foCashflowVersion;
-    }
-
-    public void setFoCashflowVersion(Integer foCashflowVersion) {
-        this.foCashflowVersion = foCashflowVersion;
-    }
-
-    public Long getTradeID() {
-        return tradeID;
-    }
-
-    public void setTradeID(Long tradeID) {
-        this.tradeID = tradeID;
+    public void setTradeId(Long tradeId) {
+        this.tradeId = tradeId;
     }
 
     public Integer getTradeVersion() {
@@ -154,12 +136,36 @@ public class CashflowEntity {
         this.tradeVersion = tradeVersion;
     }
 
+    public Long getTradeLegId() {
+        return tradeLegId;
+    }
+
+    public void setTradeLegId(Long tradeLegId) {
+        this.tradeLegId = tradeLegId;
+    }
+
+    public Integer getTradeLegVersion() {
+        return tradeLegVersion;
+    }
+
+    public void setTradeLegVersion(Integer tradeLegVersion) {
+        this.tradeLegVersion = tradeLegVersion;
+    }
+
     public String getTradeType() {
         return tradeType;
     }
 
     public void setTradeType(String tradeType) {
         this.tradeType = tradeType;
+    }
+
+    public String getTradeLegType() {
+        return tradeLegType;
+    }
+
+    public void setTradeLegType(String tradeLegType) {
+        this.tradeLegType = tradeLegType;
     }
 
     public String getBookCode() {
@@ -200,21 +206,6 @@ public class CashflowEntity {
 
     public void setValueDate(LocalDate valueDate) {
         this.valueDate = valueDate;
-    }
-
-    public List<TradeLinkEntity> getTradeLinks() {
-        return tradeLinks;
-    }
-
-    public void setTradeLinks(List<TradeLinkEntity> tradeLinks) {
-        this.tradeLinks = tradeLinks;
-    }
-
-    public void addTradeLinks(List<TradeLinkEntity> tradeLinks) {
-        this.tradeLinks = tradeLinks;
-        if (tradeLinks != null) {
-            tradeLinks.forEach(tle -> tle.setCashflow(this));
-        }
     }
 
     public String getEntityCode() {

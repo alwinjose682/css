@@ -20,21 +20,24 @@ public class CashflowRejectionEntity {
     @Column(name = "ID")
     Long id;
 
-    @Column(name = "FO_CASHFLOW_ID", nullable = false)
-    Long foCashflowID;
+    @Column(name = "TRADE_ID", nullable = false)
+    Long tradeId;
 
-    @Column(name = "FO_CASHFLOW_VERSION", nullable = false)
-    Integer foCashflowVersion;
-
-    @Column(name = "TRADE_ID")
-    Long tradeID;
-
-    @Column(name = "trade_version")
+    @Column(name = "trade_version", nullable = false)
     Integer tradeVersion;
+
+    @Column(name = "TRADE_LEG_ID")
+    Long tradeLegId;
+
+    @Column(name = "trade_leg_version")
+    Integer tradeLegVersion;
 
     // Trade and Cashflow Data
     @Column(name = "TRADE_TYPE")
     String tradeType;
+
+    @Column(name = "TRADE_LEG_TYPE")
+    String tradeLegType;
 
     @Column(name = "VALUE_DATE")
     LocalDate valueDate;
@@ -89,30 +92,12 @@ public class CashflowRejectionEntity {
         return this;
     }
 
-    public Long getFoCashflowID() {
-        return foCashflowID;
+    public Long getTradeId() {
+        return tradeId;
     }
 
-    public CashflowRejectionEntity setFoCashflowID(Long foCashflowID) {
-        this.foCashflowID = foCashflowID;
-        return this;
-    }
-
-    public Integer getFoCashflowVersion() {
-        return foCashflowVersion;
-    }
-
-    public CashflowRejectionEntity setFoCashflowVersion(Integer foCashflowVersion) {
-        this.foCashflowVersion = foCashflowVersion;
-        return this;
-    }
-
-    public Long getTradeID() {
-        return tradeID;
-    }
-
-    public CashflowRejectionEntity setTradeID(Long tradeID) {
-        this.tradeID = tradeID;
+    public CashflowRejectionEntity setTradeId(Long tradeId) {
+        this.tradeId = tradeId;
         return this;
     }
 
@@ -125,12 +110,39 @@ public class CashflowRejectionEntity {
         return this;
     }
 
+    public Long getTradeLegId() {
+        return tradeLegId;
+    }
+
+    public CashflowRejectionEntity setTradeLegId(Long tradeLegId) {
+        this.tradeLegId = tradeLegId;
+        return this;
+    }
+
+    public Integer getTradeLegVersion() {
+        return tradeLegVersion;
+    }
+
+    public CashflowRejectionEntity setTradeLegVersion(Integer tradeLegVersion) {
+        this.tradeLegVersion = tradeLegVersion;
+        return this;
+    }
+
     public String getTradeType() {
         return tradeType;
     }
 
     public CashflowRejectionEntity setTradeType(String tradeType) {
         this.tradeType = tradeType;
+        return this;
+    }
+
+    public String getTradeLegType() {
+        return tradeLegType;
+    }
+
+    public CashflowRejectionEntity setTradeLegType(String tradeLegType) {
+        this.tradeLegType = tradeLegType;
         return this;
     }
 

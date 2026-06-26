@@ -76,7 +76,7 @@ public class CashflowEnricher {
             } else if (primaryNostro != null) {
                 String nostroID = primaryNostro.nostroID();
                 builder.nostroID(nostroID);
-                log.debug("Enriched with nostroID: {}. TradeLegId-Ver: {}-{}", nostroID, builder.tradeLegId(), builder.tradeLegVersion());
+                log.debug("Enriched with nostroId: {}. TradeLegId-Ver: {}-{}", nostroID, builder.tradeLegId(), builder.tradeLegVersion());
                 return;
             }
         }
@@ -96,7 +96,7 @@ public class CashflowEnricher {
         } else {
             String ssiID = ssiWithCpData.ssiId();
             builder.ssiID(ssiID);
-            log.debug("Enriched with ssiID: {}. TradeLegId-Ver: {}-{}", ssiID, builder.tradeLegId(), builder.tradeLegVersion());
+            log.debug("Enriched with ssiId: {}. TradeLegId-Ver: {}-{}", ssiID, builder.tradeLegId(), builder.tradeLegVersion());
         }
     }
 

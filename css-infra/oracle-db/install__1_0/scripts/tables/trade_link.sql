@@ -1,11 +1,9 @@
 CREATE TABLE trade_link(
 id NUMBER(19) NOT NULL,
-cf_id NUMBER(19) NOT NULL,              -- { cashflowId }
-cf_version NUMBER(10) NOT NULL,         -- { cashflowVersion }
+trade_id NUMBER(19) NOT NULL,              -- { cashflowId }
+trade_version NUMBER(10) NOT NULL,         -- { cashflowVersion }
 link_type VARCHAR2(15) NOT NULL,        -- { linkType }
 related_reference VARCHAR2(15),         -- { relatedReference }
-related_fo_cashflow_id NUMBER(19),
-related_fo_cashflow_version NUMBER(10),
 related_trade_id NUMBER(19),
 related_trade_version NUMBER(10)
 );

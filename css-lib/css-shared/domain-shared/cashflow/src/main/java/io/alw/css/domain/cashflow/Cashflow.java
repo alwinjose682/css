@@ -3,7 +3,6 @@ package io.alw.css.domain.cashflow;
 import io.alw.css.domain.common.*;
 import io.alw.css.domain.trade.TradeLegType;
 import io.soabase.recordbuilder.core.RecordBuilder;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -11,9 +10,8 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
-/// Why not simply map counterparty directly to a nostroID instead of the sla?
+/// Why not simply map counterparty directly to a nostroId instead of the sla?
 /// The back office application I used to work for did not have such a simple mapping. Dont know about the complexities of designing and managing a reference data system
 @RecordBuilder
 public record Cashflow(
@@ -37,8 +35,6 @@ public record Cashflow(
         TransactionType transactionType,
         BigDecimal rate,
         @NotNull LocalDate valueDate,
-        // tradeLinks Can be null. Only first version and the version for which there is a change or new tradeLink must have a value, other versions can have this field null
-        @Valid List<TradeLink> tradeLinks,
 
         // ObligationData
         @NotBlank String entityCode,
@@ -48,13 +44,13 @@ public record Cashflow(
 
         // EnrichmentData
         boolean internal, // interBook, interBranch and interCompany are categorized as internal. Payment should not be generated for interBook CF
-        String nostroID,
-        String ssiID, // The counterparty's SSI. If an interBook trade and hence no real ssiID, then the dummy ssiID for interBook will be used
+        String nostroId,
+        String ssiId, // The counterparty's SSI. If an interBook trade and hence no real ssiId, then the dummy ssiId for interBook will be used
         @NotNull PaymentSuppressionCategory paymentSuppressionCategory,
 
         // Cashflow Entry Audit
         InputBy inputBy, // indicates inputted by system(SYSTEM) or by user(MAN)
-        String inputByUserID,
+        String inputByUserId,
         LocalDateTime inputDateTime
 ) {
 }

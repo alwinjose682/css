@@ -3,6 +3,7 @@ package io.alw.css.cashflowconsumer.repository;
 import io.alw.css.cashflowconsumer.model.constants.ExceptionSubCategoryType;
 import io.alw.css.cashflowconsumer.model.jpa.CashflowEntity;
 import io.alw.css.cashflowconsumer.model.jpa.CashflowRejectionEntity;
+import io.alw.css.cashflowconsumer.model.jpa.TradeLinkEntity;
 import io.alw.css.cashflowconsumer.repository.mapper.CashflowMapper;
 import io.alw.css.domain.cashflow.Cashflow;
 import io.alw.css.domain.exception.CategorizedRuntimeException;
@@ -22,10 +23,12 @@ public final class CashflowStore {
     private EntityManager em;
     private final CashflowRepository cashflowRepository;
     private final CashflowRejectionRepository cashflowRejectionRepository;
+    private final TradeLinkRepository tradeLinkRepository;
 
-    public CashflowStore(CashflowRepository cashflowRepository, CashflowRejectionRepository cashflowRejectionRepository) {
+    public CashflowStore(CashflowRepository cashflowRepository, CashflowRejectionRepository cashflowRejectionRepository, TradeLinkRepository tradeLinkRepository) {
         this.cashflowRepository = cashflowRepository;
         this.cashflowRejectionRepository = cashflowRejectionRepository;
+        this.tradeLinkRepository = tradeLinkRepository;
     }
 
     /// **TODO**: When switching to Oracle DB, check whether Hibernate still returns Long
@@ -68,14 +71,12 @@ public final class CashflowStore {
     /// 1. Update each last processed cashflow's 'latest' field to 'N' TODO: change this to a DB procedure to avoid multiple DB round trips
     /// 2. If exactly ONE row is updated in step 1, continues to step 3. If zero or more than 1 rows are updated, throws a [io.alw.css.domain.exception.CategorizedRuntimeException]
     /// 3. inserts the offset cashflow(CAN) and correction cashflow(COR) to DB. (Correction cashflow is created with latest='Y')
-    public void saveCashflows(List<Cashflow> newCashflows, List<Cashflow> lastProcessedCashflows) {
-
+    public List<CashflowEntity> saveCashflows(List<Cashflow> newCashflows, List<Cashflow> lastProcessedCashflows) {
         // Step 1: Update last processed cashflow's 'latest' field to 'N'
         for (Cashflow lpcf : lastProcessedCashflows) {
             long lpcfId = lpcf.cashflowId();
             int lpcfVer = lpcf.cashflowVersion();
             int numOfRowsUpdated = cashflowRepository.updateLastProcessedCashflowToNonLatest(lpcfId, lpcfVer);
-
 
             if (numOfRowsUpdated == 1) {
                 continue;
@@ -91,9 +92,14 @@ public final class CashflowStore {
         }
 
         // Exactly ONE row is updated. Therefore, persist the cashflows.
-        newCashflows.stream()
+        return newCashflows.stream()
                 .peek(cf -> log.trace("Saving Cashflow[{}-{}] to DB. TradeLeg[{}-{}]", cf.cashflowId(), cf.cashflowVersion(), cf.tradeLegId(), cf.tradeLegVersion()))
                 .map(CashflowMapper::mapToEntity)
-                .forEach(cashflowRepository::save);
+                .map(cashflowRepository::save)
+                .toList();
+    }
+
+    public List<TradeLinkEntity> saveTradeLinks(List<TradeLinkEntity> tradeLinkEntities) {
+        return tradeLinkEntities.stream().map(tradeLinkRepository::save).toList();
     }
 }

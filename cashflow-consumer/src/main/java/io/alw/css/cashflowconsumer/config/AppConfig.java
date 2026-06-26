@@ -8,6 +8,7 @@ import io.alw.css.cashflowconsumer.processor.CashflowVersionManager;
 import io.alw.css.cashflowconsumer.repository.CashflowRejectionRepository;
 import io.alw.css.cashflowconsumer.repository.CashflowRepository;
 import io.alw.css.cashflowconsumer.repository.CashflowStore;
+import io.alw.css.cashflowconsumer.repository.TradeLinkRepository;
 import io.alw.css.cashflowconsumer.service.CacheService;
 import io.alw.css.dbshared.tx.TXRO;
 import io.alw.css.dbshared.tx.TXRW;
@@ -74,7 +75,7 @@ public class AppConfig {
     }
 
     @Bean
-    public CashflowStore cashflowStore(CashflowRepository cashflowRepository, CashflowRejectionRepository cashflowRejectionRepository) {
-        return new CashflowStore(cashflowRepository, cashflowRejectionRepository);
+    public CashflowStore cashflowStore(CashflowRepository cashflowRepository, CashflowRejectionRepository cashflowRejectionRepository, TradeLinkRepository tradeLinkRepository) {
+        return new CashflowStore(cashflowRepository, cashflowRejectionRepository, tradeLinkRepository);
     }
 }
