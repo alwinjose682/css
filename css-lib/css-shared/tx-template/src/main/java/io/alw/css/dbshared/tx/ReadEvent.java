@@ -1,7 +1,12 @@
 package io.alw.css.dbshared.tx;
 
 import io.alw.css.profiling.ContextAwareEvent;
-import jdk.jfr.*;
+import jdk.jfr.Category;
+import jdk.jfr.Label;
+import jdk.jfr.Name;
+import jdk.jfr.StackTrace;
+
+import static io.alw.css.profiling.SimpleEventActions.beginJfrEvent;
 
 @Name("db.ints.txTemplateRead")
 @Label("TxTemplate Read")
@@ -13,7 +18,10 @@ public class ReadEvent extends ContextAwareEvent {
         super();
     }
 
-    public ReadEvent(String ctxId) {
-        super(ctxId);
+    ///  Just a helper method
+    public static ContextAwareEvent start() {
+        var event = new ReadEvent();
+        beginJfrEvent(event);
+        return event;
     }
 }
