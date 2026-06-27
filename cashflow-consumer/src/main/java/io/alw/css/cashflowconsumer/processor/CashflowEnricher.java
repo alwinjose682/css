@@ -70,12 +70,12 @@ public class CashflowEnricher {
             var overridableNostro = nostroDetails.overridableNostro();
             if (overridableNostro != null) {
                 String nostroID = overridableNostro.nostroID();
-                builder.nostroID(nostroID);
+                builder.nostroId(nostroID);
                 log.info("Enriched NostroID[{}] by overriding primary nostro with secondary configured in counterparty profile. CounterpartyCode: {}, CurrCode: {}, EntityCode: {}, TradeLegId-Ver: {}-{}", nostroID, overridableNostro.counterpartyCode(), overridableNostro.currCode(), overridableNostro.entityCode(), builder.tradeLegId(), builder.tradeLegVersion());
                 return;
             } else if (primaryNostro != null) {
                 String nostroID = primaryNostro.nostroID();
-                builder.nostroID(nostroID);
+                builder.nostroId(nostroID);
                 log.debug("Enriched with nostroId: {}. TradeLegId-Ver: {}-{}", nostroID, builder.tradeLegId(), builder.tradeLegVersion());
                 return;
             }
@@ -95,7 +95,7 @@ public class CashflowEnricher {
             throw CategorizedRuntimeException.BUSINESS_RECOVERABLE(msg, new ExceptionSubCategory(ExceptionSubCategoryType.INACTIVE_OR_MISSING_SSI, null));
         } else {
             String ssiID = ssiWithCpData.ssiId();
-            builder.ssiID(ssiID);
+            builder.ssiId(ssiID);
             log.debug("Enriched with ssiId: {}. TradeLegId-Ver: {}-{}", ssiID, builder.tradeLegId(), builder.tradeLegVersion());
         }
     }

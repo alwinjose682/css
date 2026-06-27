@@ -3,6 +3,7 @@ package io.alw.css.cashflowconsumer.service;
 import io.alw.css.cashflowconsumer.model.CashflowRejectionRecord;
 import io.alw.css.cashflowconsumer.model.CashflowRejectionRecordBuilder;
 import io.alw.css.cashflowconsumer.model.constants.ExceptionSubCategoryType;
+import io.alw.css.cashflowconsumer.model.jpa.CashflowEntity;
 import io.alw.css.cashflowconsumer.model.jpa.CashflowRejectionEntity;
 import io.alw.css.cashflowconsumer.processor.CashflowEnricher;
 import io.alw.css.cashflowconsumer.processor.CashflowVersionManager;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static io.alw.css.cashflowconsumer.processor.PreviousCashflowCheckOutcome.*;
@@ -66,16 +68,18 @@ public class CashflowService {
             }
 
             // Persist the cashflows and tradeLinks to database in a single transaction
-            var savedCashflows = txrw.execute(ts -> {
+            Supplier<List<CashflowEntity>> persistAction = () -> {
                 var savedCfs = cashflowStore.saveCashflows(newCashflows, lastProcessedCashflows);
                 if (tradeLinkEntities != null) {
                     cashflowStore.saveTradeLinks(tradeLinkEntities);
                 }
                 return savedCfs;
-            });
+            };
+            // Execute the DB transaction
+            var savedCashflows = txrw.execute(persistAction, Exception.class);
 
-            var cfIds = savedCashflows.stream().map(cf -> cf.getCashflowEntityPK().cashflowId() + "-" + cf.getCashflowEntityPK().cashflowVersion()).collect(Collectors.joining(", "));
-            log.info("Successfully created and processed cashflows for ALL trade legs. CashflowIds: {{}}", cfIds);
+            var savedCfIds = savedCashflows.stream().map(cf -> cf.getCashflowEntityPK().cashflowId() + "-" + cf.getCashflowEntityPK().cashflowVersion()).collect(Collectors.joining(", "));
+            log.info("Successfully created and processed cashflows for ALL trade legs. CashflowIds: {{}}", savedCfIds);
         } catch (CategorizedRuntimeException e) {
             log.info("Failed to process trade: {}-{}. Msg: {}", tradeID, tradeVersion, e.getMessage(), e);
             rejectCashflow(tradeAvro, e, inputBy);
@@ -155,7 +159,7 @@ public class CashflowService {
                     .setUpdatedDateTime(LocalDateTime.now())
             ;
 
-            txrw.executeWithoutResult(_ -> cashflowStore.saveRejection(cfr));
+            txrw.executeWithoutResult(() -> cashflowStore.saveRejection(cfr), Exception.class);
         } catch (Exception e) {
             log.error("Failed to save cashflow rejection to database. FoCashflowID-Ver: {}-{}", bdr.tradeId(), bdr.tradeVersion(), e);
             throw new RuntimeException(e);
