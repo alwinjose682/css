@@ -2,10 +2,7 @@ package io.alw.datagen.template;
 
 import io.alw.datagen.DataGeneratable;
 
-import java.util.Deque;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -30,7 +27,7 @@ public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U exte
 
     protected abstract U buildRelatedChildTemplate(UB builder);
 
-    /// Returns result and child association function for the template, not for related template
+    /// Returns parent and child association function for the template, not for related template
     protected abstract BiConsumer<T, Set<U>> parentAndChildAssociationFunc();
 
     @Override
@@ -42,7 +39,15 @@ public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U exte
     ///
     /// NOTE: The items inserted in the queue will be removed in the same order as they are inserted
     public AggregateTemplateBuilder<T, U, TB, UB> withChildTemplateDirective(Consumer<U> callback, Supplier<UB> buildStep) {
-        childTemplateDirectives.addFirst(new ChildBuildDirective<>(callback, buildStep));
+        childTemplateDirectives.addFirst(new ChildBuildDirective.ChildBuildDirectiveType1<>(callback, buildStep));
+        return this;
+    }
+
+    /// This method can be called recursively
+    ///
+    /// NOTE: The items inserted in the queue will be removed in the same order as they are inserted
+    public AggregateTemplateBuilder<T, U, TB, UB> withChildTemplateDirective(Runnable runnable) {
+        childTemplateDirectives.addFirst(new ChildBuildDirective.ChildBuildDirectiveType2<>(runnable));
         return this;
     }
 
@@ -51,29 +56,37 @@ public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U exte
         return this;
     }
 
-    /// Builds the template(result+child) and then its related objects(result+child), if any.
+    /// Builds the template(parent+child) and then its related objects(parent+child), if any.
     ///
     /// NOTE: Each 'T' is expected to be unique. Hence, they are added in a [Set]
     ///
     /// NOTE: The grouped and related items will be removed(retrieved for build) in the same order as they were inserted
     ///
-    /// see also {@link AggregateTemplateBuilder#buildChildTemplate(ChildBuildDirective, boolean)}}
+    /// see also {@link AggregateTemplateBuilder#buildChildTemplate(io.alw.datagen.template.ChildBuildDirective.ChildBuildDirectiveType1, boolean)}}
     @Override
     public AggregateTemplateBuilderResult<T> build() {
-        // 1. Build the result template
+        // 1. Build the parent template
         final T parentTemplate = buildRootTemplate();
 
-        // 2. Build the child templates that need to be grouped together with result/result template
+        // 2. Build the child templates that need to be grouped together with parent/root template
         final Set<U> childItems = new HashSet<>();
         while (!childTemplateDirectives.isEmpty()) {
             ChildBuildDirective<U, UB> childDirective = childTemplateDirectives.removeLast();
-            childItems.add(buildChildTemplate(childDirective, false));
+            // Build the child directive
+            switch (childDirective) {
+                case ChildBuildDirective.ChildBuildDirectiveType1<U, UB> dir -> {
+                    childItems.add(buildChildTemplate(dir, false));
+                }
+                case ChildBuildDirective.ChildBuildDirectiveType2<U, UB> dir -> {
+                    dir.runnable().run();
+                }
+            }
         }
 
-        // 3. Associate the result and child templates
+        // 3. Associate the parent and child templates
         parentAndChildAssociationFunc().accept(parentTemplate, childItems);
 
-        // 4. Build related templates that do NOT need to be grouped together with result/result template
+        // 4. Build related templates that do NOT need to be grouped together with parent/root template
         final Set<T> relatedTemplates = new HashSet<>();
         while (!relatedDirectives.isEmpty()) {
             ParentBuildDirective<T, U, TB, UB> parentBuildDirective = relatedDirectives.removeLast();
@@ -83,23 +96,19 @@ public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U exte
         return new AggregateTemplateBuilderResult<>(parentTemplate, relatedTemplates);
     }
 
-    /// Builds the related result and its multiple child items
+    /// Builds the related parent and its multiple child items
     private T buildRelatedTemplate(ParentBuildDirective<T, U, TB, UB> parentBuildDirective) {
         Supplier<TB> parentBuilderFunc = parentBuildDirective.parentBuilderFunc();
         T relatedParentItem = buildRelatedParentTemplate(parentBuilderFunc.get());
         Runnable finalExecutableAction = parentBuildDirective.finalExecutableAction();
 
-        // The related result and child association function
+        // The related parent and child association function
         BiFunction<T, Set<U>, T> associationFunc = parentBuildDirective.parentAndChildAssociationFunc();
 
-        // Execute the specific build directive to obtain the final result(the fully built related result item)
+        // Execute the specific build directive to obtain the final result(the fully built related parent item)
         var buildResult = switch (parentBuildDirective) {
             case ParentBuildDirective.ParentBuildDirectiveType1<T, U, TB, UB> dir -> {
-                Set<U> childItems = dir
-                        .childDirectives()
-                        .stream().map(childDir -> buildChildTemplate(childDir, true))
-                        .collect(Collectors.toSet());
-
+                Set<U> childItems = buildChildTemplate(dir.childDirectives(), true);
                 yield associationFunc.apply(relatedParentItem, childItems);
             }
             case ParentBuildDirective.ParentBuildDirectiveType2<T, U, TB, UB> dir -> {
@@ -112,11 +121,7 @@ public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U exte
                 yield associationFunc.apply(relatedParentItem, childItems);
             }
             case ParentBuildDirective.ParentBuildDirectiveType3<T, U, TB, UB> dir -> {
-                Set<U> childItems = dir
-                        .childDirectivesSupplier().get()
-                        .stream().map(childDir -> buildChildTemplate(childDir, true))
-                        .collect(Collectors.toSet());
-
+                Set<U> childItems = buildChildTemplate(dir.childDirectivesSupplier().get(), true);
                 dir.callback().accept(relatedParentItem);
                 yield associationFunc.apply(relatedParentItem, childItems);
             }
@@ -130,6 +135,18 @@ public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U exte
         return buildResult;
     }
 
+    private Set<U> buildChildTemplate(List<ChildBuildDirective<U, UB>> childDirectives, boolean relatedChildItem) {
+        Set<U> childItems = new HashSet<>();
+        for (ChildBuildDirective<U, UB> childDir : childDirectives) {
+            switch (childDir) {
+                case ChildBuildDirective.ChildBuildDirectiveType1<U, UB> dir -> childItems.add(buildChildTemplate(dir, relatedChildItem));
+                case ChildBuildDirective.ChildBuildDirectiveType2<U, UB> dir -> dir.runnable().run();
+            }
+        }
+
+        return Collections.unmodifiableSet(childItems);
+    }
+
     /// If the item is a buildable item:
     /// 1) build the item
     /// 2) execute callback if any
@@ -139,7 +156,7 @@ public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U exte
     /// If the item is just a runnable, just execute the runnable. There is no build result in this case.
     ///
     /// NOTE: The buildItem cannot be both a runnable and buildable item. It is ensured so
-    private U buildChildTemplate(ChildBuildDirective<U, UB> childDirective, boolean relatedChildItem) {
+    private U buildChildTemplate(ChildBuildDirective.ChildBuildDirectiveType1<U, UB> childDirective, boolean relatedChildItem) {
         // Build child item
         UB builder = childDirective.buildStep().get();
         U result = relatedChildItem ? buildRelatedChildTemplate(builder) : buildChildTemplate(builder);

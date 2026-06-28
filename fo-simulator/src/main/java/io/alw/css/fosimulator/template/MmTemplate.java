@@ -70,7 +70,7 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTrade> {
             }
             case MM_CALL -> {
                 var interestLegIds = new Id(extTrd.nextTradeLegId(), VERSION_ONE);
-                this.withChildTemplateDirective(extTrd::addInterestLeg, () -> buildInterestLeg(extTrd, interestLegIds, newTrdEventAndAction));
+                this.withChildTemplateDirective(() -> createInterestTradeLeg(extTrd, interestLegIds, newTrdEventAndAction));
             }
             default -> throw new RuntimeException("Invalid TradeType for MmTemplate");
         }
@@ -247,19 +247,26 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTrade> {
     /// MaturityLeg must be built before InterestLeg because building InterestLeg requires maturityLegValueDate.
     /// The lambdas added via [AggregateTemplateBuilder#withGroupedItem(Consumer, Supplier)] method will be executed strictly in the same order as they are inserted in the queue
     private void buildMaturityAndInterestLeg(MmTrade extTrade, Id maturityLegId, Id interestLegId, TradeEventActionPair trdEventAndAction) {
-        // 1. Add building function of MATURITY leg
+        // 1. Add building function of MATURITY leg to the builder
         this.withChildTemplateDirective(extTrade::setMaturityLeg, () -> buildMaturityLeg(extTrade, maturityLegId, trdEventAndAction));
-        // 2. Add building function of INTEREST leg
-        this.withChildTemplateDirective(extTrade::addInterestLeg, () -> buildInterestLeg(extTrade, interestLegId, trdEventAndAction));
+        // 2. create InterestTradeLeg object and add the interestLeg building function to the builder
+        this.withChildTemplateDirective(() -> createInterestTradeLeg(extTrade, interestLegId, trdEventAndAction));
     }
 
-    /// NOTE: The 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
-    /// This method is intended to be used not only for the first interest leg but also for future interest legs. Therefor Ids are received as a parameter. The same pattern is followed to build maturity leg although there can be only one maturityLeg
-    private TradeLegBuilder buildInterestLeg(MmTrade extTrd, Id interestLegId, TradeEventActionPair trdEventAndAction) {
+    private void createInterestTradeLeg(MmTrade extTrd, Id interestLegId, TradeEventActionPair trdEventAndAction) {
         var principalLeg = extTrd.principalLeg();
         var maturityLeg = extTrd.maturityLeg(); // NOTE: the 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
         // Create InterestTradeLeg object
         InterestTradeLeg newIntrTrdLegObj = createInterestTradeLegAndAssociateWithMmTrade(extTrd, principalLeg, maturityLeg);
+        // Add building function of INTEREST leg to the builder
+        this.withChildTemplateDirective(newIntrTrdLegObj::setInterestLeg, () -> buildInterestLeg(extTrd, interestLegId, trdEventAndAction, newIntrTrdLegObj));
+    }
+
+    /// NOTE: The 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
+    /// This method is intended to be used not only for the first interest leg but also for future interest legs. Therefor Ids are received as a parameter. The same pattern is followed to build maturity leg although there can be only one maturityLeg
+    private TradeLegBuilder buildInterestLeg(MmTrade extTrd, Id interestLegId, TradeEventActionPair trdEventAndAction, InterestTradeLeg newIntrTrdLegObj) {
+        var principalLeg = extTrd.principalLeg();
+        var maturityLeg = extTrd.maturityLeg(); // NOTE: the 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
 
         // Create the INTEREST leg builder
         var bdr = TradeLegBuilder.builder(principalLeg)
@@ -284,8 +291,8 @@ public final class MmTemplate extends CashMessageAmendmentTemplate<MmTrade> {
 
     private InterestTradeLeg createInterestTradeLegAndAssociateWithMmTrade(MmTrade extTrd, TradeLeg principalLeg, TradeLeg maturityLeg) {
         final BigDecimal interestAmount;
-        final InterestTradeLeg mostRecentInterestLeg = extTrd.interestLegs().getLast();
-        if (mostRecentInterestLeg != null) {
+        if (!extTrd.interestLegs().isEmpty()) {
+            final InterestTradeLeg mostRecentInterestLeg = extTrd.interestLegs().getLast();
             interestAmount = determineInterestLegAmount(extTrd, principalLeg, maturityLeg, mostRecentInterestLeg);
         } else {
             interestAmount = createInterestLegAmount(extTrd, principalLeg, maturityLeg);

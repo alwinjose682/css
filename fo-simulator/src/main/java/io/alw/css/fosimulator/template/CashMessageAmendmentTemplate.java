@@ -11,6 +11,7 @@ import io.alw.css.fosimulator.template.domain.ExtendedTrade;
 import io.alw.css.fosimulator.template.model.*;
 import io.alw.datagen.template.AggregateTemplateBuilderResult;
 import io.alw.datagen.template.ChildBuildDirective;
+import io.alw.datagen.template.ChildBuildDirective.ChildBuildDirectiveType1;
 import io.alw.datagen.template.ParentBuildDirective;
 
 import java.time.LocalDate;
@@ -208,7 +209,7 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
                 case TradeLegAmendmentContextEager trdLegAmndCtxEager -> {
                     var callback = trdLegAmndCtxEager.callback();
                     Supplier<TradeLegBuilder> buildStep = () -> buildTradeLegAmendment(trdAmndCtx, trdLegAmndCtxEager, extTrd);
-                    var bi = new ChildBuildDirective<>(callback, buildStep);
+                    var bi = new ChildBuildDirectiveType1<>(callback, buildStep);
                     buildItems.add(bi);
                 }
                 case TradeLegAmendmentContextLazy subCtxLazy -> {
@@ -247,7 +248,7 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
                                 var callback = trdLegAmndCtxEager.callback();
                                 Supplier<TradeLegBuilder> buildStep = () -> buildTradeLegAmendment(trdAmndCtx, trdLegAmndCtxEager, extTrd);
 
-                                var bi = new ChildBuildDirective<>(callback, buildStep);
+                                var bi = new ChildBuildDirectiveType1<>(callback, buildStep);
                                 buildItems.add(bi);
                             }
                         }
@@ -269,7 +270,7 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
                                 var callback = trdLegAmndCtxEager.callback();
                                 Supplier<TradeLegBuilder> buildStep = () -> buildTradeLegAmendment(trdAmndCtx, trdLegAmndCtxEager, extTrd);
 
-                                var bi = new ChildBuildDirective<>(callback, buildStep);
+                                var bi = new ChildBuildDirectiveType1<>(callback, buildStep);
                                 buildItems.add(bi);
                             }
                         }
@@ -294,7 +295,7 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
             // Register the build step with the templateBuilder
             Supplier<TradeLegBuilder> buildStep = () -> buildTradeLegAmendment(trdAmndCtx, trdLegAmndCtxEager, extTrd);
 
-            var bi = new ChildBuildDirective<>(trdLegAmndCtxEager.callback(), buildStep);
+            var bi = new ChildBuildDirectiveType1<>(trdLegAmndCtxEager.callback(), buildStep);
             buildItems.add(bi);
         }
 
