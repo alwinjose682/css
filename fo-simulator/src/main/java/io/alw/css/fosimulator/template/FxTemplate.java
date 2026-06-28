@@ -74,9 +74,10 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTrade> {
         String side2CurrCode = side2Entity.currCode();
 
         return TradeLegBuilder.builder(tradeLeg1)
-                // Id and version of fxSide2 was already determined when fxSide1 was created
+                // Id and version of fxSide2
                 .tradeLegId(extTrd().nextTradeLegId())
                 .tradeLegVersion(VERSION_ONE)
+                .tradeLegType(FX_SIDE2)
                 // Values that differ for counter side of the FX deal
                 .counterpartyCode(side2CounterpartyCode)
                 .entityCode(side2EntityCode)
