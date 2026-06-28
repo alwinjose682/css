@@ -81,9 +81,8 @@ public final class CashflowGeneratorHandler {
                     log.info("Initial values for cashflow generation are not provided explicitly. Starting cashflow generation with default initial values: {}", this.cfGenerationInitialValues);
                 } else {
                     var valueDate = initValues.valueDate();
-                    var foCashflowId = initValues.foCashflowId();
                     var tradeId = initValues.tradeId();
-                    this.cfGenerationInitialValues = new CashflowGenerationInitialValues(valueDate, tradeId, foCashflowId);
+                    this.cfGenerationInitialValues = new CashflowGenerationInitialValues(valueDate, tradeId);
                     log.info("Initial values for cashflow generation are provided explicitly via REST API. Starting cashflow generation with the explicit initial values: {}", this.cfGenerationInitialValues);
                 }
                 //Initialize the singleton instance of IdProvider

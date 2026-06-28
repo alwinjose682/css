@@ -1,6 +1,6 @@
 package io.alw.css.cashflowconsumer.repository;
 
-import io.alw.css.cashflowconsumer.model.FoCashflowIDAndTradeID;
+import io.alw.css.cashflowconsumer.model.FoCashflowIdAndTradeId;
 import io.alw.css.cashflowconsumer.model.jpa.CashflowEntity;
 import io.alw.css.cashflowconsumer.model.jpa.CashflowEntityPK;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -28,9 +28,9 @@ public interface CashflowRepository extends JpaRepository<CashflowEntity, Cashfl
     int updateLastProcessedCashflowToNonLatest(@Param("cashflowId") long cashflowId, @Param("cashflowVersion") int cashflowVersion);
 
     @Query(value = """
-            SELECT new io.alw.css.cashflowconsumer.model.FoCashflowIDAndTradeID(
-            MAX(cf.foCashflowID), MAX(cf.tradeID)
+            SELECT new io.alw.css.cashflowconsumer.model.FoCashflowIdAndTradeId(
+            MAX(cf.tradeId)
             ) FROM CashflowEntity cf
             """)
-    FoCashflowIDAndTradeID findMaxFoCashflowIdAndTradeId();
+    FoCashflowIdAndTradeId findMaxFoCashflowIdAndTradeId();
 }

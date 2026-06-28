@@ -49,8 +49,7 @@ class CashflowGeneratorControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"valueDate":"2025-08-14",
-                                "tradeId":1054321,
-                                "foCashflowId":15432}
+                                "tradeId":1054321}
                                 """))
                 .andExpect(jsonPath("$.msgs").value(SUCCESS))
                 .andExpect(status().isAccepted())
@@ -60,6 +59,5 @@ class CashflowGeneratorControllerTest {
         CashflowGenerationInitialValues cfGeneratorInitialValues = cfGeneratorValCaptor.getValue();
         assertThat(cfGeneratorInitialValues.valueDate()).isEqualTo("2025-08-14");
         assertThat(cfGeneratorInitialValues.tradeId()).isEqualTo(1054321);
-        assertThat(cfGeneratorInitialValues.foCashflowId()).isEqualTo(15432);
     }
 }

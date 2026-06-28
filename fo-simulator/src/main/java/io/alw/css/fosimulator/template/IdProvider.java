@@ -5,7 +5,6 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class IdProvider {
     private static IdProvider instance;
     public static final long defaultInitialTradeId = 1054321L;
-    public static final long defaultInitialFoCfId = 15432L;
 
     private final AtomicLong tradeIdGenerator;
 

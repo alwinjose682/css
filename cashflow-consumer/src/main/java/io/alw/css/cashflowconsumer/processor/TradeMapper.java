@@ -77,7 +77,7 @@ public final class TradeMapper {
                 // Cashflow Entry Audit
                 .inputDateTime(LocalDateTime.now())
                 .inputBy(inputBy)
-                .inputByUserID(inputByUserId)
+                .inputByUserId(inputByUserId)
                 // Trade Data
                 .tradeId(trd.getTradeID())
                 .tradeVersion(trd.getTradeVersion())

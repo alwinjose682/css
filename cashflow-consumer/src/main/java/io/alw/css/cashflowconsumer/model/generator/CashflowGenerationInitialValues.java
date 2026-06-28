@@ -7,7 +7,6 @@ import java.time.LocalDate;
 
 public record CashflowGenerationInitialValues(
         @NotNull LocalDate valueDate,
-        @Positive long tradeId,
-        @Positive long foCashflowId
+        @Positive long tradeId
 ) {
 }

@@ -2,7 +2,7 @@ package io.alw.css.cashflowconsumer.config;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.alw.css.cashflowconsumer.model.FoCashflowIDAndTradeID;
+import io.alw.css.cashflowconsumer.model.FoCashflowIdAndTradeId;
 import io.alw.css.cashflowconsumer.model.generator.CashflowGenerationInitialValues;
 import io.alw.css.cashflowconsumer.model.generator.CashflowGeneratorStartResponse;
 import io.alw.css.cashflowconsumer.repository.CashflowRepository;
@@ -74,14 +74,14 @@ public class ApplicationStartupEvent implements ApplicationListener<ApplicationR
     }
 
     private CashflowGenerationInitialValues getCashflowGenerationInitialValues() {
-        FoCashflowIDAndTradeID maxIds = cashflowRepository.findMaxFoCashflowIdAndTradeId();
-        if (maxIds == null || maxIds.foCashflowID() == null || maxIds.tradeID() == null) {
-            var initValues = new CashflowGenerationInitialValues(LocalDate.now(), 1054321L, 15432L);
+        FoCashflowIdAndTradeId maxIds = cashflowRepository.findMaxFoCashflowIdAndTradeId();
+        if (maxIds == null || maxIds.tradeId() == null) {
+            var initValues = new CashflowGenerationInitialValues(LocalDate.now(), 1054321L);
             log.info("Staring Cashflow Generators with initial values: {}", initValues);
             return initValues;
         }
 
-        var initValues = new CashflowGenerationInitialValues(LocalDate.now(), 1L + maxIds.tradeID(), 1L + maxIds.foCashflowID());
+        var initValues = new CashflowGenerationInitialValues(LocalDate.now(), 1L + maxIds.tradeId());
         log.info("Staring Cashflow Generators with initial values greater than the values of last processed cashflow: {}", initValues);
         return initValues;
     }

@@ -8,4 +8,4 @@ related_trade_id NUMBER(19),
 related_trade_version NUMBER(10)
 );
 ALTER TABLE trade_link ADD CONSTRAINT tde_lk_pk PRIMARY KEY(id);
-ALTER TABLE trade_link ADD CONSTRAINT tde_lk_cf_fk FOREIGN KEY(cf_id, cf_version) REFERENCES cashflow(cashflow_id, cashflow_version);
+--ALTER TABLE trade_link ADD CONSTRAINT tde_lk_cf_fk FOREIGN KEY(cf_id, cf_version) REFERENCES cashflow(cashflow_id, cashflow_version);

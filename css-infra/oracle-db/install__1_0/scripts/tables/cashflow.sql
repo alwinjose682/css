@@ -32,5 +32,4 @@ input_date_time TIMESTAMP(3)                                         			    -- {
 
 ALTER TABLE cashflow ADD CONSTRAINT cf_pk PRIMARY KEY(cashflow_id, cashflow_version);
 ALTER TABLE cashflow ADD CONSTRAINT cf_uniq_1 UNIQUE(trade_id, trade_version, trade_leg_id, trade_leg_version);
-CREATE INDEX cf_confirmation_idx on cashflow(trade_id, trade_version, trade_leg_id, trade_leg_version);
 --CREATE INDEX cf_netting_idx on cashflow(value_date, curr_code, payment_suppressed); -- index for netting is not required as there is no netting window in current design. Netting for CFs of any VD is done on confirmation event

@@ -8,10 +8,9 @@ import java.time.LocalDate;
 
 public record CashflowGenerationInitialValues(
         @NotNull LocalDate valueDate,
-        @Positive long tradeId,
-        @Positive long foCashflowId
+        @Positive long tradeId
 ) {
     public static CashflowGenerationInitialValues defaultValues() {
-        return new CashflowGenerationInitialValues(LocalDate.now(), IdProvider.defaultInitialTradeId, IdProvider.defaultInitialFoCfId);
+        return new CashflowGenerationInitialValues(LocalDate.now(), IdProvider.defaultInitialTradeId);
     }
 }

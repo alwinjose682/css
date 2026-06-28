@@ -76,10 +76,10 @@ public class CashflowEntity {
     YesNo internal;
 
     @Column(name = "NOSTRO_ID")
-    String nostroID;
+    String nostroId;
 
     @Column(name = "SSI_ID")
-    String ssiID;
+    String ssiId;
 
     @Column(name = "PAYMENT_SUPPRESSION_CATEGORY")
     @Enumerated(EnumType.STRING)
@@ -91,7 +91,7 @@ public class CashflowEntity {
     InputBy inputBy;
 
     @Column(name = "INPUT_BY_USER_ID")
-    String inputByUserID;
+    String inputByUserId;
 
     @Column(name = "INPUT_DATE_TIME")
     LocalDateTime inputDateTime;
@@ -248,20 +248,20 @@ public class CashflowEntity {
         this.internal = internal;
     }
 
-    public String getNostroID() {
-        return nostroID;
+    public String getNostroId() {
+        return nostroId;
     }
 
-    public void setNostroID(String nostroID) {
-        this.nostroID = nostroID;
+    public void setNostroId(String nostroId) {
+        this.nostroId = nostroId;
     }
 
-    public String getSsiID() {
-        return ssiID;
+    public String getSsiId() {
+        return ssiId;
     }
 
-    public void setSsiID(String ssiID) {
-        this.ssiID = ssiID;
+    public void setSsiId(String ssiId) {
+        this.ssiId = ssiId;
     }
 
     public PaymentSuppressionCategory getPaymentSuppressionCategory() {
@@ -280,12 +280,12 @@ public class CashflowEntity {
         this.inputBy = inputBy;
     }
 
-    public String getInputByUserID() {
-        return inputByUserID;
+    public String getInputByUserId() {
+        return inputByUserId;
     }
 
-    public void setInputByUserID(String inputByUserID) {
-        this.inputByUserID = inputByUserID;
+    public void setInputByUserId(String inputByUserId) {
+        this.inputByUserId = inputByUserId;
     }
 
     public LocalDateTime getInputDateTime() {
