@@ -96,11 +96,20 @@ public final class MmTrade implements ExtendedTrade {
     }
 
     @Override
-    public Iterable<TradeDetail> allTradeLegs() {
-        var allTradeLegs = new ArrayList<TradeDetail>();
+    public Iterable<TradeLeg> allTradeLegs() {
+        var allTradeLegs = new ArrayList<TradeLeg>();
         allTradeLegs.add(principalLeg);
         allTradeLegs.add(maturityLeg);
-        allTradeLegs.addAll(interestLegs);
+        allTradeLegs.addAll(interestLegs.stream().map(InterestTradeLeg::interestLeg).toList());
         return allTradeLegs;
+    }
+
+    @Override
+    public TradeLeg getTradeLegFrom(TradeDetail tradeDetail) {
+        if (tradeDetail instanceof InterestTradeLeg itl) {
+            return itl.interestLeg();
+        } else {
+            return (TradeLeg) tradeDetail;
+        }
     }
 }

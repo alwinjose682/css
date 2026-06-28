@@ -31,5 +31,7 @@ public sealed interface ExtendedTrade extends DataGeneratable permits FxTrade, M
         return trade().tradeEventType();
     }
 
-    Iterable<TradeDetail> allTradeLegs();
+    Iterable<TradeLeg> allTradeLegs();
+
+    TradeLeg getTradeLegFrom(TradeDetail tradeDetail);
 }

@@ -48,8 +48,14 @@ public final class FxTrade implements ExtendedTrade {
     }
 
     @Override
-    public Iterable<TradeDetail> allTradeLegs() {
+    public Iterable<TradeLeg> allTradeLegs() {
         return List.of(tradeLeg1, tradeLeg2);
+    }
+
+    @Override
+    public TradeLeg getTradeLegFrom(TradeDetail tradeDetail) {
+        // Safe to cast without any checks. Unlike MmTrade that has InterestTradeLeg that extends tradeDetail, FxTrade only has concrete TradeLegs
+        return (TradeLeg) tradeDetail;
     }
 
     public TradeLeg tradeLeg2() {

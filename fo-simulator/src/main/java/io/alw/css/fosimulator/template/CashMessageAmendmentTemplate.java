@@ -134,8 +134,7 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
         // 2. Cancellation for all TradeLegs
         final Supplier<List<TradeLegBuilder>> canTrdLegBdrFunc = () -> {
             var allTrdLegBdrs = new ArrayList<TradeLegBuilder>();
-            for (TradeDetail trdDet : extTrd.allTradeLegs()) {
-                var trdLeg = (TradeLeg) trdDet;
+            for (TradeLeg trdLeg : extTrd.allTradeLegs()) {
                 var trdLegBdr = TradeLegBuilder.builder(trdLeg)
                         .tradeLegVersion(trdLeg.tradeLegVersion() + 1)
                         .tradeEventType(TradeEventType.CANCEL)
@@ -147,8 +146,7 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
 
         // create build directive. There is no need to associate cancelled trade and trade legs to the TradeContext/TradeMetadata/ExtendedTrade. It just needs to be send to downstream system
         BiFunction<Trade, Set<TradeLeg>, Trade> associationFunc = Trade::clearAndAddTradeLegs;
-        Runnable finalAction = () -> applyFutureAmendmentInclusion(extTrd);
-        var canTrdBuildDirective = new ParentBuildDirective.ParentBuildDirectiveType2<>(canTrdBdrFunc, canTrdLegBdrFunc, associationFunc, finalAction);
+        var canTrdBuildDirective = new ParentBuildDirective.ParentBuildDirectiveType2<>(canTrdBdrFunc, canTrdLegBdrFunc, associationFunc, null);
         this.withRelatedTemplateDirective(canTrdBuildDirective);
 
         // 3. Create rebooked Trade
@@ -242,7 +240,7 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
                                         .collect(Collectors.toSet());
 
                                 // 2. Create the amendment subject context with the above derived values
-                                TradeLeg tradeLeg = (TradeLeg) tradeDetail;
+                                TradeLeg tradeLeg = extTrd.getTradeLegFrom(tradeDetail);
                                 var trdLegAmndCtxEager = new TradeLegAmendmentContextEager(tradeLeg.tradeLegType(), tradeLeg, trdLegAmndCtxLazy.callbackProvider().apply(tradeDetail), amendableFields);
                                 // 4. Register the build step with the templateBuilder
                                 var callback = trdLegAmndCtxEager.callback();
@@ -264,7 +262,7 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
                                         .collect(Collectors.toSet());
 
                                 // 3. Create the amendment subject context with the above derived values
-                                TradeLeg tradeLeg = (TradeLeg) tradeDetail;
+                                TradeLeg tradeLeg = extTrd.getTradeLegFrom(tradeDetail);
                                 var trdLegAmndCtxEager = new TradeLegAmendmentContextEager(tradeLeg.tradeLegType(), tradeLeg, trdLegAmndCtxLazy.callbackProvider().apply(tradeDetail), amendableFields);
                                 // 4. Register the build step with the templateBuilder
                                 var callback = trdLegAmndCtxEager.callback();
