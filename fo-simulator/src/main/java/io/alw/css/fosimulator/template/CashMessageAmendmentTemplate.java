@@ -135,6 +135,9 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
         final Supplier<List<TradeLegBuilder>> canTrdLegBdrFunc = () -> {
             var allTrdLegBdrs = new ArrayList<TradeLegBuilder>();
             for (TradeLeg trdLeg : extTrd.allTradeLegs()) {
+                if (trdLeg == null) { // could be null, ex: Maturity of an MM call trade
+                    continue;
+                }
                 var trdLegBdr = TradeLegBuilder.builder(trdLeg)
                         .tradeLegVersion(trdLeg.tradeLegVersion() + 1)
                         .tradeEventType(TradeEventType.CANCEL)
