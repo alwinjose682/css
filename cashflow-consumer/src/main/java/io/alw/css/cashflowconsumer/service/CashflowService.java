@@ -79,12 +79,12 @@ public class CashflowService {
             var savedCashflows = txrw.execute(persistAction, Exception.class);
 
             var savedCfIds = savedCashflows.stream().map(cf -> cf.getCashflowEntityPK().cashflowId() + "-" + cf.getCashflowEntityPK().cashflowVersion()).collect(Collectors.joining(", "));
-            log.info("Successfully created and processed cashflows for ALL trade legs. CashflowIds: {{}}", savedCfIds);
+            log.info("Successfully processed cashflow for ALL trade legs. TradeType: {}, CashflowIds: {{}}", tradeAvro.getTradeType(), savedCfIds);
         } catch (CategorizedRuntimeException e) {
-            log.info("Failed to process trade: {}-{}. Msg: {}", tradeID, tradeVersion, e.getMessage(), e);
+            log.info("Failed to process trade. TradeType: {}. Msg: {}", tradeAvro.getTradeType(), e.getMessage(), e);
             rejectCashflow(tradeAvro, e, inputBy);
         } catch (Exception e) {
-            log.info("Failed to process trade: {}-{}. Msg: {}", tradeID, tradeVersion, e.getMessage(), e);
+            log.info("Failed to process trade. TradeType: {}. Msg: {}", tradeAvro.getTradeType(), e.getMessage(), e);
             rejectCashflow(tradeAvro, CategorizedRuntimeException.UNKNOWN(e.getMessage(), tradeAvro), inputBy);
         }
     }

@@ -102,7 +102,6 @@ public class CashflowVersionManager {
                 .latest(true)
                 .build();
 
-        log.debug("Created new cashflow record. CashflowID-Ver: {}-{}", cashflow.cashflowId(), cashflow.cashflowVersion());
         return cashflow;
     }
 
