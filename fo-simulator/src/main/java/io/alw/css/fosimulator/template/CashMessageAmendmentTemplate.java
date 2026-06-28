@@ -106,7 +106,7 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
         if (trdLevelAmndFields != null && !trdLevelAmndFields.isEmpty()) {
             trdBdrFunc = () -> buildTradeAmendment(trdAmndCtx, extTrd);
         } else {
-            trdBdrFunc = null;
+            trdBdrFunc = () -> createBuilderFrom(extTrd.trade()); // No change to any fields of the trade, not even the trade version.
         }
 
         // TradeLeg level amendment
