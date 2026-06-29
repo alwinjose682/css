@@ -28,7 +28,7 @@ public interface CashflowRepository extends JpaRepository<CashflowEntity, Cashfl
     int updateLastProcessedCashflowToNonLatest(@Param("cashflowId") long cashflowId, @Param("cashflowVersion") int cashflowVersion);
 
     @Query(value = """
-            SELECT new io.alw.css.cashflowconsumer.model.FoCashflowIdAndTradeId(
+            SELECT new io.alw.css.tradeconsumer.model.FoCashflowIdAndTradeId(
             MAX(cf.tradeId)
             ) FROM CashflowEntity cf
             """)
