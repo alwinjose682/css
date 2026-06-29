@@ -10,7 +10,7 @@
         <relativePath>../css-lib/css-parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>fo-simulator</artifactId>
+    <artifactId>trade-publisher</artifactId>
 
     <dependencies>
         <dependency>

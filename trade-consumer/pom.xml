@@ -10,7 +10,7 @@
         <relativePath>../css-lib/css-parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>cashflow-consumer</artifactId>
+    <artifactId>trade-consumer</artifactId>
 
     <!-- All dependencies are imported either from 'css-services' or 'css-parent' poms -->
     <dependencies>
