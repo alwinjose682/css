@@ -49,6 +49,8 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade>
         return amendmentCandidateSelectionCriteriaPrimary.and(tradeContextAmendmentFrequency());
     }
 
+    protected abstract List<ChildBuildDirective<TradeLeg, TradeLegBuilder>> withNewTradeLegDirectives(T extTrd);
+
     /// The tradeContext amendment frequency is the secondary amendmentCandidateSelectionCriteria.
     /// see also {@link TradeAmendmentTemplate#amendmentCandidateSelectionCriteriaPrimary}
     protected abstract Predicate<T> tradeContextAmendmentFrequency();
@@ -56,7 +58,7 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade>
     /// All the trade legs selected for amendment must belong only to the trdCtx being passed via this method
     protected abstract void buildTradeAmendmentContext(Consumer<TradeAmendmentContext> buildAmendedMessageFunc, T trdCtxForAmendment);
 
-    protected abstract TradeStoreHelper<T> msgStoreHelper();
+    protected abstract TradeStoreHelper<T> trdStoreHelper();
 
     /// Return Trades(new+amends) which can be consumed by the TradeGenerators and published to CSS
     @Override
@@ -64,7 +66,7 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade>
         // Build the trades(newly created + amendments)
         AggregateTemplateBuilderResult<Trade> buildResult =
                 ((TradeAmendmentTemplate<T>) newBuildCycle())
-                        .withMessageAmendments()
+                        .withMessageAmendmentsAndNewTradeLegs()
                         .withRootTemplateValues()
                         .build();
 
@@ -78,25 +80,61 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade>
         return Collections.unmodifiableSet(tradeGeneratorInput);
     }
 
-    protected TradeAmendmentTemplate<T> withMessageAmendments() {
-        // Get trades that need to be amended
-        final List<T> extTrdsForAmendment = msgStoreHelper().retrieveMessagesForCurrentDay();
-        // Add the list of trades for amendment to the template build step
-        for (T extTrd : extTrdsForAmendment) {
-            buildTradeAmendmentContext(trdAmndCtx -> buildAmendedMessage(trdAmndCtx, extTrd), extTrd);
-        }
+    private TradeAmendmentTemplate<T> withMessageAmendmentsAndNewTradeLegs() {
+        var extTrdAndBuildDirMap = createTradeAmendmentDirectives();
+        createNewTradeLegDirectivesAndAddTo(extTrdAndBuildDirMap);
+
+        // Register the amendmentTradeBuildDirective with the template builder
+        extTrdAndBuildDirMap.values().forEach(this::withRelatedTemplateDirective);
         return this;
+    }
+
+    private void createNewTradeLegDirectivesAndAddTo(Map<T, ParentBuildDirective<Trade, TradeLeg, TradeBuilder, TradeLegBuilder>> extTrdAndBuildDirMap) {
+        // 1. Get trades for which new TradeLegs need to be created
+        final List<T> extTrds = trdStoreHelper().retrieveTradesForCurrentDay(TradeStoreHelper.TradeRetrievalPurpose.NEW_TRD_LEG);
+        for (T extTrd : extTrds) {
+            // 2. Create build directive for new TradeLegs creation
+            final List<ChildBuildDirective<TradeLeg, TradeLegBuilder>> newTradeLegDirectives = withNewTradeLegDirectives(extTrd);
+            // 3. Add the new TradeLeg directives to the amendmentTradeBuildDirective so that a single Trade object will be created with amended TradeLegs and newly created TradeLegs
+            final var buildDirective = extTrdAndBuildDirMap.get(extTrd);
+            if (buildDirective != null) {
+                buildDirective.adhocChildDirectives().addAll(newTradeLegDirectives);
+            } else {
+                // Trade Builder function. No change to the Trade
+                final Supplier<TradeBuilder> trdBdrFunc = () -> createBuilderFrom(extTrd.trade());
+                // Trade and TradeLegs association function
+                BiFunction<Trade, Set<TradeLeg>, Trade> tradeAndTradeLegAssociationFunc = Trade::clearAndAddTradeLegs;
+                var newAdhocBuildDirective = new ParentBuildDirective.ParentBuildDirectiveType1<>(trdBdrFunc, newTradeLegDirectives, tradeAndTradeLegAssociationFunc, null);
+                extTrdAndBuildDirMap.put(extTrd, newAdhocBuildDirective);
+            }
+        }
+    }
+
+    private Map<T, ParentBuildDirective<Trade, TradeLeg, TradeBuilder, TradeLegBuilder>> createTradeAmendmentDirectives() {
+        // 1. Get trades that need to be amended
+        final List<T> extTrds = trdStoreHelper().retrieveTradesForCurrentDay(TradeStoreHelper.TradeRetrievalPurpose.AMEND);
+        // 2. Create trade amendment directive
+
+        Map<T, ParentBuildDirective<Trade, TradeLeg, TradeBuilder, TradeLegBuilder>> extTrdAndBuildDirMap = new HashMap<>();
+        for (T extTrd : extTrds) {
+            buildTradeAmendmentContext(trdAmndCtx -> {
+                // 1. Create build directive for message amendments
+                var tradeAmendmentBuildDirective = createTradeAmendmentDirective(trdAmndCtx, extTrd);
+                extTrdAndBuildDirMap.put(extTrd, tradeAmendmentBuildDirective);
+            }, extTrd);
+        }
+
+        return extTrdAndBuildDirMap;
     }
 
     /// Adds the step to lazily build amended messages in the [io.alw.datagen.template.AggregateTemplateBuilder].
     /// All the trade legs being amended belong to the same extTrd
     /// The steps to lazily build(functions) and the actual build done by [io.alw.datagen.template.AggregateTemplateBuilder] are performed in FIFO order
-    protected void buildAmendedMessage(TradeAmendmentContext trdAmndCtx, T extTrd) {
+    protected ParentBuildDirective<Trade, TradeLeg, TradeBuilder, TradeLegBuilder> createTradeAmendmentDirective(TradeAmendmentContext trdAmndCtx, T extTrd) {
         // Amendment if trade is rebooked
         var nextEventAndAction = trdAmndCtx.tradeEventActionPair();
         if (nextEventAndAction.event() == TradeEventType.REBOOK) {
-            handleTradeRebookEvent(trdAmndCtx, extTrd);
-            return;
+            return handleTradeRebookEvent(trdAmndCtx, extTrd);
         }
 
         // Trade level amendment if applicable
@@ -113,11 +151,10 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade>
         // Trade and TradeLegs association function
         BiFunction<Trade, Set<TradeLeg>, Trade> tradeAndTradeLegAssociationFunc = Trade::clearAndAddTradeLegs;
         Runnable finalAction = () -> applyFutureAmendmentInclusion(extTrd);
-        var buildDirective = new ParentBuildDirective.ParentBuildDirectiveType1<>(trdBdrFunc, trdLegBuildItems, tradeAndTradeLegAssociationFunc, finalAction);
-        this.withRelatedTemplateDirective(buildDirective);
+        return new ParentBuildDirective.ParentBuildDirectiveType1<>(trdBdrFunc, trdLegBuildItems, tradeAndTradeLegAssociationFunc, finalAction);
     }
 
-    private void handleTradeRebookEvent(TradeAmendmentContext trdAmndCtx, T extTrd) {
+    private ParentBuildDirective<Trade, TradeLeg, TradeBuilder, TradeLegBuilder> handleTradeRebookEvent(TradeAmendmentContext trdAmndCtx, T extTrd) {
         // New trade's Id and Version
         var newTrdId = IdProvider.singleton().nextTradeId();
         var newTrdVer = VERSION_ONE;
@@ -174,8 +211,7 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade>
         BiFunction<Trade, Set<TradeLeg>, Trade> newTrdAndTrdLegAssociationFunc = Trade::clearAndAddTradeLegs;
         Consumer<Trade> trdAndExtTrdAssociationFunc = extTrd::setTrade;
         Runnable newTrdBuildDirectiveFinalAction = () -> applyFutureAmendmentInclusion(extTrd);
-        var newTrdBuildDirective = new ParentBuildDirective.ParentBuildDirectiveType3<>(newTrdBdrFunc, newTrdLegBdrFunc, newTrdAndTrdLegAssociationFunc, trdAndExtTrdAssociationFunc, newTrdBuildDirectiveFinalAction);
-        this.withRelatedTemplateDirective(newTrdBuildDirective);
+        return new ParentBuildDirective.ParentBuildDirectiveType3<>(newTrdBdrFunc, newTrdLegBdrFunc, newTrdAndTrdLegAssociationFunc, trdAndExtTrdAssociationFunc, newTrdBuildDirectiveFinalAction);
     }
 
     private TradeBuilder buildTradeAmendment(TradeAmendmentContext trdAmndCtx, T extTrd) {
@@ -346,7 +382,7 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade>
 
     private void applyFutureAmendmentInclusion(T extTrade) {
         if (amendmentCandidateSelectionCriteria().test(extTrade)) {
-            msgStoreHelper().storeMessageDataForFutureRndmRetrievalDay(extTrade);
+            trdStoreHelper().storeTradeForFutureRndmRetrievalDay(extTrade, TradeStoreHelper.TradeRetrievalPurpose.AMEND);
         }
     }
 }

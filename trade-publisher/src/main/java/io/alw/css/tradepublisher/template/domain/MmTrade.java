@@ -7,6 +7,7 @@ import io.alw.css.domain.trade.TradeLeg;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public final class MmTrade implements ExtendedTrade {
     private final RateType rateType;
@@ -111,5 +112,17 @@ public final class MmTrade implements ExtendedTrade {
         } else {
             return (TradeLeg) tradeDetail;
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        MmTrade mmTrade = (MmTrade) o;
+        return Objects.equals(trade, mmTrade.trade);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(trade);
     }
 }

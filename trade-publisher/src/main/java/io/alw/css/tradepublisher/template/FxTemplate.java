@@ -181,7 +181,7 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
     }
 
     @Override
-    protected TradeStoreHelper<FxTrade> msgStoreHelper() {
+    protected TradeStoreHelper<FxTrade> trdStoreHelper() {
         return msgStoreHelper;
     }
 

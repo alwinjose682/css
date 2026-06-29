@@ -38,6 +38,7 @@ import static io.alw.css.domain.trade.TradeLegType.*;
 import static io.alw.css.tradepublisher.template.MmTemplateConstants.*;
 import static io.alw.css.tradepublisher.template.domain.InterestBasis.ThirtyBy360;
 
+//TODO: Make changes in AggregateTemplateBuilder
 public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
     private final TradeStoreHelper<MmTrade> msgStoreHelper;
 
@@ -450,7 +451,7 @@ public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
     }
 
     @Override
-    protected TradeStoreHelper<MmTrade> msgStoreHelper() {
+    protected TradeStoreHelper<MmTrade> trdStoreHelper() {
         return msgStoreHelper;
     }
 

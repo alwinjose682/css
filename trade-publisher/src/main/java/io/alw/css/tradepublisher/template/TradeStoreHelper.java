@@ -9,26 +9,36 @@ import java.util.random.RandomGenerator;
 
 /// NOTE: This helper class has mutable state
 final class TradeStoreHelper<T> {
-    private long lastMessageRetrievalDay;
+    private long lastTradeRetrievalDay;
     private static final int maxAmendmentGenerationDelayInDays = 20; // NOTE: Increasing this value will result in retaining the messages requiring amendment for a longer period in the messageStore. Hence, will also result in increased size of the messageStore
 
     private final TradeStore<T> msgStore;
     private final RandomGenerator rndm;
     private final TradeTemplateHelper msgTemplateHelper;
 
-    TradeStoreHelper(DayTicker lastMessageRetrievalDay, TradeStore<T> msgStore, RandomGenerator rndm, TradeTemplateHelper msgTemplateHelper) {
-        this.lastMessageRetrievalDay = lastMessageRetrievalDay.firstDay();
+    enum TradeRetrievalPurpose {
+        AMEND(TradeStore.storeIndexes[0]), NEW_TRD_LEG(TradeStore.storeIndexes[1]);
+
+        private final int storeIdx;
+
+        TradeRetrievalPurpose(int storeIdx) {
+            this.storeIdx = storeIdx;
+        }
+    }
+
+    TradeStoreHelper(DayTicker lastTradeRetrievalDay, TradeStore<T> msgStore, RandomGenerator rndm, TradeTemplateHelper msgTemplateHelper) {
+        this.lastTradeRetrievalDay = lastTradeRetrievalDay.firstDay();
         this.msgStore = msgStore;
         this.rndm = rndm;
         this.msgTemplateHelper = msgTemplateHelper;
     }
 
     /// Removes the message data from the store and returns it
-    List<T> retrieveMessagesForCurrentDay() {
+    List<T> retrieveTradesForCurrentDay(TradeRetrievalPurpose trdRetrievalPurpose) {
         final long currentDay = msgTemplateHelper.currentDayForMsgTemplate();
         List<T> msgsToBeAmended = new ArrayList<>();
-        for (; lastMessageRetrievalDay <= currentDay; ++lastMessageRetrievalDay) {
-            List<T> msgs = msgStore.remove(lastMessageRetrievalDay);
+        for (; lastTradeRetrievalDay <= currentDay; ++lastTradeRetrievalDay) {
+            List<T> msgs = msgStore.remove(lastTradeRetrievalDay, trdRetrievalPurpose.storeIdx);
             if (msgs != null) {
                 msgsToBeAmended.addAll(msgs);
             }
@@ -36,9 +46,9 @@ final class TradeStoreHelper<T> {
         return msgsToBeAmended;
     }
 
-    /// Store message data in [TradeStore] with a random retrieval day that ranges from `lastMessageRetrievalDay` upto `maxAmendmentGenerationDelayInDays` into the future
-    void storeMessageDataForFutureRndmRetrievalDay(T msgData) {
-        long futureAmendmentDay = rndm.nextLong(lastMessageRetrievalDay, lastMessageRetrievalDay + maxAmendmentGenerationDelayInDays);
-        msgStore.add(futureAmendmentDay, msgData);
+    /// Store trade in [TradeStore] with a random retrieval day that ranges from `lastMessageRetrievalDay` upto `maxAmendmentGenerationDelayInDays` into the future
+    void storeTradeForFutureRndmRetrievalDay(T msgData, TradeRetrievalPurpose trdRetrievalPurpose) {
+        long futureAmendmentDay = rndm.nextLong(lastTradeRetrievalDay, lastTradeRetrievalDay + maxAmendmentGenerationDelayInDays);
+        msgStore.add(futureAmendmentDay, msgData, trdRetrievalPurpose.storeIdx);
     }
 }

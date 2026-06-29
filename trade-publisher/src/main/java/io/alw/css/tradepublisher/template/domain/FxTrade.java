@@ -5,6 +5,7 @@ import io.alw.css.domain.trade.TradeDetail;
 import io.alw.css.domain.trade.TradeLeg;
 
 import java.util.List;
+import java.util.Objects;
 
 public final class FxTrade implements ExtendedTrade {
     private int nextTradeLegId;
@@ -72,5 +73,17 @@ public final class FxTrade implements ExtendedTrade {
 
     public void setTradeLeg1(TradeLeg tradeLeg1) {
         this.tradeLeg1 = tradeLeg1;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        FxTrade fxTrade = (FxTrade) o;
+        return Objects.equals(trade, fxTrade.trade);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(trade);
     }
 }
