@@ -1,7 +1,7 @@
-package io.alw.css.fosimulator.cashflowgnrtr;
+package io.alw.css.fosimulator.tradegenerator;
 
 import io.alw.css.domain.trade.Trade;
-import io.alw.css.fosimulator.CashMessagePublisher;
+import io.alw.css.fosimulator.TradePublisher;
 import io.alw.css.fosimulator.model.GeneratorDetail;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,27 +11,21 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 
-public final class CashflowGenerator extends Stoppable implements Runnable {
-    /*
-    Amendment Notes:
-        Trade and Cashflow amendment
-        Let amendments happen on T and T+1 days.
-     */
-
-    private final static Logger log = LoggerFactory.getLogger(CashflowGenerator.class);
-    private final Supplier<Set<Trade>> cashMessageSupplier;
-    private final Consumer<Set<Trade>> cashMessageConsumer;
+public final class TradeGenerator extends Stoppable implements Runnable {
+    private final static Logger log = LoggerFactory.getLogger(TradeGenerator.class);
+    private final Supplier<Set<Trade>> tradeSupplier;
+    private final Consumer<Set<Trade>> tradePublisher;
     private final GeneratorDetail generatorDetail;
     private final long pauseIntervalSeconds;
     private final RandomGenerator rndm;
 
-    public CashflowGenerator(GeneratorDetail generatorDetail, Supplier<Set<Trade>> cashMessageSupplier, CashMessagePublisher cashMessageConsumer) {
+    public TradeGenerator(GeneratorDetail generatorDetail, Supplier<Set<Trade>> tradeSupplier, TradePublisher tradePublisher) {
         super();
         this.generatorDetail = generatorDetail;
-        this.cashMessageSupplier = cashMessageSupplier;
+        this.tradeSupplier = tradeSupplier;
         this.pauseIntervalSeconds = generatorDetail.generationFrequency() * 1_000;
         this.rndm = RandomGenerator.getDefault();
-        this.cashMessageConsumer = cashMessageConsumer;
+        this.tradePublisher = tradePublisher;
     }
 
     @Override
@@ -42,8 +36,8 @@ public final class CashflowGenerator extends Stoppable implements Runnable {
             Thread.sleep(pauseTimeBeforeActualStart);
             // Start
             while (!isStopSignalled()) {
-                Set<Trade> trades = cashMessageSupplier.get();
-                cashMessageConsumer.accept(trades);
+                Set<Trade> trades = tradeSupplier.get();
+                tradePublisher.accept(trades);
                 Thread.sleep(pauseIntervalSeconds);
             }
         } catch (InterruptedException e) {

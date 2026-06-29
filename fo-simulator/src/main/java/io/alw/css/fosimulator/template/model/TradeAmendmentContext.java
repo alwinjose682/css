@@ -11,8 +11,7 @@ import java.util.function.Function;
 /// All amendmentSubjectContexts are held in an ArrayList to ensure strict sequential encounter order(FIFO) when retrieving them.
 /// This is important because, amendmentSubjects are built lazily and may require the previously built amendmentSubjects during their build process
 ///
-/// Note: The primaryAmendmentSubject is ideally the cashMessage selected for amendment that has caused amendment for other dependent cashMessages.
-/// But it is not explicitly ensured by this class as to which element is the primaryAmendmentSubject.
+/// Note: The primaryAmendmentSubject is the trade or trade leg selected for amendment that has caused amendment for others.
 /// It is the responsibility of the user to add the elements in the proper simple sequential order using [TradeAmendmentContext#addNextTradeLegAmndCtx]
 public final class TradeAmendmentContext {
     private final Set<AmendableField> tradeLevelAmendmentFields;

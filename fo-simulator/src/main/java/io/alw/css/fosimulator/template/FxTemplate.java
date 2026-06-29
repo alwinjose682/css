@@ -2,15 +2,15 @@ package io.alw.css.fosimulator.template;
 
 import io.alw.css.domain.common.*;
 import io.alw.css.domain.trade.TradeLegBuilder;
-import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
-import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
+import io.alw.css.fosimulator.model.properties.TradeTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
-import io.alw.css.fosimulator.store.CashMessageStore;
-import io.alw.css.fosimulator.store.InMemoryCashMessageStore;
+import io.alw.css.fosimulator.store.InMemoryTradeStore;
+import io.alw.css.fosimulator.store.TradeStore;
 import io.alw.css.fosimulator.template.domain.FxTrade;
 import io.alw.css.fosimulator.template.model.*;
+import io.alw.css.fosimulator.tradegenerator.DayTicker;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
 
 import java.math.BigDecimal;
@@ -24,17 +24,17 @@ import java.util.random.RandomGenerator;
 
 import static io.alw.css.domain.trade.TradeLegType.FX_SIDE1;
 import static io.alw.css.domain.trade.TradeLegType.FX_SIDE2;
-import static io.alw.css.fosimulator.template.model.AmendableFoCashMessageFieldType.*;
+import static io.alw.css.fosimulator.template.model.AmendableFieldType.*;
 
-public final class FxTemplate extends CashMessageAmendmentTemplate<FxTrade> {
-    private final CashMessageStoreHelper<FxTrade> msgStoreHelper;
-    private static final Supplier<Set<AmendableFoCashMessageFieldType>> cyclicAmendableFoCashMessageFieldTypeProvider = new CyclicAmendableFoCashMessageFieldProvider(getListOfAmendableCashMessageFieldTypes());
+public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
+    private final TradeStoreHelper<FxTrade> msgStoreHelper;
+    private static final Supplier<Set<AmendableFieldType>> cyclicAmendableTradeMessageFieldTypeProvider = new CyclicAmendableTradeMessageFieldProvider(getListOfAmendableTradeMessageFieldTypes());
 
-    public FxTemplate(Entity entity, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMessageTemplateProperties) {
-        super(entity, TradeType.FX, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
+    public FxTemplate(Entity entity, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, TradeTemplateProperties tradeTemplateProperties) {
+        super(entity, TradeType.FX, transactionType, rndm, initialValueDate, refDataService, dayTicker, tradeTemplateProperties);
 
-        CashMessageStore<FxTrade> msgStore = new InMemoryCashMessageStore<>();
-        this.msgStoreHelper = new CashMessageStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
+        TradeStore<FxTrade> msgStore = new InMemoryTradeStore<>();
+        this.msgStoreHelper = new TradeStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
     }
 
     @Override
@@ -46,7 +46,7 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTrade> {
     public FxTemplate withRootTemplateValues() {
         // Create message context and all tradeLinks
         var extTrd = createExtendedTrade();
-        // Create FoCashMessage builder for new template with default base values
+        // Create Trade builder for new template with default base values
         createNewTradeWithDefaultValues(extTrd);
         // Create Ids for the FXTrade legs, FX-Side-1 and Fx-Side-2
         // Create FX-Side-1 (rootTradeLeg)
@@ -89,7 +89,7 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTrade> {
     }
 
     @Override
-    protected void buildCashMessageAmendmentContext(Consumer<TradeAmendmentContext> buildAmendedMessageFunc, FxTrade trdCtxForAmendment) {
+    protected void buildTradeAmendmentContext(Consumer<TradeAmendmentContext> buildAmendedMessageFunc, FxTrade trdCtxForAmendment) {
         var rootMsg = trdCtxForAmendment.rootTradeLeg();
         var nextTradeEventAction = determineNextTradeEventAndAction(rootMsg.tradeEventType(), rootMsg.tradeEventAction());
         var nextEventType = nextTradeEventAction.event();
@@ -116,9 +116,9 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTrade> {
     private TradeAmendmentContext buildAmendmentContextForCommonAmendEvents(FxTrade trdCtxForAmendment, TradeEventActionPair nextTradeEventAction) {
         final var side1Msg = trdCtxForAmendment.tradeLeg1();
         final var side2Msg = trdCtxForAmendment.tradeLeg2();
-        Set<AmendableFoCashMessageFieldType> amendableFieldTypes = cyclicAmendableFoCashMessageFieldTypeProvider.get();
+        Set<AmendableFieldType> amendableFieldTypes = cyclicAmendableTradeMessageFieldTypeProvider.get();
         var amendableFields = new AmendableFieldsCollection();
-        for (AmendableFoCashMessageFieldType ft : amendableFieldTypes) {
+        for (AmendableFieldType ft : amendableFieldTypes) {
             switch (ft) {
                 case VALUE_DATE -> {
                     var valueDate = new AmendableField.ValueDate(msgTemplateHelper.getRndmValueDate());
@@ -160,7 +160,7 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTrade> {
         return rndm.nextDouble(Math.abs(side1Amount - 100), side1Amount + 1000);
     }
 
-    private static List<Set<AmendableFoCashMessageFieldType>> getListOfAmendableCashMessageFieldTypes() {
+    private static List<Set<AmendableFieldType>> getListOfAmendableTradeMessageFieldTypes() {
         return List.of(
                 Set.of(COUNTERPARTY_CODE),
                 Set.of(AMOUNT),
@@ -181,12 +181,12 @@ public final class FxTemplate extends CashMessageAmendmentTemplate<FxTrade> {
     }
 
     @Override
-    protected CashMessageStoreHelper<FxTrade> msgStoreHelper() {
+    protected TradeStoreHelper<FxTrade> msgStoreHelper() {
         return msgStoreHelper;
     }
 
-    private static class CyclicAmendableFoCashMessageFieldProvider extends AbstractCyclicDataProvider<Set<AmendableFoCashMessageFieldType>> {
-        public CyclicAmendableFoCashMessageFieldProvider(List<Set<AmendableFoCashMessageFieldType>> fields) {
+    private static class CyclicAmendableTradeMessageFieldProvider extends AbstractCyclicDataProvider<Set<AmendableFieldType>> {
+        public CyclicAmendableTradeMessageFieldProvider(List<Set<AmendableFieldType>> fields) {
             super(fields);
         }
     }

@@ -38,8 +38,8 @@ public final class FxTrade implements ExtendedTrade {
     }
 
     @Override
-    public void setRootTradeLeg(TradeLeg rootFoCashMessage) {
-        this.tradeLeg1 = rootFoCashMessage;
+    public void setRootTradeLeg(TradeLeg rootTradeLeg) {
+        this.tradeLeg1 = rootTradeLeg;
     }
 
     @Override

@@ -1,4 +1,4 @@
-package io.alw.css.fosimulator.cashflowgnrtr;
+package io.alw.css.fosimulator.tradegenerator;
 
 import io.alw.css.fosimulator.CssTaskExecutor;
 import org.slf4j.Logger;
@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 // TODO 2: Is it a good idea to use virtual threads in a scheduled executor service?
 //         https://stackoverflow.com/questions/76587253/how-to-use-virtual-threads-with-scheduledexecutorservice
-// TODO 3: When cashflow generators are stopped, should DayTicker also be stopped ? - DONE
+// TODO 3: When trade generators are stopped, should DayTicker also be stopped ? - DONE
 public final class DayTicker extends Stoppable {
     private final static Logger log = LoggerFactory.getLogger(DayTicker.class);
 

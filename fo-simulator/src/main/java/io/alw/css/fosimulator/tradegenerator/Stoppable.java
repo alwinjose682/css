@@ -1,6 +1,6 @@
-package io.alw.css.fosimulator.cashflowgnrtr;
+package io.alw.css.fosimulator.tradegenerator;
 
-sealed abstract class Stoppable permits CashflowGenerator, DayTicker {
+sealed abstract class Stoppable permits TradeGenerator, DayTicker {
 
     private volatile boolean stopSignalled;
 

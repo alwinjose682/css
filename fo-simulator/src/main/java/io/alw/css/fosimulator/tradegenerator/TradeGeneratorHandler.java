@@ -1,15 +1,15 @@
-package io.alw.css.fosimulator.cashflowgnrtr;
+package io.alw.css.fosimulator.tradegenerator;
 
 import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.common.TransactionType;
 import io.alw.css.domain.trade.Trade;
-import io.alw.css.fosimulator.CashMessagePublisher;
 import io.alw.css.fosimulator.CssTaskExecutor;
-import io.alw.css.fosimulator.model.CashflowGenerationInitialValues;
+import io.alw.css.fosimulator.TradePublisher;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.GeneratorDetail;
-import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
-import io.alw.css.fosimulator.model.properties.CashflowGeneratorProperties;
+import io.alw.css.fosimulator.model.TradeGenerationInitialValues;
+import io.alw.css.fosimulator.model.properties.TradeGeneratorProperties;
+import io.alw.css.fosimulator.model.properties.TradeTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.template.FxTemplate;
 import io.alw.css.fosimulator.template.IdProvider;
@@ -31,26 +31,26 @@ import java.util.random.RandomGenerator;
 
 import static io.alw.css.domain.common.TradeType.*;
 
-public final class CashflowGeneratorHandler {
-    private final static Logger log = LoggerFactory.getLogger(CashflowGeneratorHandler.class);
+public final class TradeGeneratorHandler {
+    private final static Logger log = LoggerFactory.getLogger(TradeGeneratorHandler.class);
     private final static String GENERATOR_KEY_PART_SEPARATOR = "-";
     private final AtomicBoolean activeHandlerOperation;
-    private final Map<String, List<CashflowGenerator>> generatorMap;
+    private final Map<String, List<TradeGenerator>> generatorMap;
 
-    private final CashflowGeneratorProperties cashflowGeneratorProperties;
-    private final CashMessageTemplateProperties cashMessageTemplateProperties;
-    private final CashMessagePublisher cashMessagePublisher;
+    private final TradeGeneratorProperties tradeGeneratorProperties;
+    private final TradeTemplateProperties tradeTemplateProperties;
+    private final TradePublisher tradePublisher;
     private final RefDataService refDataService;
     private final DayTicker dayTicker;
     private final CssTaskExecutor cssTaskExecutor;
 
     // Initial Generator Values - initialized only once
-    private CashflowGenerationInitialValues cfGenerationInitialValues;
+    private TradeGenerationInitialValues cfGenerationInitialValues;
 
-    public CashflowGeneratorHandler(CashflowGeneratorProperties cashflowGeneratorProperties, CashMessageTemplateProperties cashMessageTemplateProperties, CashMessagePublisher cashMessagePublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
-        this.cashflowGeneratorProperties = cashflowGeneratorProperties;
-        this.cashMessageTemplateProperties = cashMessageTemplateProperties;
-        this.cashMessagePublisher = cashMessagePublisher;
+    public TradeGeneratorHandler(TradeGeneratorProperties tradeGeneratorProperties, TradeTemplateProperties tradeTemplateProperties, TradePublisher tradePublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
+        this.tradeGeneratorProperties = tradeGeneratorProperties;
+        this.tradeTemplateProperties = tradeTemplateProperties;
+        this.tradePublisher = tradePublisher;
         this.refDataService = refDataService;
         this.dayTicker = DayTicker.initSingleton(10, 30, 2, cssTaskExecutor);
         this.activeHandlerOperation = new AtomicBoolean(false);
@@ -66,24 +66,24 @@ public final class CashflowGeneratorHandler {
         return activeHandlerOperation.compareAndSet(true, false);
     }
 
-    public CashflowGeneratorHandlerOutcome startAllGenerators(CashflowGenerationInitialValues cashflowGenerationInitialValues) {
-        setCashflowGenerationInitialValues(cashflowGenerationInitialValues);
+    public TradeGeneratorHandlerOutcome startAllGenerators(TradeGenerationInitialValues tradeGenerationInitialValues) {
+        setTradeGenerationInitialValues(tradeGenerationInitialValues);
         return startAllGenerators();
     }
 
-    /// Sets cashflow generation initial values IF they are not set already.
-    /// Cashflow generation initial values can be provided explicitly via the REST API. If not provided explicitly, then default values are used
-    private void setCashflowGenerationInitialValues(CashflowGenerationInitialValues initValues) {
+    /// Sets trade generation initial values IF they are not set already.
+    /// Trade generation initial values can be provided explicitly via the REST API. If not provided explicitly, then default values are used
+    private void setTradeGenerationInitialValues(TradeGenerationInitialValues initValues) {
         if (this.cfGenerationInitialValues == null) {
             synchronized (this) {
                 if (this.cfGenerationInitialValues == null && initValues == null) {
-                    this.cfGenerationInitialValues = CashflowGenerationInitialValues.defaultValues();
-                    log.info("Initial values for cashflow generation are not provided explicitly. Starting cashflow generation with default initial values: {}", this.cfGenerationInitialValues);
+                    this.cfGenerationInitialValues = TradeGenerationInitialValues.defaultValues();
+                    log.info("Initial values for trade generation are not provided explicitly. Starting trade generation with default initial values: {}", this.cfGenerationInitialValues);
                 } else {
                     var valueDate = initValues.valueDate();
                     var tradeId = initValues.tradeId();
-                    this.cfGenerationInitialValues = new CashflowGenerationInitialValues(valueDate, tradeId);
-                    log.info("Initial values for cashflow generation are provided explicitly via REST API. Starting cashflow generation with the explicit initial values: {}", this.cfGenerationInitialValues);
+                    this.cfGenerationInitialValues = new TradeGenerationInitialValues(valueDate, tradeId);
+                    log.info("Initial values for trade generation are provided explicitly via REST API. Starting trade generation with the explicit initial values: {}", this.cfGenerationInitialValues);
                 }
                 //Initialize the singleton instance of IdProvider
                 IdProvider.init(this.cfGenerationInitialValues.tradeId());
@@ -97,12 +97,12 @@ public final class CashflowGeneratorHandler {
     /// Atomic boolean is used instead of just making this method synchronized because:
     /// concurrent invocations of this method that are blocked should not attempt to start the generators again.
     /// But sequential invocations of this method will start another instance of all the generators, which is considered ok
-    public CashflowGeneratorHandlerOutcome startAllGenerators() {
-        setCashflowGenerationInitialValues(cfGenerationInitialValues);
+    public TradeGeneratorHandlerOutcome startAllGenerators() {
+        setTradeGenerationInitialValues(cfGenerationInitialValues);
 
         boolean ok = beginHandlerOperation();
         if (!ok) {
-            return new CashflowGeneratorHandlerOutcome.ConcurrentOperation("Another CashflowGeneratorHandler operation is in progress");
+            return new TradeGeneratorHandlerOutcome.ConcurrentOperation("Another TradeGeneratorHandler operation is in progress");
         }
 
         // If already started, calling this method has no effect
@@ -119,19 +119,19 @@ public final class CashflowGeneratorHandler {
                     final long generatorSleepDurationSeconds = getGeneratorSleepDurationFor(key);
 
                     try {
-                        // Create the FoCashMessage supplier
-                        Supplier<Set<Trade>> cashMessageSupplier = createCashMessageSupplier(transactionType, tradeType, entity);
-                        // Create the cashflowGenerator
+                        // Create the Trade supplier
+                        Supplier<Set<Trade>> trdSupplier = createTradeSupplier(transactionType, tradeType, entity);
+                        // Create the tradeGenerator
                         GeneratorDetail generatorDetail = new GeneratorDetail(key, generatorSleepDurationSeconds);
-                        CashflowGenerator cashflowGenerator = createGenerator(generatorDetail, cashMessageSupplier, cashMessagePublisher);
-                        log.info("Created Cashflow Generator for TransactionType: " + transactionType + ", TradeType: " + tradeType + ", Entity: " + entity + " [key: " + generatorDetail.generatorKey() + ", freq: " + generatorDetail.generationFrequency() + "]");
-                        // Start the cashflowGenerator
-                        cssTaskExecutor.submit(cashflowGenerator);
+                        TradeGenerator tradeGenerator = createGenerator(generatorDetail, trdSupplier, tradePublisher);
+                        log.info("Created Trade Generator for TransactionType: " + transactionType + ", TradeType: " + tradeType + ", Entity: " + entity + " [key: " + generatorDetail.generatorKey() + ", freq: " + generatorDetail.generationFrequency() + "]");
+                        // Start the tradeGenerator
+                        cssTaskExecutor.submit(tradeGenerator);
                         startedGenerators.add(generatorDetail);
                     } catch (Exception e) {
                         startedGenerators.stream().map(GeneratorDetail::generatorKey).forEach(this::stop);
                         dayTicker.stop();
-                        return new CashflowGeneratorHandlerOutcome.Failure(e.getMessage(), startedGenerators.stream().map(GeneratorDetail::generatorKey).toList(), List.of(key));
+                        return new TradeGeneratorHandlerOutcome.Failure(e.getMessage(), startedGenerators.stream().map(GeneratorDetail::generatorKey).toList(), List.of(key));
                     }
                 }
             }
@@ -140,11 +140,11 @@ public final class CashflowGeneratorHandler {
         // End handler operation
         endHandlerOperation(); //TODO: What to do if not ok
 
-        return new CashflowGeneratorHandlerOutcome.Success("Successfully started all cashflow and confirmation generators", startedGenerators);
+        return new TradeGeneratorHandlerOutcome.Success("Successfully started all trade generators", startedGenerators);
     }
 
     private long getGeneratorSleepDurationFor(String generatorKey) {
-        Map<String, Long> cfgProps = cashflowGeneratorProperties.frequencySeconds();
+        Map<String, Long> cfgProps = tradeGeneratorProperties.frequencySeconds();
         String[] gkp = generatorKey.split(GENERATOR_KEY_PART_SEPARATOR);
 
         for (String key : cfgProps.keySet()) {
@@ -154,11 +154,11 @@ public final class CashflowGeneratorHandler {
                 return cfgProps.get(key);
             }
         }
-        return cashflowGeneratorProperties.frequencySecondsDefault();
+        return tradeGeneratorProperties.frequencySecondsDefault();
     }
 
-    public List<CashflowGeneratorHandlerOutcome> stopAllGenerators() {
-        List<CashflowGeneratorHandlerOutcome> outcome = generatorMap.keySet().stream().map(this::stop).toList();
+    public List<TradeGeneratorHandlerOutcome> stopAllGenerators() {
+        List<TradeGeneratorHandlerOutcome> outcome = generatorMap.keySet().stream().map(this::stop).toList();
         dayTicker.stop();
         return outcome;
     }
@@ -166,11 +166,11 @@ public final class CashflowGeneratorHandler {
     /// Creates a new generator and adds to the list of the same type of generators.
     /// Concurrent Safe. Performs this computation atomically. generatorMap is ConcurrentHashMap
     /// This method does NOT change the 'begin' or 'end' handler operation state
-    private CashflowGenerator createGenerator(GeneratorDetail generatorDetail, Supplier<Set<Trade>> cashMessageSupplier, CashMessagePublisher cashMessagePublisher) {
-        CashflowGenerator newGenerator = new CashflowGenerator(generatorDetail, cashMessageSupplier, cashMessagePublisher);
+    private TradeGenerator createGenerator(GeneratorDetail generatorDetail, Supplier<Set<Trade>> trdSupplier, TradePublisher tradePublisher) {
+        TradeGenerator newGenerator = new TradeGenerator(generatorDetail, trdSupplier, tradePublisher);
         generatorMap.compute(generatorDetail.generatorKey(), (k, v) -> {
             if (v == null) {
-                List<CashflowGenerator> generators = new ArrayList<>();
+                List<TradeGenerator> generators = new ArrayList<>();
                 generators.add(newGenerator);
                 return generators;
             } else {
@@ -181,33 +181,33 @@ public final class CashflowGeneratorHandler {
         return newGenerator;
     }
 
-    private Supplier<Set<Trade>> createCashMessageSupplier(TransactionType transactionType, TradeType tradeType, Entity entity) {
+    private Supplier<Set<Trade>> createTradeSupplier(TransactionType transactionType, TradeType tradeType, Entity entity) {
         LocalDate initialValueDate = cfGenerationInitialValues.valueDate();
         RandomGenerator rndm = RandomGenerator.getDefault();
         return switch (tradeType) {
-            case FX -> new FxTemplate(entity, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
-            case MM_TERM -> new MmTemplate(entity, MM_TERM, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
-            case MM_CALL -> new MmTemplate(entity, MM_CALL, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMessageTemplateProperties);
-            default -> throw new IllegalStateException("Cashflow generation not implemented yet for TradeType: " + tradeType);
+            case FX -> new FxTemplate(entity, transactionType, rndm, initialValueDate, refDataService, dayTicker, tradeTemplateProperties);
+            case MM_TERM -> new MmTemplate(entity, MM_TERM, transactionType, rndm, initialValueDate, refDataService, dayTicker, tradeTemplateProperties);
+            case MM_CALL -> new MmTemplate(entity, MM_CALL, transactionType, rndm, initialValueDate, refDataService, dayTicker, tradeTemplateProperties);
+            default -> throw new IllegalStateException("Trade generation not implemented yet for TradeType: " + tradeType);
         };
     }
 
-    /// 1. Signals the [CashflowGenerator] to stop in a new Thread
+    /// 1. Signals the [TradeGenerator] to stop in a new Thread
     /// 2. if the
     /// This method is Concurrent Safe. Performs this computation atomically.
     /// TODO: dayTicker is not stopped if all the generators are stopped in an adhoc manner
-    private CashflowGeneratorHandlerOutcome stop(String key) {
-        CashflowGeneratorHandlerOutcome[] outcome = new CashflowGeneratorHandlerOutcome[1];
+    private TradeGeneratorHandlerOutcome stop(String key) {
+        TradeGeneratorHandlerOutcome[] outcome = new TradeGeneratorHandlerOutcome[1];
 
         // Performs this computation atomically. generatorMap is ConcurrentHashMap
         generatorMap.compute(key, (_, generators) -> {
             if (generators == null) {
-                outcome[0] = new CashflowGeneratorHandlerOutcome.GenericMessage("No handler with given name exists or Incorrect cashflow generator name. Key: " + key);
+                outcome[0] = new TradeGeneratorHandlerOutcome.GenericMessage("No handler with given name exists or incorrect Trade Generator name. Key: " + key);
                 return null;
             } else {
-                CashflowGenerator generator = generators.removeFirst();
+                TradeGenerator generator = generators.removeFirst();
                 performStop(generator, key);
-                outcome[0] = new CashflowGeneratorHandlerOutcome.GenericMessage("Successfully signalled stop for generator: " + key + ". The generator is expected to stop shortly. Current remaining number of generators of the same type: " + generators.size());
+                outcome[0] = new TradeGeneratorHandlerOutcome.GenericMessage("Successfully signalled stop for generator: " + key + ". The generator is expected to stop shortly. Current remaining number of generators of the same type: " + generators.size());
                 if (generators.isEmpty()) {
                     return null;
                 } else {
@@ -220,9 +220,9 @@ public final class CashflowGeneratorHandler {
     }
 
     /// 1. Stops the generator and removes the generator from the collection of generators
-    /// 2. Spawns a new thread and that waits for [CashflowGenerator#isTaskExecutionCompleted] to become true for `waitTimeMinutes` minutes.
+    /// 2. Spawns a new thread and that waits for [TradeGenerator#isTaskExecutionCompleted] to become true for `waitTimeMinutes` minutes.
     ///     - If wait period expires and the wait condition is not met, then the spawned thread logs an error message
-    private void performStop(CashflowGenerator generator, String key) {
+    private void performStop(TradeGenerator generator, String key) {
         // Signal Stop
         generator.stop();
 

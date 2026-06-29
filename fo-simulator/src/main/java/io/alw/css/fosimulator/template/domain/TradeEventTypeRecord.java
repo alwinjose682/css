@@ -4,7 +4,7 @@ import io.alw.css.domain.common.TradeEventType;
 
 /// The name of Trade Events specified in this file corresponds with [TradeEventType] that are common to all trades
 ///
-/// NOTE: This class is purely for convenience’s sake to use switch expression rather than if-else-ladder for expressing the logic of -> CashMessageAmendmentTemplate#getNextEventActionPair(TradeEventType, TradeEventAction).
+/// NOTE: This class is purely for convenience’s sake to use switch expression rather than if-else-ladder for expressing the logic of -> TradeAmendmentTemplate#getNextEventActionPair(TradeEventType, TradeEventAction).
 ///
 /// It does not seem good to convert the [TradeEventType] enum to record for other uses
 public sealed interface TradeEventTypeRecord

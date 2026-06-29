@@ -11,7 +11,7 @@ public class avro {
     void getAvroSchema_notATest() {
         Schema schema = ReflectData.get()
                 .getSchema(Trade.class)
-//                .getSchema(FoCashMessage.class)
+//                .getSchema(TradeLeg.class)
                 ;
 
         System.out.println(schema);

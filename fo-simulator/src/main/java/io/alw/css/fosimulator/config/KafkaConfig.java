@@ -12,7 +12,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 @EnableKafka
 public class KafkaConfig {
 
-    @Bean("kafkaTemplateCashMessage")
+    @Bean("kafkaTemplateTradeMessage")
     public KafkaTemplate<String, TradeAvro> kafkaTemplate(KafkaProperties kafkaProperties) {
         var producerPropMap = kafkaProperties.buildProducerProperties(null);
         var producerFactory = new DefaultKafkaProducerFactory<String, TradeAvro>(producerPropMap);

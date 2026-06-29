@@ -3,15 +3,15 @@ package io.alw.css.fosimulator.model.properties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
-@ConfigurationProperties("cash-message.template")
-public class CashMessageTemplateProperties {
+@ConfigurationProperties("trade.template")
+public class TradeTemplateProperties {
     private final int vdForwardDays;
     private final int vdBackwardDays;
     private final int numOfCfsForABackVdCf;
     private final int maxPermittedAmendments;
 
     @ConstructorBinding
-    public CashMessageTemplateProperties(int vdForwardDays, int vdBackwardDays, int cfsForBackvdCf, int maxAmendments) {
+    public TradeTemplateProperties(int vdForwardDays, int vdBackwardDays, int cfsForBackvdCf, int maxAmendments) {
         if (vdBackwardDays == 0) {
             throw new RuntimeException("config param: vdBackwardDays, should not be zero");
         }

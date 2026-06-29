@@ -5,14 +5,14 @@ import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
 @ConfigurationProperties("app.kafka.topic")
 public class KafkaTopicProperties {
-    private final String cashflowOutput;
+    private final String tradeOutput;
 
     @ConstructorBinding
-    public KafkaTopicProperties(String cashflowOutput) {
-        this.cashflowOutput = cashflowOutput;
+    public KafkaTopicProperties(String tradeOutput) {
+        this.tradeOutput = tradeOutput;
     }
 
-    public String cashMessageOutputTopic() {
-        return cashflowOutput;
+    public String tradeOutputTopic() {
+        return tradeOutput;
     }
 }

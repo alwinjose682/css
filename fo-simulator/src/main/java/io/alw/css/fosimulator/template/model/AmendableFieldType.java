@@ -1,13 +1,13 @@
 package io.alw.css.fosimulator.template.model;
 
-public enum AmendableFoCashMessageFieldType {
+public enum AmendableFieldType {
     VALUE_DATE(AmendmentTarget.TRADE_LEG),
     AMOUNT(AmendmentTarget.TRADE_LEG),
     COUNTERPARTY_CODE(AmendmentTarget.TRADE_LEG);
 
     private final AmendmentTarget amendmentTarget;
 
-    AmendableFoCashMessageFieldType(AmendmentTarget amendmentTarget) {
+    AmendableFieldType(AmendmentTarget amendmentTarget) {
         this.amendmentTarget = amendmentTarget;
     }
 

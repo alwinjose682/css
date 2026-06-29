@@ -5,12 +5,12 @@ import io.alw.css.domain.common.TradeEventType;
 import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.common.TransactionType;
 import io.alw.css.domain.trade.*;
-import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
-import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
+import io.alw.css.fosimulator.model.properties.TradeTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.template.domain.ExtendedTrade;
+import io.alw.css.fosimulator.tradegenerator.DayTicker;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
 import io.alw.datagen.template.AggregateTemplateBuilder;
 
@@ -27,12 +27,12 @@ import java.util.random.RandomGenerator;
 
 /// This class is not concurrent safe / thread safe.
 ///
-/// [CashMessageTemplate] instances are both a trade type template and a supplier of the build output of the template
+/// [TradeTemplate] instances are both a trade type template and a supplier of the build output of the template
 /// Each instance of this class is supposed to be exclusive for a single thread
-sealed abstract class CashMessageTemplate<T extends ExtendedTrade>
+sealed abstract class TradeTemplate<T extends ExtendedTrade>
         extends AggregateTemplateBuilder<Trade, TradeLeg, TradeBuilder, TradeLegBuilder>
         implements Supplier<Set<Trade>>
-        permits CashMessageAmendmentTemplate {
+        permits TradeAmendmentTemplate {
 
     /// Variable values for each template build. These values remain un-modified for each template build.
     /// After each build of the template, the [ExtendedTrade] (trdCtx) and [TradeBuilder] (`bdr`) references are just assigned with new instances
@@ -40,13 +40,13 @@ sealed abstract class CashMessageTemplate<T extends ExtendedTrade>
     private T extTrd;
     private TradeBuilder bdr;
 
-    // Constant values for each instance of CashMessageTemplate
+    // Constant values for each instance of TradeTemplate
     private final String entityCode;
     private final String currCode;
     private final TradeType tradeType;
     private final TransactionType transactionType;
     protected final RandomGenerator rndm;
-    protected final CashMessageTemplateHelper msgTemplateHelper;
+    protected final TradeTemplateHelper msgTemplateHelper;
 
     // Spring Beans
     protected final DayTicker dayTicker;
@@ -56,18 +56,18 @@ sealed abstract class CashMessageTemplate<T extends ExtendedTrade>
     protected final static int VERSION_ONE = 1;
     protected final static Supplier<BigDecimal> cyclicRateProvider = new CyclicRateProvider(getRateList());
 
-    public CashMessageTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
-        this(null, entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMsgTemplateProps);
+    public TradeTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, TradeTemplateProperties trdTemplateProps) {
+        this(null, entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, trdTemplateProps);
     }
 
-    private CashMessageTemplate(Trade parent, Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
+    private TradeTemplate(Trade parent, Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, TradeTemplateProperties trdTemplateProps) {
         super(parent);
         this.entityCode = entity.entityCode();
         this.currCode = entity.currCode();
         this.tradeType = tradeType;
         this.transactionType = transactionType;
         this.rndm = rndm;
-        this.msgTemplateHelper = new CashMessageTemplateHelper(initialValueDate, transactionType, rndm, cashMsgTemplateProps, refDataService);
+        this.msgTemplateHelper = new TradeTemplateHelper(initialValueDate, transactionType, rndm, trdTemplateProps, refDataService);
         this.dayTicker = dayTicker;
         this.refDataService = refDataService;
     }
@@ -77,14 +77,14 @@ sealed abstract class CashMessageTemplate<T extends ExtendedTrade>
     protected abstract TradeEventActionPair determineNextTradeEventAndAction(TradeEventType amendMsgEvt, TradeEventAction amendMsgAct);
 
     /// This method is the starting point to start a new build cycle
-    /// This method ensures that the same [DayTicker#day()] is used at all points of building multiple cash messages in current cycle
-    protected CashMessageTemplate<T> newBuildCycle() {
+    /// This method ensures that the same [DayTicker#day()] is used at all points of building multiple trades in current cycle
+    protected TradeTemplate<T> newBuildCycle() {
         msgTemplateHelper.setDayForMsgTemplate(dayTicker.day());
         return this;
     }
 
-    /// This method is used to create result [TradeBuilder]. The builder for grouped or related items are created using [CashMessageTemplate#createBuilderFrom(Trade , String)]
-    /// NOTE: New [CashMessageTemplate] instances are not created by this method.
+    /// This method is used to create result [TradeBuilder]. The builder for grouped or related items are created using [TradeTemplate#createBuilderFrom(Trade , String)]
+    /// NOTE: New [TradeTemplate] instances are not created by this method.
     /// Instead, the existing [TradeBuilder] (`bdr`) is just replaced with a new one and then new values are assigned.
     protected TradeBuilder createNewTradeWithDefaultValues(T trd) {
         msgTemplateHelper.incrementCounter();

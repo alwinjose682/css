@@ -12,15 +12,15 @@ import org.springframework.kafka.core.KafkaTemplate;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public class CashMessagePublisher implements Consumer<Set<Trade>> {
-    private final static Logger log = LoggerFactory.getLogger(CashMessagePublisher.class);
+public class TradePublisher implements Consumer<Set<Trade>> {
+    private final static Logger log = LoggerFactory.getLogger(TradePublisher.class);
     private final KafkaTopicProperties kafkaTopicProperties;
-    private final KafkaTemplate<String, TradeAvro> kafkaTemplateCashMessage;
+    private final KafkaTemplate<String, TradeAvro> kafkaTemplateTradeMessage;
     private final CssTaskExecutor cssTaskExecutor;
 
-    public CashMessagePublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, TradeAvro> kafkaTemplateCashMessage, CssTaskExecutor cssTaskExecutor) {
+    public TradePublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, TradeAvro> kafkaTemplateTradeMessage, CssTaskExecutor cssTaskExecutor) {
         this.kafkaTopicProperties = kafkaTopicProperties;
-        this.kafkaTemplateCashMessage = kafkaTemplateCashMessage;
+        this.kafkaTemplateTradeMessage = kafkaTemplateTradeMessage;
         this.cssTaskExecutor = cssTaskExecutor;
     }
 
@@ -30,12 +30,12 @@ public class CashMessagePublisher implements Consumer<Set<Trade>> {
     }
 
     public void publish(Trade trdMsg) {
-        String outputTopic = kafkaTopicProperties.cashMessageOutputTopic();
+        String outputTopic = kafkaTopicProperties.tradeOutputTopic();
         TradeAvro avroMsg = TradeAvroMapper.instance().domainToAvro(trdMsg);
         String key = avroMsg.getTradeID() + "-" + avroMsg.getTradeVersion();
         log.trace("Sending trade message: {} to topic: {}", key, outputTopic);
 
-        kafkaTemplateCashMessage
+        kafkaTemplateTradeMessage
                 .send(outputTopic, key, avroMsg)
                 .whenCompleteAsync((result, e) -> {
                     if (e == null) {

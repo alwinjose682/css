@@ -4,7 +4,7 @@ import io.alw.css.domain.common.TradeEventAction;
 import io.alw.css.domain.common.TradeEventType;
 import io.alw.css.domain.common.TransactionType;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
-import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
+import io.alw.css.fosimulator.model.properties.TradeTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.template.domain.MmTradeEvent;
 import io.alw.css.fosimulator.template.domain.TradeEventActionRecord;
@@ -19,33 +19,33 @@ import static io.alw.css.domain.common.TradeEventType.*;
 
 
 /// NOTE: This helper class has mutable state
-public final class CashMessageTemplateHelper implements CountAware {
+public final class TradeTemplateHelper implements CountAware {
     // Variable values for each template build. Also, these remain un-modified for each template build.
     private long dayForMsgTemplate;
 
-    // Fixed values for each instance of CashMessageTemplate and therefore for MessageTemplateHelper
+    // Fixed values for each instance of TradeTemplate and therefore for MessageTemplateHelper
     private final LocalDate initialValueDate;
     private final TransactionType transactionType;
     private final RandomGenerator rndm;
 
     // Spring Beans
-    final CashMessageTemplateProperties cashMsgTemplateProps;
+    final TradeTemplateProperties trdTemplateProps;
     private final RefDataService refDataService;
 
     private long counter;
 
-    CashMessageTemplateHelper(LocalDate initialValueDate, TransactionType transactionType, RandomGenerator rndm, CashMessageTemplateProperties cashMsgTemplateProps, RefDataService refDataService) {
+    TradeTemplateHelper(LocalDate initialValueDate, TransactionType transactionType, RandomGenerator rndm, TradeTemplateProperties trdTemplateProps, RefDataService refDataService) {
         this.initialValueDate = initialValueDate;
         this.transactionType = transactionType;
         this.rndm = rndm;
-        this.cashMsgTemplateProps = cashMsgTemplateProps;
+        this.trdTemplateProps = trdTemplateProps;
         this.refDataService = refDataService;
         this.counter = 0L;
     }
 
-    /// Check the documentation for [CashMessageTemplate#getRndmValueDate()]
+    /// Check the documentation for [TradeTemplate#getRndmValueDate()]
     ///
-    /// `numOfTemplateCreationsForValueDateToRemainSameAsCurrentDayCounter` - determines the first N number of templates for which a random number should not be added to the current [CashMessageTemplate#dayForMsgTemplate]
+    /// `numOfTemplateCreationsForValueDateToRemainSameAsCurrentDayCounter` - determines the first N number of templates for which a random number should not be added to the current [TradeTemplate#dayForMsgTemplate]
     LocalDate getRndmValueDate(long numOfTemplateCreationsForValueDateToRemainSameAsCurrentDayCounter) {
         if (counter() <= numOfTemplateCreationsForValueDateToRemainSameAsCurrentDayCounter) {
             long daysToAdd = dayForMsgTemplate;
@@ -55,14 +55,14 @@ public final class CashMessageTemplateHelper implements CountAware {
         }
     }
 
-    /// Returns the value date which can randomly range from [CashMessageTemplateProperties#vdBackwardDays] to [CashMessageTemplateProperties#vdForwardDays] with respect to the current [CashMessageTemplate#dayForMsgTemplate].
-    /// This means this method can return back valued date as well, but the percentage of back valued cashMessages is configured to be very less.
+    /// Returns the value date which can randomly range from [TradeTemplateProperties#vdBackwardDays] to [TradeTemplateProperties#vdForwardDays] with respect to the current [TradeTemplate#dayForMsgTemplate].
+    /// This means this method can return back valued date as well, but the percentage of back valued trades is configured to be very less.
     LocalDate getRndmValueDate() {
         final long daysToAdd;
-        if (isAnNthItem(cashMsgTemplateProps.numOfCfsForABackVdCf())) { // A back valued cashflow will be created only when this becomes true
-            daysToAdd = rndm.nextInt(Math.negateExact(cashMsgTemplateProps.vdBackwardDays()), -1);
+        if (isAnNthItem(trdTemplateProps.numOfCfsForABackVdCf())) { // A back valued trade will be created only when this becomes true
+            daysToAdd = rndm.nextInt(Math.negateExact(trdTemplateProps.vdBackwardDays()), -1);
         } else {
-            daysToAdd = dayForMsgTemplate + rndm.nextInt(0, cashMsgTemplateProps.vdForwardDays());
+            daysToAdd = dayForMsgTemplate + rndm.nextInt(0, trdTemplateProps.vdForwardDays());
         }
         return initialValueDate.plusDays(daysToAdd);
     }
@@ -71,12 +71,12 @@ public final class CashMessageTemplateHelper implements CountAware {
         return getRndmFutureValueDateRelativeTo(initialValueDate, false, 0);
     }
 
-    /// NOTE: This method can create valueDate higher than cashMsgTemplateProps::vdForwardDays()
+    /// NOTE: This method can create valueDate higher than TradeTemplateProps::vdForwardDays()
     /// NOTE: The method can return a current or future valued date even though the param`isBackValuedDateExpectedAsResult` is set to true
     LocalDate getRndmFutureValueDateRelativeTo(LocalDate givenDate, boolean isBackValuedDateExpectedAsResult, long minimumNumOfDaysIntoFutureRelativeToTheGivenDate) {
         final long daysToAdd;
         if (!isBackValuedDateExpectedAsResult) {
-            daysToAdd = dayForMsgTemplate + minimumNumOfDaysIntoFutureRelativeToTheGivenDate + rndm.nextInt(0, 365 + cashMsgTemplateProps.vdForwardDays());
+            daysToAdd = dayForMsgTemplate + minimumNumOfDaysIntoFutureRelativeToTheGivenDate + rndm.nextInt(0, 365 + trdTemplateProps.vdForwardDays());
         } else {
             daysToAdd = minimumNumOfDaysIntoFutureRelativeToTheGivenDate;
         }
@@ -148,7 +148,7 @@ public final class CashMessageTemplateHelper implements CountAware {
                 case TradeEventActionRecord.REMOVE _ when num > 30 -> new TradeEventActionPair(AMEND, ADD);
                 case TradeEventActionRecord.REMOVE _ -> new TradeEventActionPair(AMEND, ADD);
             };
-            case TradeEventTypeRecord.CANCEL _ -> throw new RuntimeException("Attempt to amend a cancelled cashflow is invalid");
+            case TradeEventTypeRecord.CANCEL _ -> throw new RuntimeException("Attempt to amend a cancelled trade is invalid");
             case MmTradeEvent _ -> throw new RuntimeException("Invalid trade event");
         };
     }

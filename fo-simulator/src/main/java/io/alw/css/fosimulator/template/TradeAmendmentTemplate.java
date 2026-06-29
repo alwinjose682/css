@@ -2,13 +2,13 @@ package io.alw.css.fosimulator.template;
 
 import io.alw.css.domain.common.*;
 import io.alw.css.domain.trade.*;
-import io.alw.css.fosimulator.cashflowgnrtr.DayTicker;
 import io.alw.css.fosimulator.model.Entity;
 import io.alw.css.fosimulator.model.TradeEventActionPair;
-import io.alw.css.fosimulator.model.properties.CashMessageTemplateProperties;
+import io.alw.css.fosimulator.model.properties.TradeTemplateProperties;
 import io.alw.css.fosimulator.service.RefDataService;
 import io.alw.css.fosimulator.template.domain.ExtendedTrade;
 import io.alw.css.fosimulator.template.model.*;
+import io.alw.css.fosimulator.tradegenerator.DayTicker;
 import io.alw.datagen.template.AggregateTemplateBuilderResult;
 import io.alw.datagen.template.ChildBuildDirective;
 import io.alw.datagen.template.ChildBuildDirective.ChildBuildDirectiveType1;
@@ -27,13 +27,12 @@ import static io.alw.css.domain.trade.TradeLegType.CHILD_TRADE;
 import static io.alw.css.domain.trade.TradeLegType.PARENT_TRADE;
 
 /// The type parameter M stands for MessageContext which is a combination of [Trade] and its metadata created by the implementations of this class.
-/// Some implementations choose to store MessageContext instead of just FoCashMessage in [io.alw.css.fosimulator.store.CashMessageStore]
-sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
-        extends CashMessageTemplate<T>
+sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade>
+        extends TradeTemplate<T>
         permits FxTemplate, MmTemplate {
 
-    public CashMessageAmendmentTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, CashMessageTemplateProperties cashMsgTemplateProps) {
-        super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, cashMsgTemplateProps);
+    public TradeAmendmentTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, TradeTemplateProperties trdTemplateProps) {
+        super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, trdTemplateProps);
     }
 
     /// Both primary and secondary criteria will be applied to select a tradeContext for amendment.
@@ -42,29 +41,29 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
         var rootTradeLeg = trd.rootTradeLeg();
         return trd.tradeEventType() != TradeEventType.CANCEL
                 && trd.tradeEventType() != TradeEventType.REBOOK
-                && (rootTradeLeg.tradeLegVersion() + trd.tradeVersion() <= msgTemplateHelper.cashMsgTemplateProps.maxPermittedAmendments());
+                && (rootTradeLeg.tradeLegVersion() + trd.tradeVersion() <= msgTemplateHelper.trdTemplateProps.maxPermittedAmendments());
     };
 
-    /// see also{@link CashMessageAmendmentTemplate#amendmentCandidateSelectionCriteriaPrimary}
+    /// see also{@link TradeAmendmentTemplate#amendmentCandidateSelectionCriteriaPrimary}
     private Predicate<T> amendmentCandidateSelectionCriteria() {
         return amendmentCandidateSelectionCriteriaPrimary.and(tradeContextAmendmentFrequency());
     }
 
     /// The tradeContext amendment frequency is the secondary amendmentCandidateSelectionCriteria.
-    /// see also {@link CashMessageAmendmentTemplate#amendmentCandidateSelectionCriteriaPrimary}
+    /// see also {@link TradeAmendmentTemplate#amendmentCandidateSelectionCriteriaPrimary}
     protected abstract Predicate<T> tradeContextAmendmentFrequency();
 
-    /// All the cashMessages selected for amendment must belong only to the trdCtx being passed via this method
-    protected abstract void buildCashMessageAmendmentContext(Consumer<TradeAmendmentContext> buildAmendedMessageFunc, T trdCtxForAmendment);
+    /// All the trade legs selected for amendment must belong only to the trdCtx being passed via this method
+    protected abstract void buildTradeAmendmentContext(Consumer<TradeAmendmentContext> buildAmendedMessageFunc, T trdCtxForAmendment);
 
-    protected abstract CashMessageStoreHelper<T> msgStoreHelper();
+    protected abstract TradeStoreHelper<T> msgStoreHelper();
 
     /// Return Trades(new+amends) which can be consumed by the TradeGenerators and published to CSS
     @Override
     public Set<Trade> get() {
         // Build the trades(newly created + amendments)
         AggregateTemplateBuilderResult<Trade> buildResult =
-                ((CashMessageAmendmentTemplate<T>) newBuildCycle())
+                ((TradeAmendmentTemplate<T>) newBuildCycle())
                         .withMessageAmendments()
                         .withRootTemplateValues()
                         .build();
@@ -79,18 +78,18 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
         return Collections.unmodifiableSet(tradeGeneratorInput);
     }
 
-    protected CashMessageAmendmentTemplate<T> withMessageAmendments() {
-        // Get cash message data that need to be amended
+    protected TradeAmendmentTemplate<T> withMessageAmendments() {
+        // Get trades that need to be amended
         final List<T> extTrdsForAmendment = msgStoreHelper().retrieveMessagesForCurrentDay();
-        // Add the list of foCashMessages for amendment to the template build step
+        // Add the list of trades for amendment to the template build step
         for (T extTrd : extTrdsForAmendment) {
-            buildCashMessageAmendmentContext(trdAmndCtx -> buildAmendedMessage(trdAmndCtx, extTrd), extTrd);
+            buildTradeAmendmentContext(trdAmndCtx -> buildAmendedMessage(trdAmndCtx, extTrd), extTrd);
         }
         return this;
     }
 
     /// Adds the step to lazily build amended messages in the [io.alw.datagen.template.AggregateTemplateBuilder].
-    /// All the cashMessages being amended belongs to the same extTrd
+    /// All the trade legs being amended belong to the same extTrd
     /// The steps to lazily build(functions) and the actual build done by [io.alw.datagen.template.AggregateTemplateBuilder] are performed in FIFO order
     protected void buildAmendedMessage(TradeAmendmentContext trdAmndCtx, T extTrd) {
         // Amendment if trade is rebooked
@@ -194,7 +193,7 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
                 case AmendableField.CounterpartyCode _, AmendableField.ValueDate _, AmendableField.Amount _ ->
                         throw new RuntimeException("CounterpartyCode, Amount and ValueDate amendment cannot be done on Trade level. Instead it must be done on the TradeLeg level");
                 case AmendableFieldSupplier _ ->
-                        throw new RuntimeException("Incorrect use of `AmendableFoCashMessageFieldSupplier` type. `AmendableFoCashMessageFieldSupplier` type should be used only when the values are NOT known at the time of constructing the object");
+                        throw new RuntimeException("Incorrect use of `AmendableTradeMessageFieldSupplier` type. `AmendableTradeMessageFieldSupplier` type should be used only when the values are NOT known at the time of constructing the object");
             }
         }
 
@@ -283,11 +282,11 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
             }
         }
 
-        // NOTE: AmendmentSubjectContextLazy may contain a both concrete amendable fields like AmendableFoCashMessageField.Amount, ValueDate etc in addition to the obviously expected 'AmendableFoCashMessageFieldSupplier'
+        // NOTE: AmendmentSubjectContextLazy may contain a both concrete amendable fields like AmendableTradeMessageField.Amount, ValueDate etc in addition to the obviously expected 'AmendableTradeMessageFieldSupplier'
         if (!concreteAmendableFields.isEmpty()) {
             var tradeLeg = trdLegAmndCtxLazy.tradeLeg();
             if (tradeLeg == null) {
-                throw new RuntimeException("Unable to amend a cashMessage. tradeLeg should not be null when a concrete 'AmendableFoCashMessageField' is present in 'AmendmentSubjectContextLazy'");
+                throw new RuntimeException("Unable to amend a trade leg. tradeLeg should not be null when a concrete 'AmendableTradeMessageField' is present in 'AmendmentSubjectContextLazy'");
             }
             var callbackProvider = trdLegAmndCtxLazy.callbackProvider();
 
@@ -307,7 +306,7 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
         TradeEventActionPair nextEventAndAction = trdAmndCtx.tradeEventActionPair();
         Set<AmendableField> amendableFields = trdLegAmndCtx.amendableFields();
         TradeLeg tradeLeg = trdLegAmndCtx.tradeLeg();
-        // Create builder for amending cashMessage from the cashMessage being amended
+        // Create builder for amending trade leg
         TradeLegBuilder amndBdr = TradeLegBuilder.builder(tradeLeg);
 
         // If trade is rebooked, get a new tradeLegId. Note: the extTrd::nextTradeLegId counter was already reset in a previous step due to rebook event
@@ -333,7 +332,7 @@ sealed abstract class CashMessageAmendmentTemplate<T extends ExtendedTrade>
                 case AmendableField.Amount(var newAmount) -> amndBdr.amount(newAmount);
                 case AmendableField.CounterpartyCode(var cpCode) -> amndBdr.counterpartyCode(cpCode);
                 case AmendableFieldSupplier _ -> {
-                    throw new RuntimeException("Incorrect use of `AmendableFoCashMessageFieldSupplier` type. `AmendableFoCashMessageFieldSupplier` type should be used only when the values are NOT known at the time of constructing the object");
+                    throw new RuntimeException("Incorrect use of `AmendableTradeMessageFieldSupplier` type. `AmendableTradeMessageFieldSupplier` type should be used only when the values are NOT known at the time of constructing the object");
                 }
             }
         }
