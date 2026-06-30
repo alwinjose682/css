@@ -1,6 +1,6 @@
 package io.alw.css.refdtgtr.model;
 
-import io.alw.datagen.TestDataGeneratable;
+import io.alw.datagen.DataGeneratable;
 import io.alw.css.domain.referencedata.Country;
 import io.alw.css.domain.referencedata.Currency;
 
@@ -9,5 +9,5 @@ public record CountryStateCurrency(
         Country country,
         String state,
         Currency currency
-) implements TestDataGeneratable {
+) implements DataGeneratable {
 }

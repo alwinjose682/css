@@ -1,0 +1,45 @@
+{
+  "type": "record",
+  "name": "TradeAvro",
+  "namespace": "io.alw.css.serialization.trade",
+  "fields": [
+    {
+      "name": "tradeEventAction",
+      "type": "string"
+    },
+    {
+      "name": "tradeEventType",
+      "type": "string"
+    },
+    {
+      "name": "tradeID",
+      "type": "long"
+    },
+    {
+      "name": "tradeType",
+      "type": "string"
+    },
+    {
+      "name": "tradeVersion",
+      "type": "int"
+    },
+    {
+      "name": "transactionType",
+      "type": "string"
+    },
+    {
+      "name": "tradeLegs",
+      "type": {
+        "type": "array",
+        "items": "io.alw.css.serialization.trade.TradeLegAvro"
+      }
+    },
+    {
+      "name": "tradeLinks",
+      "type": {
+        "type": "array",
+        "items": "io.alw.css.serialization.trade.TradeLinkAvro"
+      }
+    }
+  ]
+}

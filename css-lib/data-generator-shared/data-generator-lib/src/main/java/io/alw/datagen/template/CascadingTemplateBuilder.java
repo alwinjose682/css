@@ -1,12 +1,12 @@
 package io.alw.datagen.template;
 
-import io.alw.datagen.TestDataGeneratable;
+import io.alw.datagen.DataGeneratable;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public abstract class CascadingTemplateBuilder<T extends TestDataGeneratable> extends TemplateBuilder<T, List<T>> {
+public abstract class CascadingTemplateBuilder<T extends DataGeneratable> extends TemplateBuilder<T, List<T>> {
     private int numOfChildTemplates;
 
     protected CascadingTemplateBuilder(T parent) {
@@ -22,8 +22,8 @@ public abstract class CascadingTemplateBuilder<T extends TestDataGeneratable> ex
         return this;
     }
 
-    /// Builds the parent template and its related templates, if any.
-    /// The first element in the list is ALWAYS the parent. Rest of the elements build results of related templates.
+    /// Builds the result template and its related templates, if any.
+    /// The first element in the list is ALWAYS the result. Rest of the elements build results of related templates.
     ///
     /// The related templates can access the build output, T, during their builds.
     /// Values of parentType such as io.alw.css.domain.referencedata.Counterparty#entityCode are required during the build of related templates

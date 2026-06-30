@@ -1,0 +1,72 @@
+{
+  "type": "record",
+  "name": "TradeLegAvro",
+  "namespace": "io.alw.css.serialization.trade",
+  "fields": [
+    {
+      "name": "amount",
+      "type": {
+        "type": "string",
+        "java-class": "java.math.BigDecimal"
+      }
+    },
+    {
+      "name": "bookCode",
+      "type": "string"
+    },
+    {
+      "name": "counterBookCode",
+      "type": ["null","string"]
+    },
+    {
+      "name": "counterpartyCode",
+      "type": "string"
+    },
+    {
+      "name": "currCode",
+      "type": "string"
+    },
+    {
+      "name": "entityCode",
+      "type": "string"
+    },
+    {
+      "name": "payOrReceive",
+      "type": "string"
+    },
+    {
+      "name": "rate",
+      "type": {
+        "type": "string",
+        "java-class": "java.math.BigDecimal"
+      }
+    },
+    {
+      "name": "tradeEventAction",
+      "type": "string"
+    },
+    {
+      "name": "tradeEventType",
+      "type": "string"
+    },
+    {
+      "name": "tradeLegId",
+      "type": "long"
+    },
+    {
+      "name": "tradeLegType",
+      "type": "string"
+    },
+    {
+      "name": "tradeLegVersion",
+      "type": "int"
+    },
+    {
+      "name": "valueDate",
+      "type": {
+        "type": "int",
+        "logicalType":"date"
+      }
+    }
+  ]
+}
