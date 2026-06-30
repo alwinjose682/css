@@ -16,4 +16,8 @@ public abstract class ContextAwareEvent extends Event {
     protected ContextAwareEvent(String ctxId) {
         this.ctxId = ctxId;
     }
+
+    public void setCtxId(String ctxId){
+        this.ctxId = ctxId;
+    }
 }

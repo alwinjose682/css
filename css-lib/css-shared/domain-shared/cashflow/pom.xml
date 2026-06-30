@@ -36,6 +36,11 @@
             <groupId>io.alw.css.domain</groupId>
             <artifactId>common</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.alw.css.domain</groupId>
+            <artifactId>trade</artifactId>
+            <version>1.0.0</version>
+        </dependency>
     </dependencies>
 
 </project>

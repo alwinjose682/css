@@ -5,4 +5,4 @@
 maxage=10m,\
 maxsize=1G,\
 dumponexit=true,\
-filename=./recordings/fo_simulator__%p_%t.jfr"
+filename=./recordings/trade_publisher__%p_%t.jfr"

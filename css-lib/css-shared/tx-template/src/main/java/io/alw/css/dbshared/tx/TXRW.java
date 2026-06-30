@@ -1,56 +1,89 @@
 package io.alw.css.dbshared.tx;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.transaction.support.TransactionCallback;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-import static io.alw.css.profiling.SimpleEventActions.beginJfrEvent;
-import static io.alw.css.profiling.SimpleEventActions.endJfrEvent;
-
-public final class TXRW {
-    private final TransactionTemplate txrw;
+public final class TXRW extends TXRWBase {
+    private static final Logger log = LoggerFactory.getLogger(TXRW.class);
 
     public TXRW(PlatformTransactionManager platformTransactionManager) {
-        txrw = new TransactionTemplate(platformTransactionManager, new DefaultTransactionDefinition());
-        // Explicitly setting below even though the same are the defaults
-        txrw.setReadOnly(false);
-        txrw.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
-        txrw.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+        super(platformTransactionManager);
     }
 
-    public <T> T execute(TransactionCallback<T> action) throws TransactionException {
-        WriteEvent event = new WriteEvent();
-        beginJfrEvent(event);
-        T res = txrw.execute(action);
-        endJfrEvent(event);
-        return res;
+    @SafeVarargs
+    @Override
+    public final <T> T execute(Supplier<T> action, Class<? extends Exception>... rollbackFor) throws TransactionException {
+        TransactionCallback<T> txCallback = executeAction(action, rollbackFor);
+        return super.execute(txCallback);
     }
 
-    public void executeWithoutResult(Consumer<TransactionStatus> action) throws TransactionException {
-        WriteEvent event = new WriteEvent();
-        beginJfrEvent(event);
-        txrw.executeWithoutResult(action);
-        endJfrEvent(event);
+    @SafeVarargs
+    @Override
+    public final void executeWithoutResult(Runnable action, Class<? extends Exception>... rollbackFor) throws TransactionException {
+        Consumer<TransactionStatus> txStatusConsumer = executeAction(action, rollbackFor);
+        super.executeWithoutResult(txStatusConsumer);
     }
 
-    public <T> T execute(String ctxId, TransactionCallback<T> action) throws TransactionException {
-        WriteEvent event = new WriteEvent();
-        beginJfrEvent(event);
-        T res = txrw.execute(action);
-        endJfrEvent(event, e -> ((WriteEvent) e).ctxId = ctxId);
-        return res;
+    @SafeVarargs
+    @Override
+    public final <T> T execute(String ctxId, Supplier<T> action, Class<? extends Exception>... rollbackFor) throws TransactionException {
+        TransactionCallback<T> txCallback = executeAction(action, rollbackFor);
+        return super.execute(ctxId, txCallback);
     }
 
-    public void executeWithoutResult(String ctxId, Consumer<TransactionStatus> action) throws TransactionException {
-        WriteEvent event = new WriteEvent();
-        beginJfrEvent(event);
-        txrw.executeWithoutResult(action);
-        endJfrEvent(event, e -> ((WriteEvent) e).ctxId = ctxId);
+    @SafeVarargs
+    @Override
+    public final void executeWithoutResult(String ctxId, Runnable action, Class<? extends Exception>... rollbackFor) throws TransactionException {
+        Consumer<TransactionStatus> txStatusConsumer = executeAction(action, rollbackFor);
+        super.executeWithoutResult(ctxId, txStatusConsumer);
+    }
+
+    private Consumer<TransactionStatus> executeAction(Runnable action, Class<? extends Exception>[] rollbackFor) {
+        return ts -> {
+            try {
+                action.run();
+            } catch (Exception e) {
+
+                // Roll back the transaction if the exception occurred match any of the explicitly given types
+                for (Class<? extends Exception> aClass : rollbackFor) {
+                    if (aClass.isInstance(e)) {
+                        ts.setRollbackOnly();
+                        log.error("Encountered a Checked Exception during transaction. The transaction will be rolled back. Exception: " + e.getMessage());
+                        throw e;
+                    }
+                }
+
+                // Do not roll back if the exception occurred does not match the explicitly given types
+                throw e;
+            }
+        };
+    }
+
+    private <T> TransactionCallback<T> executeAction(Supplier<T> action, Class<? extends Exception>[] rollbackFor) {
+        return ts -> {
+            try {
+                return action.get();
+            } catch (Exception e) {
+
+                // Roll back the transaction if the exception occurred match any of the explicitly given types
+                for (Class<? extends Exception> aClass : rollbackFor) {
+                    if (aClass.isInstance(e)) {
+                        ts.setRollbackOnly();
+                        log.error("Encountered a Checked Exception during transaction. The transaction will be rolled back. Exception: " + e.getMessage());
+                        throw e;
+                    }
+                }
+
+                // Do not roll back if the exception occurred does not match the explicitly given types
+                throw e;
+            }
+        };
     }
 }
