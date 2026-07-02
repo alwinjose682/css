@@ -43,6 +43,11 @@ public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U exte
         return this;
     }
 
+    public AggregateTemplateBuilder<T, U, TB, UB> withChildTemplateDirective(ChildBuildDirective<U, UB> directive) {
+        childTemplateDirectives.addFirst(directive);
+        return this;
+    }
+
     /// This method can be called recursively
     ///
     /// NOTE: The items inserted in the queue will be removed in the same order as they are inserted
@@ -87,10 +92,11 @@ public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U exte
         parentAndChildAssociationFunc().accept(parentTemplate, childItems);
 
         // 4. Build related templates that do NOT need to be grouped together with parent/root template
-        final Set<T> relatedTemplates = new HashSet<>();
+        final List<T> relatedTemplates = new ArrayList<>();
         while (!relatedDirectives.isEmpty()) {
             ParentBuildDirective<T, U, TB, UB> parentBuildDirective = relatedDirectives.removeLast();
-            relatedTemplates.add(buildRelatedTemplate(parentBuildDirective));
+            T t = buildRelatedTemplate(parentBuildDirective);
+            relatedTemplates.add(t);
         }
 
         return new AggregateTemplateBuilderResult<>(parentTemplate, relatedTemplates);

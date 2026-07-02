@@ -17,7 +17,7 @@ final class TradeStoreHelper<T> {
     private final TradeTemplateHelper msgTemplateHelper;
 
     enum TradeRetrievalPurpose {
-        AMEND(TradeStore.storeIndexes[0]), NEW_TRD_LEG(TradeStore.storeIndexes[1]);
+        AMEND(TradeStore.storeIndexes[0]), TRD_SPECIFIC_EVENT(TradeStore.storeIndexes[1]);
 
         private final int storeIdx;
 

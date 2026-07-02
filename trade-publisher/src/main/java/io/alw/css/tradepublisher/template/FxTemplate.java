@@ -1,6 +1,7 @@
 package io.alw.css.tradepublisher.template;
 
 import io.alw.css.domain.common.*;
+import io.alw.css.domain.trade.TradeLeg;
 import io.alw.css.domain.trade.TradeLegBuilder;
 import io.alw.css.tradepublisher.model.Entity;
 import io.alw.css.tradepublisher.model.TradeEventActionPair;
@@ -12,6 +13,7 @@ import io.alw.css.tradepublisher.template.domain.FxTrade;
 import io.alw.css.tradepublisher.template.model.*;
 import io.alw.css.tradepublisher.tradegenerator.DayTicker;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
+import io.alw.datagen.template.ChildBuildDirective;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -35,6 +37,11 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
 
         TradeStore<FxTrade> msgStore = new InMemoryTradeStore<>();
         this.msgStoreHelper = new TradeStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
+    }
+
+    @Override
+    protected List<ChildBuildDirective<TradeLeg, TradeLegBuilder>> createNewTradeLegsForTradeSpecificEvents(FxTrade extTrd) {
+        return List.of();
     }
 
     @Override
@@ -89,7 +96,7 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
     }
 
     @Override
-    protected void buildTradeAmendmentContext(Consumer<TradeAmendmentContext> buildAmendedMessageFunc, FxTrade trdCtxForAmendment) {
+    protected void buildTradeAmendmentContext(Consumer<TradeAmendmentContext> trdAmendmentBuilderFunc, FxTrade trdCtxForAmendment) {
         var rootMsg = trdCtxForAmendment.rootTradeLeg();
         var nextTradeEventAction = determineNextTradeEventAndAction(rootMsg.tradeEventType(), rootMsg.tradeEventAction());
         var nextEventType = nextTradeEventAction.event();
@@ -105,7 +112,7 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
         };
 
         // Execute the amendment build function
-        buildAmendedMessageFunc.accept(msgAmndCtx);
+        trdAmendmentBuilderFunc.accept(msgAmndCtx);
     }
 
     private TradeAmendmentContext buildAmendmentContextForCancelEvent(TradeEventActionPair nextTradeEventAction) {

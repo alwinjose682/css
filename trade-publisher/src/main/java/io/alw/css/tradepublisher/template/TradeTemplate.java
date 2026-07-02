@@ -31,7 +31,7 @@ import java.util.random.RandomGenerator;
 /// Each instance of this class is supposed to be exclusive for a single thread
 sealed abstract class TradeTemplate<T extends ExtendedTrade>
         extends AggregateTemplateBuilder<Trade, TradeLeg, TradeBuilder, TradeLegBuilder>
-        implements Supplier<Set<Trade>>
+        implements Supplier<List<Trade>>
         permits TradeAmendmentTemplate {
 
     /// Variable values for each template build. These values remain un-modified for each template build.

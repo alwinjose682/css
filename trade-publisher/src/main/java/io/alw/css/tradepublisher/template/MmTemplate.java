@@ -20,11 +20,13 @@ import io.alw.css.tradepublisher.template.domain.MmTrade;
 import io.alw.css.tradepublisher.template.model.*;
 import io.alw.css.tradepublisher.tradegenerator.DayTicker;
 import io.alw.datagen.template.AggregateTemplateBuilder;
+import io.alw.datagen.template.ChildBuildDirective;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -38,7 +40,6 @@ import static io.alw.css.domain.trade.TradeLegType.*;
 import static io.alw.css.tradepublisher.template.MmTemplateConstants.*;
 import static io.alw.css.tradepublisher.template.domain.InterestBasis.ThirtyBy360;
 
-//TODO: Make changes in AggregateTemplateBuilder
 public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
     private final TradeStoreHelper<MmTrade> msgStoreHelper;
 
@@ -49,7 +50,15 @@ public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
         this.msgStoreHelper = new TradeStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
     }
 
-    /// Build new template for MM trade. A new MM trade can have 1 to 3 trade legs depending on whether its a TERM or CALL and depending on the interest tradeLeg
+    /// Currently implemented for only one [TradeEventType]. Not even checked if its valid to create the TradeLeg for the current state of the Trade
+    @Override
+    protected List<ChildBuildDirective<TradeLeg, TradeLegBuilder>> createNewTradeLegsForTradeSpecificEvents(MmTrade extTrd) {
+        var interestLegIds = new Id(extTrd.nextTradeLegId(), VERSION_ONE);
+        var trdEventAndAction = new TradeEventActionPair(TradeEventType.INTEREST_ACTION, TradeEventAction.ADD);
+        return List.of(createInterestTradeLeg(extTrd, interestLegIds, trdEventAndAction));
+    }
+
+    /// Build new template for MM trade. A new MM trade can have 1 to 3 trade legs depending on whether it is a TERM or CALL and depending on the interest tradeLeg
     @Override
     public MmTemplate withRootTemplateValues() {
         // Create MessageContext
@@ -71,7 +80,10 @@ public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
             }
             case MM_CALL -> {
                 var interestLegIds = new Id(extTrd.nextTradeLegId(), VERSION_ONE);
-                this.withChildTemplateDirective(() -> createInterestTradeLeg(extTrd, interestLegIds, newTrdEventAndAction));
+                this.withChildTemplateDirective(() -> {
+                    var directive = createInterestTradeLeg(extTrd, interestLegIds, newTrdEventAndAction);
+                    this.withChildTemplateDirective(directive);
+                });
             }
             default -> throw new RuntimeException("Invalid TradeType for MmTemplate");
         }
@@ -87,18 +99,18 @@ public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
     }
 
     @Override
-    protected void buildTradeAmendmentContext(Consumer<TradeAmendmentContext> amendmentMessageBuilderFunc, MmTrade trdForAmendment) {
+    protected void buildTradeAmendmentContext(Consumer<TradeAmendmentContext> trdAmendmentBuilderFunc, MmTrade trdForAmendment) {
         switch (cyclicAmendableMmLegProvider.get()) {
             case MM_PRINCIPAL -> {
                 var msgAmendCtx = buildTradeAmendmentContextStep2(trdForAmendment.principalLeg(), trdForAmendment);
-                amendmentMessageBuilderFunc.accept(msgAmendCtx);
+                trdAmendmentBuilderFunc.accept(msgAmendCtx);
             }
             case MM_MATURITY -> {
                 var maturityLeg = trdForAmendment.maturityLeg();
                 // maturityLeg may not be present for CALL trade. If not present, do no amendment to create, hence do not execute the function
                 if (maturityLeg != null) {
                     var msgAmendCtx = buildTradeAmendmentContextStep2(maturityLeg, trdForAmendment);
-                    amendmentMessageBuilderFunc.accept(msgAmendCtx);
+                    trdAmendmentBuilderFunc.accept(msgAmendCtx);
                 }
             }
             case MM_INTEREST -> throw new RuntimeException("Amending interest leg is not allowed");
@@ -251,16 +263,21 @@ public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
         // 1. Add building function of MATURITY leg to the builder
         this.withChildTemplateDirective(extTrade::setMaturityLeg, () -> buildMaturityLeg(extTrade, maturityLegId, trdEventAndAction));
         // 2. create InterestTradeLeg object and add the interestLeg building function to the builder
-        this.withChildTemplateDirective(() -> createInterestTradeLeg(extTrade, interestLegId, trdEventAndAction));
+        this.withChildTemplateDirective(() -> {
+            var directive = createInterestTradeLeg(extTrade, interestLegId, trdEventAndAction);
+            this.withChildTemplateDirective(directive);
+        });
     }
 
-    private void createInterestTradeLeg(MmTrade extTrd, Id interestLegId, TradeEventActionPair trdEventAndAction) {
+    private ChildBuildDirective<TradeLeg, TradeLegBuilder> createInterestTradeLeg(MmTrade extTrd, Id interestLegId, TradeEventActionPair trdEventAndAction) {
         var principalLeg = extTrd.principalLeg();
         var maturityLeg = extTrd.maturityLeg(); // NOTE: the 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
         // Create InterestTradeLeg object
         InterestTradeLeg newIntrTrdLegObj = createInterestTradeLegAndAssociateWithMmTrade(extTrd, principalLeg, maturityLeg);
-        // Add building function of INTEREST leg to the builder
-        this.withChildTemplateDirective(newIntrTrdLegObj::setInterestLeg, () -> buildInterestLeg(extTrd, interestLegId, trdEventAndAction, newIntrTrdLegObj));
+        // Create interest TradeLeg directive
+        Consumer<TradeLeg> callback = newIntrTrdLegObj::setInterestLeg;
+        Supplier<TradeLegBuilder> buildStep = () -> buildInterestLeg(extTrd, interestLegId, trdEventAndAction, newIntrTrdLegObj);
+        return new ChildBuildDirective.ChildBuildDirectiveType1<>(callback, buildStep);
     }
 
     /// NOTE: The 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
