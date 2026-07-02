@@ -35,7 +35,7 @@ final class TradeStoreHelper<T> {
 
     /// Removes the message data from the store and returns it
     List<T> retrieveTradesForCurrentDay(TradeRetrievalPurpose trdRetrievalPurpose) {
-        final long currentDay = msgTemplateHelper.currentDayForMsgTemplate();
+        final long currentDay = msgTemplateHelper.currentDayForTrdTemplate();
         List<T> msgsToBeAmended = new ArrayList<>();
         for (; lastTradeRetrievalDay <= currentDay; ++lastTradeRetrievalDay) {
             List<T> msgs = msgStore.remove(lastTradeRetrievalDay, trdRetrievalPurpose.storeIdx);

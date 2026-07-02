@@ -41,7 +41,7 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade>
         var rootTradeLeg = trd.rootTradeLeg();
         return trd.tradeEventType() != TradeEventType.CANCEL
                 && trd.tradeEventType() != TradeEventType.REBOOK
-                && (rootTradeLeg.tradeLegVersion() + trd.tradeVersion() <= msgTemplateHelper.trdTemplateProps.maxPermittedAmendments());
+                && (rootTradeLeg.tradeLegVersion() + trd.tradeVersion() <= trdTemplateHelper.trdTemplateProps.maxPermittedAmendments());
     };
 
     /// see also{@link TradeAmendmentTemplate#amendmentCandidateSelectionCriteriaPrimary}

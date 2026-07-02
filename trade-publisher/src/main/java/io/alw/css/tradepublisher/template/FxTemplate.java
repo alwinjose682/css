@@ -29,14 +29,14 @@ import static io.alw.css.domain.trade.TradeLegType.FX_SIDE2;
 import static io.alw.css.tradepublisher.template.model.AmendableFieldType.*;
 
 public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
-    private final TradeStoreHelper<FxTrade> msgStoreHelper;
+    private final TradeStoreHelper<FxTrade> trdStoreHelper;
     private static final Supplier<Set<AmendableFieldType>> cyclicAmendableTradeMessageFieldTypeProvider = new CyclicAmendableTradeMessageFieldProvider(getListOfAmendableTradeMessageFieldTypes());
 
     public FxTemplate(Entity entity, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, TradeTemplateProperties tradeTemplateProperties) {
         super(entity, TradeType.FX, transactionType, rndm, initialValueDate, refDataService, dayTicker, tradeTemplateProperties);
 
-        TradeStore<FxTrade> msgStore = new InMemoryTradeStore<>();
-        this.msgStoreHelper = new TradeStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
+        TradeStore<FxTrade> trdStore = new InMemoryTradeStore<>();
+        this.trdStoreHelper = new TradeStoreHelper<>(dayTicker, trdStore, rndm, trdTemplateHelper);
     }
 
     @Override
@@ -67,7 +67,7 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
     /// Builds TradeLeg-1(Fx-Side-1) of the fx message
     private TradeLegBuilder buildFxSide1() {
         return createNewTradeLegWithDefaultValues(extTrd(), FX_SIDE1)
-                .valueDate(msgTemplateHelper.getRndmValueDate(50))
+                .valueDate(trdTemplateHelper.getRndmValueDate(50))
                 .payOrReceive(rndm.nextBoolean() ? PayOrReceive.PAY : PayOrReceive.RECEIVE)
                 .amount(BigDecimal.valueOf(rndm.nextDouble(2, 95036)));
     }
@@ -75,7 +75,7 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
     /// Builds TradeLeg-2(Fx-Side-2) of the fx message
     private TradeLegBuilder buildFxSide2() {
         var tradeLeg1 = extTrd().tradeLeg1();
-        String side2CounterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(tradeLeg1.counterpartyCode());
+        String side2CounterpartyCode = trdTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(tradeLeg1.counterpartyCode());
         Entity side2Entity = refDataService.entityOtherThan(rndm, tradeLeg1.entityCode());
         String side2EntityCode = side2Entity.entityCode();
         String side2CurrCode = side2Entity.currCode();
@@ -97,10 +97,10 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
 
     @Override
     protected void buildTradeAmendmentContext(Consumer<TradeAmendmentContext> trdAmendmentBuilderFunc, FxTrade trdCtxForAmendment) {
-        var rootMsg = trdCtxForAmendment.rootTradeLeg();
-        var nextTradeEventAction = determineNextTradeEventAndAction(rootMsg.tradeEventType(), rootMsg.tradeEventAction());
+        var rootTrdLeg = trdCtxForAmendment.rootTradeLeg();
+        var nextTradeEventAction = determineNextTradeEventAndAction(rootTrdLeg.tradeEventType(), rootTrdLeg.tradeEventAction());
         var nextEventType = nextTradeEventAction.event();
-        var msgAmndCtx = switch (nextEventType) {
+        var trdAmndCtx = switch (nextEventType) {
             // Common trade amend events applicable for all trades
             case AMEND, REBOOK -> buildAmendmentContextForCommonAmendEvents(trdCtxForAmendment, nextTradeEventAction);
             case CANCEL -> buildAmendmentContextForCancelEvent(nextTradeEventAction);
@@ -112,7 +112,7 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
         };
 
         // Execute the amendment build function
-        trdAmendmentBuilderFunc.accept(msgAmndCtx);
+        trdAmendmentBuilderFunc.accept(trdAmndCtx);
     }
 
     private TradeAmendmentContext buildAmendmentContextForCancelEvent(TradeEventActionPair nextTradeEventAction) {
@@ -121,14 +121,14 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
     }
 
     private TradeAmendmentContext buildAmendmentContextForCommonAmendEvents(FxTrade trdCtxForAmendment, TradeEventActionPair nextTradeEventAction) {
-        final var side1Msg = trdCtxForAmendment.tradeLeg1();
-        final var side2Msg = trdCtxForAmendment.tradeLeg2();
+        final var trdLeg1 = trdCtxForAmendment.tradeLeg1();
+        final var trdLeg2 = trdCtxForAmendment.tradeLeg2();
         Set<AmendableFieldType> amendableFieldTypes = cyclicAmendableTradeMessageFieldTypeProvider.get();
         var amendableFields = new AmendableFieldsCollection();
         for (AmendableFieldType ft : amendableFieldTypes) {
             switch (ft) {
                 case VALUE_DATE -> {
-                    var valueDate = new AmendableField.ValueDate(msgTemplateHelper.getRndmValueDate());
+                    var valueDate = new AmendableField.ValueDate(trdTemplateHelper.getRndmValueDate());
                     amendableFields
                             .addForTradeLeg(FX_SIDE1, valueDate)
                             .addForTradeLeg(FX_SIDE2, valueDate);
@@ -143,8 +143,8 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
                             .addForTradeLeg(FX_SIDE2, side2Amount);
                 }
                 case COUNTERPARTY_CODE -> {
-                    String side1CpCodeStr = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(side1Msg.counterpartyCode());
-                    String side2CpCodeStr = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(side2Msg.counterpartyCode());
+                    String side1CpCodeStr = trdTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(trdLeg1.counterpartyCode());
+                    String side2CpCodeStr = trdTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(trdLeg2.counterpartyCode());
                     var side1CpCode = new AmendableField.CounterpartyCode(side1CpCodeStr);
                     var side2CpCode = new AmendableField.CounterpartyCode(side2CpCodeStr);
 
@@ -156,8 +156,8 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
             }
         }
 
-        var side1AmndSubCtx = new TradeLegAmendmentContextEager(FX_SIDE1, side1Msg, trdCtxForAmendment::setTradeLeg1, amendableFields.getForTradeLeg(FX_SIDE1));
-        var side2AmndSubCtx = new TradeLegAmendmentContextEager(FX_SIDE2, side2Msg, trdCtxForAmendment::setTradeLeg2, amendableFields.getForTradeLeg(FX_SIDE2));
+        var side1AmndSubCtx = new TradeLegAmendmentContextEager(FX_SIDE1, trdLeg1, trdCtxForAmendment::setTradeLeg1, amendableFields.getForTradeLeg(FX_SIDE1));
+        var side2AmndSubCtx = new TradeLegAmendmentContextEager(FX_SIDE2, trdLeg2, trdCtxForAmendment::setTradeLeg2, amendableFields.getForTradeLeg(FX_SIDE2));
         return new TradeAmendmentContext(nextTradeEventAction)
                 .addNextTradeLegAmndCtx(side1AmndSubCtx)
                 .addNextTradeLegAmndCtx(side2AmndSubCtx);
@@ -183,13 +183,13 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
     }
 
     @Override
-    protected TradeEventActionPair determineNextTradeEventAndAction(TradeEventType tradeEventType, TradeEventAction tradeEventAction) {
-        return msgTemplateHelper.determineNextTradeEventAndActionForCommonEvents(rndm, tradeEventType, tradeEventAction);
+    protected TradeEventActionPair determineNextTradeEventAndAction(TradeEventType trdEventType, TradeEventAction trdEventAction) {
+        return trdTemplateHelper.determineNextTradeEventAndActionForCommonEvents(rndm, trdEventType, trdEventAction);
     }
 
     @Override
     protected TradeStoreHelper<FxTrade> trdStoreHelper() {
-        return msgStoreHelper;
+        return trdStoreHelper;
     }
 
     private static class CyclicAmendableTradeMessageFieldProvider extends AbstractCyclicDataProvider<Set<AmendableFieldType>> {

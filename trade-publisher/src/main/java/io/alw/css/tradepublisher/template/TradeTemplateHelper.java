@@ -21,7 +21,7 @@ import static io.alw.css.domain.common.TradeEventType.*;
 /// NOTE: This helper class has mutable state
 public final class TradeTemplateHelper implements CountAware {
     // Variable values for each template build. Also, these remain un-modified for each template build.
-    private long dayForMsgTemplate;
+    private long dayForTrdTemplate;
 
     // Fixed values for each instance of TradeTemplate and therefore for MessageTemplateHelper
     private final LocalDate initialValueDate;
@@ -45,24 +45,24 @@ public final class TradeTemplateHelper implements CountAware {
 
     /// Check the documentation for [TradeTemplate#getRndmValueDate()]
     ///
-    /// `numOfTemplateCreationsForValueDateToRemainSameAsCurrentDayCounter` - determines the first N number of templates for which a random number should not be added to the current [TradeTemplate#dayForMsgTemplate]
+    /// `numOfTemplateCreationsForValueDateToRemainSameAsCurrentDayCounter` - determines the first N number of templates for which a random number should not be added to the current [TradeTemplate#dayForTrdTemplate]
     LocalDate getRndmValueDate(long numOfTemplateCreationsForValueDateToRemainSameAsCurrentDayCounter) {
         if (counter() <= numOfTemplateCreationsForValueDateToRemainSameAsCurrentDayCounter) {
-            long daysToAdd = dayForMsgTemplate;
+            long daysToAdd = dayForTrdTemplate;
             return initialValueDate.plusDays(daysToAdd);
         } else {
             return getRndmValueDate();
         }
     }
 
-    /// Returns the value date which can randomly range from [TradeTemplateProperties#vdBackwardDays] to [TradeTemplateProperties#vdForwardDays] with respect to the current [TradeTemplate#dayForMsgTemplate].
+    /// Returns the value date which can randomly range from [TradeTemplateProperties#vdBackwardDays] to [TradeTemplateProperties#vdForwardDays] with respect to the current [TradeTemplate#dayForTrdTemplate].
     /// This means this method can return back valued date as well, but the percentage of back valued trades is configured to be very less.
     LocalDate getRndmValueDate() {
         final long daysToAdd;
         if (isAnNthItem(trdTemplateProps.numOfCfsForABackVdCf())) { // A back valued trade will be created only when this becomes true
             daysToAdd = rndm.nextInt(Math.negateExact(trdTemplateProps.vdBackwardDays()), -1);
         } else {
-            daysToAdd = dayForMsgTemplate + rndm.nextInt(0, trdTemplateProps.vdForwardDays());
+            daysToAdd = dayForTrdTemplate + rndm.nextInt(0, trdTemplateProps.vdForwardDays());
         }
         return initialValueDate.plusDays(daysToAdd);
     }
@@ -76,7 +76,7 @@ public final class TradeTemplateHelper implements CountAware {
     LocalDate getRndmFutureValueDateRelativeTo(LocalDate givenDate, boolean isBackValuedDateExpectedAsResult, long minimumNumOfDaysIntoFutureRelativeToTheGivenDate) {
         final long daysToAdd;
         if (!isBackValuedDateExpectedAsResult) {
-            daysToAdd = dayForMsgTemplate + minimumNumOfDaysIntoFutureRelativeToTheGivenDate + rndm.nextInt(0, 365 + trdTemplateProps.vdForwardDays());
+            daysToAdd = dayForTrdTemplate + minimumNumOfDaysIntoFutureRelativeToTheGivenDate + rndm.nextInt(0, 365 + trdTemplateProps.vdForwardDays());
         } else {
             daysToAdd = minimumNumOfDaysIntoFutureRelativeToTheGivenDate;
         }
@@ -114,16 +114,16 @@ public final class TradeTemplateHelper implements CountAware {
         return transactionType == TransactionType.INTER_BOOK || transactionType == TransactionType.INTER_BRANCH || transactionType == TransactionType.INTER_COMPANY;
     }
 
-    long currentDayForMsgTemplate() {
-        return dayForMsgTemplate;
+    long currentDayForTrdTemplate() {
+        return dayForTrdTemplate;
     }
 
-    LocalDate currentDateForMsgTemplate() {
-        return initialValueDate.plusDays(dayForMsgTemplate);
+    LocalDate currentDateForTrdTemplate() {
+        return initialValueDate.plusDays(dayForTrdTemplate);
     }
 
-    void setDayForMsgTemplate(long day) {
-        dayForMsgTemplate = day;
+    void setDayForTrdTemplate(long day) {
+        dayForTrdTemplate = day;
     }
 
     TradeEventActionPair determineNextTradeEventAndActionForCommonEvents(RandomGenerator rbdm, TradeEventType standardEvent, TradeEventAction standardAction) {
