@@ -1,7 +1,6 @@
 package io.alw.css.tradepublisher.template;
 
 import io.alw.css.domain.common.*;
-import io.alw.css.domain.trade.TradeLeg;
 import io.alw.css.domain.trade.TradeLegBuilder;
 import io.alw.css.tradepublisher.model.Entity;
 import io.alw.css.tradepublisher.model.TradeEventActionPair;
@@ -13,7 +12,6 @@ import io.alw.css.tradepublisher.template.domain.FxTrade;
 import io.alw.css.tradepublisher.template.model.*;
 import io.alw.css.tradepublisher.tradegenerator.DayTicker;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
-import io.alw.datagen.template.ChildBuildDirective;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -28,7 +26,7 @@ import static io.alw.css.domain.trade.TradeLegType.FX_SIDE1;
 import static io.alw.css.domain.trade.TradeLegType.FX_SIDE2;
 import static io.alw.css.tradepublisher.template.model.AmendableFieldType.*;
 
-public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
+public final class FxTemplate extends TradeAmendmentTemplate<FxTrade, FxTemplate> {
     private final TradeStoreHelper<FxTrade> trdStoreHelper;
     private static final Supplier<Set<AmendableFieldType>> cyclicAmendableTradeMessageFieldTypeProvider = new CyclicAmendableTradeMessageFieldProvider(getListOfAmendableTradeMessageFieldTypes());
 
@@ -40,12 +38,7 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
     }
 
     @Override
-    protected List<ChildBuildDirective<TradeLeg, TradeLegBuilder>> createNewTradeLegsForTradeSpecificEvents(FxTrade extTrd) {
-        return List.of();
-    }
-
-    @Override
-    protected Predicate<FxTrade> tradeContextAmendmentFrequency() {
+    protected Predicate<FxTrade> amendmentCandidateSelectionCriteriaSecondary() {
         return _ -> rndm.nextInt(0, 100) > 80;
     }
 
@@ -66,7 +59,7 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
 
     /// Builds TradeLeg-1(Fx-Side-1) of the fx message
     private TradeLegBuilder buildFxSide1() {
-        return createNewTradeLegWithDefaultValues(extTrd(), FX_SIDE1)
+        return createNewTradeLegWithDefaultValues(getExtendedTradeOfCurrentBuildCycle(), FX_SIDE1)
                 .valueDate(trdTemplateHelper.getRndmValueDate(50))
                 .payOrReceive(rndm.nextBoolean() ? PayOrReceive.PAY : PayOrReceive.RECEIVE)
                 .amount(BigDecimal.valueOf(rndm.nextDouble(2, 95036)));
@@ -74,7 +67,7 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
 
     /// Builds TradeLeg-2(Fx-Side-2) of the fx message
     private TradeLegBuilder buildFxSide2() {
-        var tradeLeg1 = extTrd().tradeLeg1();
+        var tradeLeg1 = getExtendedTradeOfCurrentBuildCycle().tradeLeg1();
         String side2CounterpartyCode = trdTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(tradeLeg1.counterpartyCode());
         Entity side2Entity = refDataService.entityOtherThan(rndm, tradeLeg1.entityCode());
         String side2EntityCode = side2Entity.entityCode();
@@ -82,7 +75,7 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
 
         return TradeLegBuilder.builder(tradeLeg1)
                 // Id and version of fxSide2
-                .tradeLegId(extTrd().nextTradeLegId())
+                .tradeLegId(getExtendedTradeOfCurrentBuildCycle().nextTradeLegId())
                 .tradeLegVersion(VERSION_ONE)
                 .tradeLegType(FX_SIDE2)
                 // Values that differ for counter side of the FX deal
@@ -185,6 +178,11 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade> {
     @Override
     protected TradeEventActionPair determineNextTradeEventAndAction(TradeEventType trdEventType, TradeEventAction trdEventAction) {
         return trdTemplateHelper.determineNextTradeEventAndActionForCommonEvents(rndm, trdEventType, trdEventAction);
+    }
+
+    @Override
+    protected FxTemplate self() {
+        return this;
     }
 
     @Override

@@ -23,7 +23,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -120,7 +119,7 @@ public final class TradeGeneratorHandler {
 
                     try {
                         // Create the Trade supplier
-                        Supplier<Set<Trade>> trdSupplier = createTradeSupplier(transactionType, tradeType, entity);
+                        Supplier<List<Trade>> trdSupplier = createTradeSupplier(transactionType, tradeType, entity);
                         // Create the tradeGenerator
                         GeneratorDetail generatorDetail = new GeneratorDetail(key, generatorSleepDurationSeconds);
                         TradeGenerator tradeGenerator = createGenerator(generatorDetail, trdSupplier, tradePublisher);
@@ -166,7 +165,7 @@ public final class TradeGeneratorHandler {
     /// Creates a new generator and adds to the list of the same type of generators.
     /// Concurrent Safe. Performs this computation atomically. generatorMap is ConcurrentHashMap
     /// This method does NOT change the 'begin' or 'end' handler operation state
-    private TradeGenerator createGenerator(GeneratorDetail generatorDetail, Supplier<Set<Trade>> trdSupplier, TradePublisher tradePublisher) {
+    private TradeGenerator createGenerator(GeneratorDetail generatorDetail, Supplier<List<Trade>> trdSupplier, TradePublisher tradePublisher) {
         TradeGenerator newGenerator = new TradeGenerator(generatorDetail, trdSupplier, tradePublisher);
         generatorMap.compute(generatorDetail.generatorKey(), (k, v) -> {
             if (v == null) {
@@ -181,7 +180,7 @@ public final class TradeGeneratorHandler {
         return newGenerator;
     }
 
-    private Supplier<Set<Trade>> createTradeSupplier(TransactionType transactionType, TradeType tradeType, Entity entity) {
+    private Supplier<List<Trade>> createTradeSupplier(TransactionType transactionType, TradeType tradeType, Entity entity) {
         LocalDate initialValueDate = cfGenerationInitialValues.valueDate();
         RandomGenerator rndm = RandomGenerator.getDefault();
         return switch (tradeType) {

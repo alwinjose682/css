@@ -29,7 +29,7 @@ import java.util.random.RandomGenerator;
 ///
 /// [TradeTemplate] instances are both a trade type template and a supplier of the build output of the template
 /// Each instance of this class is supposed to be exclusive for a single thread
-sealed abstract class TradeTemplate<T extends ExtendedTrade>
+sealed abstract class TradeTemplate<T extends ExtendedTrade, TT extends TradeTemplate<T, TT>>
         extends AggregateTemplateBuilder<Trade, TradeLeg, TradeBuilder, TradeLegBuilder>
         implements Supplier<List<Trade>>
         permits TradeAmendmentTemplate {
@@ -76,11 +76,13 @@ sealed abstract class TradeTemplate<T extends ExtendedTrade>
 
     protected abstract TradeEventActionPair determineNextTradeEventAndAction(TradeEventType trdEventType, TradeEventAction trdEventAction);
 
+    protected abstract TT self();
+
     /// This method is the starting point to start a new build cycle
     /// This method ensures that the same [DayTicker#day()] is used at all points of building multiple trades in current cycle
-    protected TradeTemplate<T> newBuildCycle() {
+    protected TT newBuildCycle() {
         trdTemplateHelper.setDayForTrdTemplate(dayTicker.day());
-        return this;
+        return self();
     }
 
     /// This method is used to create result [TradeBuilder]. The builder for grouped or related items are created using [TradeTemplate#createBuilderFrom(Trade , String)]
@@ -129,7 +131,7 @@ sealed abstract class TradeTemplate<T extends ExtendedTrade>
                 ;
     }
 
-    protected T extTrd() {
+    protected T getExtendedTradeOfCurrentBuildCycle() {
         return extTrd;
     }
 

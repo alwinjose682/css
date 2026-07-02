@@ -51,4 +51,8 @@ final class TradeStoreHelper<T> {
         long futureAmendmentDay = rndm.nextLong(lastTradeRetrievalDay, lastTradeRetrievalDay + maxAmendmentGenerationDelayInDays);
         msgStore.add(futureAmendmentDay, msgData, trdRetrievalPurpose.storeIdx);
     }
+
+    void storeTradeForFutureRetrievalDay(T msgData, TradeRetrievalPurpose trdRetrievalPurpose, long retrievalDay) {
+        msgStore.add(retrievalDay, msgData, trdRetrievalPurpose.storeIdx);
+    }
 }
