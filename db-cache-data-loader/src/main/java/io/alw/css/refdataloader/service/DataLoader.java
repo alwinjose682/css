@@ -14,7 +14,9 @@ import io.alw.css.refdataloader.mapper.jpa.CurrencyEntityMapper;
 import io.alw.css.refdataloader.mapper.jpa.EntityEntityMapper;
 import io.alw.css.refdataloader.mapper.jpa.NostroEntityMapper;
 import io.alw.css.refdataloader.model.DataLoadType;
-import io.alw.css.refdataloader.model.jpa.*;
+import io.alw.css.refdataloader.model.jpa.CounterpartyEntity;
+import io.alw.css.refdataloader.model.jpa.DataLoadStatusEntity;
+import io.alw.css.refdataloader.model.jpa.ReferenceDataJpaEntity;
 import io.alw.css.refdtgtr.RefDataGenerator;
 import io.alw.css.refdtgtr.model.GeneratedReferenceData;
 import org.slf4j.Logger;
@@ -82,7 +84,7 @@ public class DataLoader {
             cacheDataLoader.loadCurrency(countryAndCurrency.currencies);
 
             // Fetch paged data for Entity, Nostro, Counterparty, Ssi, CPNettingProfile and CPSlaMapping
-            final int pageSize = 200;
+            final int pageSize = 5000;
             // 1. Creates a supplier, for each ReferenceDataJpaEntity type, that supplies one new page at a time from DB
             // 2. Perform page wise data load from DB to Cache
             cacheDataLoader.loadDataFromDB(getPagedDataSupplier("Entity_Page", pageSize, dao::getEntityPaged));
