@@ -130,7 +130,7 @@ public final class MmTrade implements TradeLegGeneratableExtendedTrade {
     public void addTradeLegGenerationSchedules(List<TradeLegGenerationSchedule> tradeLegGenerationSchedules) {
         tradeLegGenerationSchedules.stream()
                 .collect(Collectors.groupingBy(TradeLegGenerationSchedule::scheduleDay, toSet()))
-                .forEach((day, newScheduleSet) -> this.trdLegGenerationSchedules.get(day).addAll(newScheduleSet));
+                .forEach((day, newScheduleSet) -> this.trdLegGenerationSchedules.computeIfAbsent(day, _ -> new HashSet<>()).addAll(newScheduleSet));
     }
 
     @Override

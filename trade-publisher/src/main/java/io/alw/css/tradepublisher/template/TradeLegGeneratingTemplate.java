@@ -110,6 +110,9 @@ public abstract sealed class TradeLegGeneratingTemplate<T extends TradeLegGenera
 
     /// Saves the schedules in ExtendedTrade object and saves the ExtendedTrade object in store for retrieval on the nearest scheduleDay
     private void saveForTradeLegGenerationFromSchedule(List<TradeLegGenerationSchedule> schedules, T extTrd) {
+        if (schedules == null || schedules.isEmpty()) {
+            return;
+        }
         // save the schedules in ExtendedTrade object
         extTrd.addTradeLegGenerationSchedules(schedules);
         // save the ExtendedTrade object in store for retrieval on the nearest scheduleDay

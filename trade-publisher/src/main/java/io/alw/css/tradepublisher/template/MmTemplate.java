@@ -503,7 +503,7 @@ public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemp
 
     @Override
     protected MmTemplate self() {
-        return null;
+        return this;
     }
 
     @Override
