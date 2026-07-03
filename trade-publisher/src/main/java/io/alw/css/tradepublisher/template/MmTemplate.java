@@ -17,14 +17,17 @@ import io.alw.css.tradepublisher.store.TradeStore;
 import io.alw.css.tradepublisher.template.domain.InterestPayoutFrequency;
 import io.alw.css.tradepublisher.template.domain.InterestTradeLeg;
 import io.alw.css.tradepublisher.template.domain.MmTrade;
+import io.alw.css.tradepublisher.template.domain.TradeLegGenerationSchedule;
 import io.alw.css.tradepublisher.template.model.*;
 import io.alw.css.tradepublisher.tradegenerator.DayTicker;
 import io.alw.datagen.template.AggregateTemplateBuilder;
+import io.alw.datagen.template.ChildBuildDirective;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -37,18 +40,19 @@ import static io.alw.css.domain.common.RateType.FLOAT;
 import static io.alw.css.domain.trade.TradeLegType.*;
 import static io.alw.css.tradepublisher.template.MmTemplateConstants.*;
 import static io.alw.css.tradepublisher.template.domain.InterestBasis.ThirtyBy360;
+import static io.alw.css.tradepublisher.template.domain.InterestPayoutFrequency.*;
 
-public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
-    private final TradeStoreHelper<MmTrade> msgStoreHelper;
+public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemplate> {
+    private final TradeStoreHelper<MmTrade> trdStoreHelper;
 
     public MmTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, TradeTemplateProperties trdTemplateProps) {
         super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, trdTemplateProps);
 
-        TradeStore<MmTrade> msgStore = new InMemoryTradeStore<>();
-        this.msgStoreHelper = new TradeStoreHelper<>(dayTicker, msgStore, rndm, msgTemplateHelper);
+        TradeStore<MmTrade> trdStore = new InMemoryTradeStore<>();
+        this.trdStoreHelper = new TradeStoreHelper<>(dayTicker, trdStore, rndm, trdTemplateHelper);
     }
 
-    /// Build new template for MM trade. A new MM trade can have 1 to 3 trade legs depending on whether its a TERM or CALL and depending on the interest tradeLeg
+    /// Build new template for MM trade. A new MM trade can have 1 to 3 trade legs depending on whether it is a TERM or CALL and depending on the interest tradeLeg
     @Override
     public MmTemplate withRootTemplateValues() {
         // Create MessageContext
@@ -56,7 +60,7 @@ public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
         // Create MoneyMarket trade builder with base values
         createNewTradeWithDefaultValues(extTrd);
         // Build PRINCIPAL leg
-        this.withChildTemplateDirective(extTrd::setRootTradeLeg, this::buildPrincipalLeg);
+        this.withChildTemplateDirective(extTrd::setRootTradeLeg, this::createPrincipalLegBuilder);
 
         // IMPORTANT NOTE: The order here is important.
         // MaturityLeg must be built before InterestLeg because building InterestLeg requires maturityLegValueDate.
@@ -70,34 +74,74 @@ public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
             }
             case MM_CALL -> {
                 var interestLegIds = new Id(extTrd.nextTradeLegId(), VERSION_ONE);
-                this.withChildTemplateDirective(() -> createInterestTradeLeg(extTrd, interestLegIds, newTrdEventAndAction));
+                this.withChildTemplateDirective(() -> {
+                    var directive = createInterestTradeLegBuildDirective(extTrd, interestLegIds, newTrdEventAndAction);
+                    this.withChildTemplateDirective(directive);
+                });
             }
             default -> throw new RuntimeException("Invalid TradeType for MmTemplate");
         }
         return this;
     }
 
-    private TradeLegBuilder buildPrincipalLeg() {
-        return createNewTradeLegWithDefaultValues(extTrd(), MM_PRINCIPAL)
-                .valueDate(msgTemplateHelper.getRndmValueDate(30))
-                .payOrReceive(rndm.nextBoolean() ? PAY : RECEIVE)
-                .amount(BigDecimal.valueOf(rndm.nextDouble(principalLegAmountOrigin, principalLegAmountBound)))
-                ;
+    @Override
+    protected List<TradeLegGenerationSchedule> getInitialTradeLegGenerationSchedules(MmTrade mmTrade) {
+        return List.of(buildNextTradeLegGenerationScheduleFor(MM_INTEREST, mmTrade));
     }
 
     @Override
-    protected void buildTradeAmendmentContext(Consumer<TradeAmendmentContext> amendmentMessageBuilderFunc, MmTrade trdForAmendment) {
+    protected ChildBuildDirective<TradeLeg, TradeLegBuilder> generateTradeLegsFromSchedule(MmTrade extTrd, TradeLegGenerationSchedule schedule) {
+        return switch (schedule.tradeLegType()) {
+            case MM_INTEREST -> {
+                var interestLegIds = new Id(extTrd.nextTradeLegId(), VERSION_ONE);
+                Runnable childBuildDirective = () -> {
+                    var dir = createInterestTradeLegBuildDirective(extTrd, interestLegIds, schedule.tradeEventActionPair());
+                    this.withChildTemplateDirective(dir);
+                };
+                yield new ChildBuildDirective.ChildBuildDirectiveType2<>(childBuildDirective);
+            }
+            case FX_SIDE1, FX_SIDE2, MM_PRINCIPAL, MM_MATURITY, PARENT_TRADE, CHILD_TRADE -> {
+                throw new RuntimeException("TradeLeg generation for: " + schedule.tradeLegType() + " is either not permitted or is invalid");
+            }
+        };
+    }
+
+    @Override
+    protected TradeLegGenerationSchedule buildNextTradeLegGenerationScheduleFor(TradeLegType tradeLegType, MmTrade mmTrade) {
+        return switch (tradeLegType) {
+            case MM_INTEREST -> {
+                InterestPayoutFrequency ipFrequency = mmTrade.ipFrequency();
+                long offestDays = switch (ipFrequency) {
+                    case DAY, MONTHLY, QUARTERLY, SEMI_ANNUALLY, YEARLY -> ipFrequency.offsetDays();
+                    case PRINCIPAL_MATURITY -> {
+                        LocalDate maturityLegValueDate = getRealOrPotentialMaturityLegValueDate(mmTrade.principalLeg(), mmTrade.maturityLeg());
+                        yield trdTemplateHelper.currentDateForTrdTemplate().until(maturityLegValueDate, ChronoUnit.DAYS);
+                    }
+                };
+
+                long scheduleDay = trdTemplateHelper.currentDayForTrdTemplate() + offestDays;
+                TradeEventActionPair tradeEventActionPair = new TradeEventActionPair(TradeEventType.INTEREST_ACTION, TradeEventAction.ADD);
+                yield new TradeLegGenerationSchedule(scheduleDay, MM_INTEREST, tradeEventActionPair);
+            }
+            case FX_SIDE1, FX_SIDE2, MM_PRINCIPAL, MM_MATURITY, PARENT_TRADE, CHILD_TRADE -> {
+                throw new RuntimeException("TradeLeg generation for: " + tradeLegType + " is either not permitted or is invalid");
+            }
+        };
+    }
+
+    @Override
+    protected void buildTradeAmendmentContext(Consumer<TradeAmendmentContext> trdAmendmentBuilderFunc, MmTrade trdForAmendment) {
         switch (cyclicAmendableMmLegProvider.get()) {
             case MM_PRINCIPAL -> {
-                var msgAmendCtx = buildTradeAmendmentContextStep2(trdForAmendment.principalLeg(), trdForAmendment);
-                amendmentMessageBuilderFunc.accept(msgAmendCtx);
+                var trdAmendCtx = buildTradeAmendmentContextStep2(trdForAmendment.principalLeg(), trdForAmendment);
+                trdAmendmentBuilderFunc.accept(trdAmendCtx);
             }
             case MM_MATURITY -> {
                 var maturityLeg = trdForAmendment.maturityLeg();
                 // maturityLeg may not be present for CALL trade. If not present, do no amendment to create, hence do not execute the function
                 if (maturityLeg != null) {
-                    var msgAmendCtx = buildTradeAmendmentContextStep2(maturityLeg, trdForAmendment);
-                    amendmentMessageBuilderFunc.accept(msgAmendCtx);
+                    var trdAmendCtx = buildTradeAmendmentContextStep2(maturityLeg, trdForAmendment);
+                    trdAmendmentBuilderFunc.accept(trdAmendCtx);
                 }
             }
             case MM_INTEREST -> throw new RuntimeException("Amending interest leg is not allowed");
@@ -135,7 +179,7 @@ public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
         var amendableFields = new AmendableFieldsCollection();
         // NOTE: To determine new amount for InterestLeg, the amended amount and amended valueDate of both *principalLeg* and *maturityLeg* are needed, although they may not be computed yet during execution
         // One of the `AmendableTradeMessageFieldSupplier` type is used to lazily obtain the amendable fields after the amended principalLeg and maturityLeg are built.
-        var intLegAmndFieldSupplier = new AmendableFieldSupplier.SupplierWithMessageSelector(trd, extTrd -> ((MmTrade) extTrd).interestLegs().stream().filter(itl -> itl.interestLeg().valueDate().isAfter(msgTemplateHelper.currentDateForMsgTemplate())).toList());
+        var intLegAmndFieldSupplier = new AmendableFieldSupplier.SupplierWithMessageSelector(trd, extTrd -> ((MmTrade) extTrd).interestLegs().stream().filter(itl -> itl.interestLeg().valueDate().isAfter(trdTemplateHelper.currentDateForTrdTemplate())).toList());
         for (var ft : amendableFieldTypes) {
             switch (ft.amendmentTarget()) {
                 case TRADE -> {
@@ -147,7 +191,7 @@ public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
                 case TRADE_LEG -> {
                     switch (ft) {
                         case COUNTERPARTY_CODE -> {
-                            var cpCode = MmAmendmentFieldValue.PrimarySubject.forCounterpartyCode(principalLeg, msgTemplateHelper);
+                            var cpCode = MmAmendmentFieldValue.PrimarySubject.forCounterpartyCode(principalLeg, trdTemplateHelper);
                             amendableFields
                                     .addForTradeLeg(MM_PRINCIPAL, cpCode)
                                     .addForTradeLeg(MM_INTEREST, intLegAmndFieldSupplier.add(_ -> cpCode));
@@ -170,7 +214,7 @@ public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
                                 // No adjustments needed for MM_INTEREST with respect to valueDate change of principalLeg
 
                                 // Get new valueDate for principalLeg and add to the collection
-                                var principalLegNewVd = MmAmendmentFieldValue.PrimarySubject.PrincipalLeg.forValueDate(principalLeg, msgTemplateHelper, trd);
+                                var principalLegNewVd = MmAmendmentFieldValue.PrimarySubject.PrincipalLeg.forValueDate(principalLeg, trdTemplateHelper, trd);
                                 amendableFields.addForTradeLeg(MM_PRINCIPAL, principalLegNewVd);
 
                                 // Conditionally apply new valueDate for maturityLeg
@@ -243,28 +287,41 @@ public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
         return amndCtx;
     }
 
+    private TradeLegBuilder createPrincipalLegBuilder() {
+        return createNewTradeLegWithDefaultValues(getExtendedTradeOfCurrentBuildCycle(), MM_PRINCIPAL)
+                .valueDate(trdTemplateHelper.getRndmValueDate(30))
+                .payOrReceive(rndm.nextBoolean() ? PAY : RECEIVE)
+                .amount(BigDecimal.valueOf(rndm.nextDouble(principalLegAmountOrigin, principalLegAmountBound)))
+                ;
+    }
+
     /// IMPORTANT NOTE: The order here is important.
     /// MaturityLeg must be built before InterestLeg because building InterestLeg requires maturityLegValueDate.
     /// The lambdas added via [AggregateTemplateBuilder#withGroupedItem(Consumer, Supplier)] method will be executed strictly in the same order as they are inserted in the queue
     private void buildMaturityAndInterestLeg(MmTrade extTrade, Id maturityLegId, Id interestLegId, TradeEventActionPair trdEventAndAction) {
         // 1. Add building function of MATURITY leg to the builder
-        this.withChildTemplateDirective(extTrade::setMaturityLeg, () -> buildMaturityLeg(extTrade, maturityLegId, trdEventAndAction));
+        this.withChildTemplateDirective(extTrade::setMaturityLeg, () -> createMaturityLegBuilder(extTrade, maturityLegId, trdEventAndAction));
         // 2. create InterestTradeLeg object and add the interestLeg building function to the builder
-        this.withChildTemplateDirective(() -> createInterestTradeLeg(extTrade, interestLegId, trdEventAndAction));
+        this.withChildTemplateDirective(() -> {
+            var directive = createInterestTradeLegBuildDirective(extTrade, interestLegId, trdEventAndAction);
+            this.withChildTemplateDirective(directive);
+        });
     }
 
-    private void createInterestTradeLeg(MmTrade extTrd, Id interestLegId, TradeEventActionPair trdEventAndAction) {
+    private ChildBuildDirective<TradeLeg, TradeLegBuilder> createInterestTradeLegBuildDirective(MmTrade extTrd, Id interestLegId, TradeEventActionPair trdEventAndAction) {
         var principalLeg = extTrd.principalLeg();
         var maturityLeg = extTrd.maturityLeg(); // NOTE: the 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
         // Create InterestTradeLeg object
         InterestTradeLeg newIntrTrdLegObj = createInterestTradeLegAndAssociateWithMmTrade(extTrd, principalLeg, maturityLeg);
-        // Add building function of INTEREST leg to the builder
-        this.withChildTemplateDirective(newIntrTrdLegObj::setInterestLeg, () -> buildInterestLeg(extTrd, interestLegId, trdEventAndAction, newIntrTrdLegObj));
+        // Create interest TradeLeg directive
+        Consumer<TradeLeg> callback = newIntrTrdLegObj::setInterestLeg;
+        Supplier<TradeLegBuilder> buildStep = () -> createInterestLegBuilder(extTrd, interestLegId, trdEventAndAction, newIntrTrdLegObj);
+        return new ChildBuildDirective.ChildBuildDirectiveType1<>(callback, buildStep);
     }
 
     /// NOTE: The 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
     /// This method is intended to be used not only for the first interest leg but also for future interest legs. Therefor Ids are received as a parameter. The same pattern is followed to build maturity leg although there can be only one maturityLeg
-    private TradeLegBuilder buildInterestLeg(MmTrade extTrd, Id interestLegId, TradeEventActionPair trdEventAndAction, InterestTradeLeg newIntrTrdLegObj) {
+    private TradeLegBuilder createInterestLegBuilder(MmTrade extTrd, Id interestLegId, TradeEventActionPair trdEventAndAction, InterestTradeLeg newIntrTrdLegObj) {
         var principalLeg = extTrd.principalLeg();
         var maturityLeg = extTrd.maturityLeg(); // NOTE: the 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
 
@@ -369,7 +426,7 @@ public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
     private LocalDate getRealOrPotentialMaturityLegValueDate(TradeLeg principalLeg, TradeLeg maturityLeg) {
         final LocalDate maturityLegValueDate;
         if (maturityLeg == null) {
-            maturityLegValueDate = principalLeg.valueDate().plusDays(msgTemplateHelper.currentDayForMsgTemplate() + 360);
+            maturityLegValueDate = principalLeg.valueDate().plusDays(trdTemplateHelper.currentDayForTrdTemplate() + 360);
         } else {
             maturityLegValueDate = maturityLeg.valueDate();
         }
@@ -380,26 +437,21 @@ public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
     /// NOTE: The 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
     private LocalDate determineInterestLegValueDate(MmTrade trd, TradeLeg principalLeg, TradeLeg maturityLeg) {
         final LocalDate principalLegValueDate = principalLeg.valueDate();
-        final LocalDate maturityLegValueDate;
-        if (maturityLeg == null) {
-            maturityLegValueDate = principalLegValueDate.plusDays(msgTemplateHelper.currentDayForMsgTemplate() + 360);
-        } else {
-            maturityLegValueDate = maturityLeg.valueDate();
-        }
+        final LocalDate maturityLegValueDate = getRealOrPotentialMaturityLegValueDate(principalLeg, maturityLeg);
 
         return switch (trd.interestBasis()) {
             case ThirtyBy360 -> switch (trd.ipFrequency()) {
-                case DAY -> msgTemplateHelper.getFutureValueDate(1, principalLegValueDate, maturityLegValueDate);
-                case MONTHLY -> msgTemplateHelper.getFutureValueDate(30, principalLegValueDate, maturityLegValueDate);
-                case QUARTERLY -> msgTemplateHelper.getFutureValueDate(90, principalLegValueDate, maturityLegValueDate);
-                case SEMI_ANNUALLY -> msgTemplateHelper.getFutureValueDate(180, principalLegValueDate, maturityLegValueDate);
-                case YEARLY -> msgTemplateHelper.getFutureValueDate(360, principalLegValueDate, maturityLegValueDate);
+                case DAY -> trdTemplateHelper.getFutureValueDate(DAY.offsetDays(), principalLegValueDate, maturityLegValueDate);
+                case MONTHLY -> trdTemplateHelper.getFutureValueDate(MONTHLY.offsetDays(), principalLegValueDate, maturityLegValueDate);
+                case QUARTERLY -> trdTemplateHelper.getFutureValueDate(QUARTERLY.offsetDays(), principalLegValueDate, maturityLegValueDate);
+                case SEMI_ANNUALLY -> trdTemplateHelper.getFutureValueDate(SEMI_ANNUALLY.offsetDays(), principalLegValueDate, maturityLegValueDate);
+                case YEARLY -> trdTemplateHelper.getFutureValueDate(YEARLY.offsetDays(), principalLegValueDate, maturityLegValueDate);
                 case PRINCIPAL_MATURITY -> maturityLegValueDate;
             };
         };
     }
 
-    private TradeLegBuilder buildMaturityLeg(MmTrade trd, Id maturityLegId, TradeEventActionPair trdEventAndAction) {
+    private TradeLegBuilder createMaturityLegBuilder(MmTrade trd, Id maturityLegId, TradeEventActionPair trdEventAndAction) {
         var principalLeg = trd.principalLeg();
         var maturityLegValueDate = determineMaturityLegValueDate(principalLeg);
 
@@ -425,7 +477,7 @@ public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
     }
 
     private LocalDate determineMaturityLegValueDate(TradeLeg relativeTradeLeg) {
-        return msgTemplateHelper.getRndmFutureValueDateRelativeTo(relativeTradeLeg.valueDate(), false, 10);
+        return trdTemplateHelper.getRndmFutureValueDateRelativeTo(relativeTradeLeg.valueDate(), false, 10);
     }
 
     /// Interest Basis is always assigned a constant: InterestBasis.ThirtyBy360. Corresponding calculation for other basis types are not implemented.
@@ -436,22 +488,27 @@ public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
         var ipFrequency = cyclicIpFrequencyProvider.get();
         var basis = ThirtyBy360;
 
-        return new MmTrade(rateType, ipFrequency, basis);
+        return new MmTrade(rateType, ipFrequency, basis, trdTemplateHelper.currentDayForTrdTemplate());
     }
 
     @Override
-    protected Predicate<MmTrade> tradeContextAmendmentFrequency() {
+    protected Predicate<MmTrade> amendmentCandidateSelectionCriteriaSecondary() {
         return _ -> rndm.nextInt(0, 100) > 80;
     }
 
     @Override
-    protected TradeEventActionPair determineNextTradeEventAndAction(TradeEventType tradeEventType, TradeEventAction tradeEventAction) {
-        return msgTemplateHelper.determineNextTradeEventAndActionForCommonEvents(rndm, tradeEventType, tradeEventAction);
+    protected TradeEventActionPair determineNextTradeEventAndAction(TradeEventType trdEventType, TradeEventAction trdEventAction) {
+        return trdTemplateHelper.determineNextTradeEventAndActionForCommonEvents(rndm, trdEventType, trdEventAction);
     }
 
     @Override
-    protected TradeStoreHelper<MmTrade> msgStoreHelper() {
-        return msgStoreHelper;
+    protected MmTemplate self() {
+        return this;
+    }
+
+    @Override
+    protected TradeStoreHelper<MmTrade> trdStoreHelper() {
+        return trdStoreHelper;
     }
 
     private static final class MmAmendmentFieldValue {
@@ -462,24 +519,25 @@ public final class MmTemplate extends TradeAmendmentTemplate<MmTrade> {
                 return new AmendableField.Amount(newAmount);
             }
 
-            private static AmendableField forCounterpartyCode(TradeLeg trdLeg, TradeTemplateHelper msgTemplateHelper) {
-                String newCounterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(trdLeg.counterpartyCode());
+            private static AmendableField forCounterpartyCode(TradeLeg trdLeg, TradeTemplateHelper trdTemplateHelper) {
+                String newCounterpartyCode = trdTemplateHelper.getCounterpartyCorrespondingToTransactionTypeOtherThan(trdLeg.counterpartyCode());
                 return new AmendableField.CounterpartyCode(newCounterpartyCode);
             }
 
             private static final class PrincipalLeg {
-                private static AmendableField.ValueDate forValueDate(TradeLeg principalLeg, TradeTemplateHelper msgTemplateHelper, MmTrade trdCtx) {
+                private static AmendableField.ValueDate forValueDate(TradeLeg principalLeg, TradeTemplateHelper trdTemplateHelper, MmTrade trdCtx) {
 
-                    var currentDate = msgTemplateHelper.currentDateForMsgTemplate();
+                    var currentDate = trdTemplateHelper.currentDateForTrdTemplate();
                     var maturityLeg = trdCtx.maturityLeg();
                     final LocalDate maturityLegValueDate;
+                    // refer instance method: getRealOrPotentialMaturityLegValueDate(principalLeg, maturityLeg);
                     if (maturityLeg == null) {
-                        maturityLegValueDate = principalLeg.valueDate().plusDays(msgTemplateHelper.currentDayForMsgTemplate() + 360);
+                        maturityLegValueDate = principalLeg.valueDate().plusDays(trdTemplateHelper.currentDayForTrdTemplate() + 360);
                     } else {
                         maturityLegValueDate = maturityLeg.valueDate();
                     }
                     // New valueDate for principal leg
-                    LocalDate newValueDate = msgTemplateHelper.getFutureValueDate(1, currentDate, maturityLegValueDate);
+                    LocalDate newValueDate = trdTemplateHelper.getFutureValueDate(1, currentDate, maturityLegValueDate);
                     return new AmendableField.ValueDate(newValueDate);
                 }
             }

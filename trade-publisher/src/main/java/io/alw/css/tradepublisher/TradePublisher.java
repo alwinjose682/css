@@ -9,10 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 
-import java.util.Set;
+import java.util.List;
 import java.util.function.Consumer;
 
-public class TradePublisher implements Consumer<Set<Trade>> {
+public class TradePublisher implements Consumer<List<Trade>> {
     private final static Logger log = LoggerFactory.getLogger(TradePublisher.class);
     private final KafkaTopicProperties kafkaTopicProperties;
     private final KafkaTemplate<String, TradeAvro> kafkaTemplateTradeMessage;
@@ -25,7 +25,7 @@ public class TradePublisher implements Consumer<Set<Trade>> {
     }
 
     @Override
-    public void accept(Set<Trade> trades) {
+    public void accept(List<Trade> trades) {
         trades.forEach(this::publish);
     }
 

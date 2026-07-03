@@ -27,13 +27,21 @@ import static io.alw.css.domain.trade.TradeLegType.CHILD_TRADE;
 import static io.alw.css.domain.trade.TradeLegType.PARENT_TRADE;
 
 /// The type parameter M stands for MessageContext which is a combination of [Trade] and its metadata created by the implementations of this class.
-sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade>
-        extends TradeTemplate<T>
-        permits FxTemplate, MmTemplate {
+sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends TradeAmendmentTemplate<T, TT>>
+        extends TradeTemplate<T, TT>
+        permits TradeLegGeneratingTemplate, FxTemplate {
 
     public TradeAmendmentTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, TradeTemplateProperties trdTemplateProps) {
         super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, trdTemplateProps);
     }
+
+    /// see also {@link TradeAmendmentTemplate#amendmentCandidateSelectionCriteriaPrimary}
+    protected abstract Predicate<T> amendmentCandidateSelectionCriteriaSecondary();
+
+    /// All the trade legs selected for amendment must belong only to the trdCtx being passed via this method
+    protected abstract void buildTradeAmendmentContext(Consumer<TradeAmendmentContext> trdAmendmentBuilderFunc, T trdCtxForAmendment);
+
+    protected abstract TradeStoreHelper<T> trdStoreHelper();
 
     /// Both primary and secondary criteria will be applied to select a tradeContext for amendment.
     /// This applies both for the selecting a tradeContext for first time and each time after amendment
@@ -41,62 +49,62 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade>
         var rootTradeLeg = trd.rootTradeLeg();
         return trd.tradeEventType() != TradeEventType.CANCEL
                 && trd.tradeEventType() != TradeEventType.REBOOK
-                && (rootTradeLeg.tradeLegVersion() + trd.tradeVersion() <= msgTemplateHelper.trdTemplateProps.maxPermittedAmendments());
+                && (rootTradeLeg.tradeLegVersion() + trd.tradeVersion() <= trdTemplateHelper.trdTemplateProps.maxPermittedAmendments());
     };
 
     /// see also{@link TradeAmendmentTemplate#amendmentCandidateSelectionCriteriaPrimary}
     private Predicate<T> amendmentCandidateSelectionCriteria() {
-        return amendmentCandidateSelectionCriteriaPrimary.and(tradeContextAmendmentFrequency());
+        return amendmentCandidateSelectionCriteriaPrimary.and(amendmentCandidateSelectionCriteriaSecondary());
     }
-
-    /// The tradeContext amendment frequency is the secondary amendmentCandidateSelectionCriteria.
-    /// see also {@link TradeAmendmentTemplate#amendmentCandidateSelectionCriteriaPrimary}
-    protected abstract Predicate<T> tradeContextAmendmentFrequency();
-
-    /// All the trade legs selected for amendment must belong only to the trdCtx being passed via this method
-    protected abstract void buildTradeAmendmentContext(Consumer<TradeAmendmentContext> buildAmendedMessageFunc, T trdCtxForAmendment);
-
-    protected abstract TradeStoreHelper<T> msgStoreHelper();
 
     /// Return Trades(new+amends) which can be consumed by the TradeGenerators and published to CSS
     @Override
-    public Set<Trade> get() {
+    public List<Trade> get() {
         // Build the trades(newly created + amendments)
         AggregateTemplateBuilderResult<Trade> buildResult =
-                ((TradeAmendmentTemplate<T>) newBuildCycle())
-                        .withMessageAmendments()
+                newBuildCycle()
+                        .withTradeAmendmentDirectives()
                         .withRootTemplateValues()
                         .build();
 
         // Store the newly created trade(ExtendedTrade) for future amendments if the selection criteria allows to do so
         // The same for amended trades(ExtendedTrade) are already done during the 'related template' build process, via a runnable in the build directive, prior to reaching this point.
-        applyFutureAmendmentInclusion(extTrd());
+        saveForFutureAmendment(getExtendedTradeOfCurrentBuildCycle());
 
         // Return messages(new+amends) which can be consumed by the TradeGenerators
-        var tradeGeneratorInput = new HashSet<>(buildResult.childResults());
+        var tradeGeneratorInput = new ArrayList<>(buildResult.childResults());
         tradeGeneratorInput.add(buildResult.result());
-        return Collections.unmodifiableSet(tradeGeneratorInput);
+        return Collections.unmodifiableList(tradeGeneratorInput);
     }
 
-    protected TradeAmendmentTemplate<T> withMessageAmendments() {
-        // Get trades that need to be amended
-        final List<T> extTrdsForAmendment = msgStoreHelper().retrieveMessagesForCurrentDay();
-        // Add the list of trades for amendment to the template build step
-        for (T extTrd : extTrdsForAmendment) {
-            buildTradeAmendmentContext(trdAmndCtx -> buildAmendedMessage(trdAmndCtx, extTrd), extTrd);
+    protected TT withTradeAmendmentDirectives() {
+        // 1. Get trades that need to be amended
+        final List<T> extTrds = trdStoreHelper().retrieveTradesForCurrentDay(TradeStoreHelper.TradeRetrievalPurpose.AMEND);
+        // 2. Create trade amendment directive
+        for (T extTrd : extTrds) {
+            // Trade amendment builder function
+            Consumer<TradeAmendmentContext> trdAmendmentBuilderFunc = trdAmndCtx -> {
+                // 1. Create build directive for message amendments
+                var tradeAmendmentBuildDirective = createTradeAmendmentDirective(trdAmndCtx, extTrd);
+                // 2. Register the amendmentTradeBuildDirective with the template builder
+                this.withRelatedTemplateDirective(tradeAmendmentBuildDirective);
+            };
+
+            // Invoke the method implemented by implementing class
+            buildTradeAmendmentContext(trdAmendmentBuilderFunc, extTrd);
         }
-        return this;
+
+        return self();
     }
 
     /// Adds the step to lazily build amended messages in the [io.alw.datagen.template.AggregateTemplateBuilder].
     /// All the trade legs being amended belong to the same extTrd
     /// The steps to lazily build(functions) and the actual build done by [io.alw.datagen.template.AggregateTemplateBuilder] are performed in FIFO order
-    protected void buildAmendedMessage(TradeAmendmentContext trdAmndCtx, T extTrd) {
+    protected ParentBuildDirective<Trade, TradeLeg, TradeBuilder, TradeLegBuilder> createTradeAmendmentDirective(TradeAmendmentContext trdAmndCtx, T extTrd) {
         // Amendment if trade is rebooked
         var nextEventAndAction = trdAmndCtx.tradeEventActionPair();
         if (nextEventAndAction.event() == TradeEventType.REBOOK) {
-            handleTradeRebookEvent(trdAmndCtx, extTrd);
-            return;
+            return handleTradeRebookEvent(trdAmndCtx, extTrd);
         }
 
         // Trade level amendment if applicable
@@ -112,12 +120,13 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade>
         List<ChildBuildDirective<TradeLeg, TradeLegBuilder>> trdLegBuildItems = buildTradeLegAmendment(trdAmndCtx, extTrd);
         // Trade and TradeLegs association function
         BiFunction<Trade, Set<TradeLeg>, Trade> tradeAndTradeLegAssociationFunc = Trade::clearAndAddTradeLegs;
-        Runnable finalAction = () -> applyFutureAmendmentInclusion(extTrd);
-        var buildDirective = new ParentBuildDirective.ParentBuildDirectiveType1<>(trdBdrFunc, trdLegBuildItems, tradeAndTradeLegAssociationFunc, finalAction);
-        this.withRelatedTemplateDirective(buildDirective);
+        // Final action
+        Runnable finalAction = () -> saveForFutureAmendment(extTrd);
+        // The build directive
+        return new ParentBuildDirective.ParentBuildDirectiveType1<>(trdBdrFunc, trdLegBuildItems, tradeAndTradeLegAssociationFunc, finalAction);
     }
 
-    private void handleTradeRebookEvent(TradeAmendmentContext trdAmndCtx, T extTrd) {
+    private ParentBuildDirective<Trade, TradeLeg, TradeBuilder, TradeLegBuilder> handleTradeRebookEvent(TradeAmendmentContext trdAmndCtx, T extTrd) {
         // New trade's Id and Version
         var newTrdId = IdProvider.singleton().nextTradeId();
         var newTrdVer = VERSION_ONE;
@@ -173,9 +182,8 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade>
 
         BiFunction<Trade, Set<TradeLeg>, Trade> newTrdAndTrdLegAssociationFunc = Trade::clearAndAddTradeLegs;
         Consumer<Trade> trdAndExtTrdAssociationFunc = extTrd::setTrade;
-        Runnable newTrdBuildDirectiveFinalAction = () -> applyFutureAmendmentInclusion(extTrd);
-        var newTrdBuildDirective = new ParentBuildDirective.ParentBuildDirectiveType3<>(newTrdBdrFunc, newTrdLegBdrFunc, newTrdAndTrdLegAssociationFunc, trdAndExtTrdAssociationFunc, newTrdBuildDirectiveFinalAction);
-        this.withRelatedTemplateDirective(newTrdBuildDirective);
+        Runnable newTrdBuildDirectiveFinalAction = () -> saveForFutureAmendment(extTrd);
+        return new ParentBuildDirective.ParentBuildDirectiveType3<>(newTrdBdrFunc, newTrdLegBdrFunc, newTrdAndTrdLegAssociationFunc, trdAndExtTrdAssociationFunc, newTrdBuildDirectiveFinalAction);
     }
 
     private TradeBuilder buildTradeAmendment(TradeAmendmentContext trdAmndCtx, T extTrd) {
@@ -340,13 +348,13 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade>
         return amndBdr;
     }
 
-    private TradeBuilder createBuilderFrom(Trade trd) {
+    protected TradeBuilder createBuilderFrom(Trade trd) {
         return TradeBuilder.builder(trd);
     }
 
-    private void applyFutureAmendmentInclusion(T extTrade) {
-        if (amendmentCandidateSelectionCriteria().test(extTrade)) {
-            msgStoreHelper().storeMessageDataForFutureRndmRetrievalDay(extTrade);
+    protected void saveForFutureAmendment(T extTrd) {
+        if (amendmentCandidateSelectionCriteria().test(extTrd)) {
+            trdStoreHelper().storeTradeForFutureRndmRetrievalDay(extTrd, TradeStoreHelper.TradeRetrievalPurpose.AMEND);
         }
     }
 }

@@ -6,20 +6,20 @@ import io.alw.css.tradepublisher.model.GeneratorDetail;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Set;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 
 public final class TradeGenerator extends Stoppable implements Runnable {
     private final static Logger log = LoggerFactory.getLogger(TradeGenerator.class);
-    private final Supplier<Set<Trade>> tradeSupplier;
-    private final Consumer<Set<Trade>> tradePublisher;
+    private final Supplier<List<Trade>> tradeSupplier;
+    private final Consumer<List<Trade>> tradePublisher;
     private final GeneratorDetail generatorDetail;
     private final long pauseIntervalSeconds;
     private final RandomGenerator rndm;
 
-    public TradeGenerator(GeneratorDetail generatorDetail, Supplier<Set<Trade>> tradeSupplier, TradePublisher tradePublisher) {
+    public TradeGenerator(GeneratorDetail generatorDetail, Supplier<List<Trade>> tradeSupplier, TradePublisher tradePublisher) {
         super();
         this.generatorDetail = generatorDetail;
         this.tradeSupplier = tradeSupplier;
@@ -36,7 +36,7 @@ public final class TradeGenerator extends Stoppable implements Runnable {
             Thread.sleep(pauseTimeBeforeActualStart);
             // Start
             while (!isStopSignalled()) {
-                Set<Trade> trades = tradeSupplier.get();
+                List<Trade> trades = tradeSupplier.get();
                 tradePublisher.accept(trades);
                 Thread.sleep(pauseIntervalSeconds);
             }

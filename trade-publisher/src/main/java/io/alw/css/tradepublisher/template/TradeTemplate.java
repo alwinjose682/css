@@ -29,9 +29,9 @@ import java.util.random.RandomGenerator;
 ///
 /// [TradeTemplate] instances are both a trade type template and a supplier of the build output of the template
 /// Each instance of this class is supposed to be exclusive for a single thread
-sealed abstract class TradeTemplate<T extends ExtendedTrade>
+sealed abstract class TradeTemplate<T extends ExtendedTrade, TT extends TradeTemplate<T, TT>>
         extends AggregateTemplateBuilder<Trade, TradeLeg, TradeBuilder, TradeLegBuilder>
-        implements Supplier<Set<Trade>>
+        implements Supplier<List<Trade>>
         permits TradeAmendmentTemplate {
 
     /// Variable values for each template build. These values remain un-modified for each template build.
@@ -46,7 +46,7 @@ sealed abstract class TradeTemplate<T extends ExtendedTrade>
     private final TradeType tradeType;
     private final TransactionType transactionType;
     protected final RandomGenerator rndm;
-    protected final TradeTemplateHelper msgTemplateHelper;
+    protected final TradeTemplateHelper trdTemplateHelper;
 
     // Spring Beans
     protected final DayTicker dayTicker;
@@ -67,27 +67,29 @@ sealed abstract class TradeTemplate<T extends ExtendedTrade>
         this.tradeType = tradeType;
         this.transactionType = transactionType;
         this.rndm = rndm;
-        this.msgTemplateHelper = new TradeTemplateHelper(initialValueDate, transactionType, rndm, trdTemplateProps, refDataService);
+        this.trdTemplateHelper = new TradeTemplateHelper(initialValueDate, transactionType, rndm, trdTemplateProps, refDataService);
         this.dayTicker = dayTicker;
         this.refDataService = refDataService;
     }
 
     protected abstract T createExtendedTrade();
 
-    protected abstract TradeEventActionPair determineNextTradeEventAndAction(TradeEventType amendMsgEvt, TradeEventAction amendMsgAct);
+    protected abstract TradeEventActionPair determineNextTradeEventAndAction(TradeEventType trdEventType, TradeEventAction trdEventAction);
+
+    protected abstract TT self();
 
     /// This method is the starting point to start a new build cycle
     /// This method ensures that the same [DayTicker#day()] is used at all points of building multiple trades in current cycle
-    protected TradeTemplate<T> newBuildCycle() {
-        msgTemplateHelper.setDayForMsgTemplate(dayTicker.day());
-        return this;
+    protected TT newBuildCycle() {
+        trdTemplateHelper.setDayForTrdTemplate(dayTicker.day());
+        return self();
     }
 
     /// This method is used to create result [TradeBuilder]. The builder for grouped or related items are created using [TradeTemplate#createBuilderFrom(Trade , String)]
     /// NOTE: New [TradeTemplate] instances are not created by this method.
     /// Instead, the existing [TradeBuilder] (`bdr`) is just replaced with a new one and then new values are assigned.
     protected TradeBuilder createNewTradeWithDefaultValues(T trd) {
-        msgTemplateHelper.incrementCounter();
+        trdTemplateHelper.incrementCounter();
         this.bdr = TradeBuilder.builder();
         this.extTrd = trd;
 
@@ -108,7 +110,7 @@ sealed abstract class TradeTemplate<T extends ExtendedTrade>
     }
 
     protected TradeLegBuilder createNewTradeLegWithDefaultValues(ExtendedTrade extTrd, TradeLegType tradeLegType) {
-        final String counterpartyCode = msgTemplateHelper.getCounterpartyCorrespondingToTransactionType();
+        final String counterpartyCode = trdTemplateHelper.getCounterpartyCorrespondingToTransactionType();
 
         return TradeLegBuilder.builder()
                 .tradeLegId(extTrd.nextTradeLegId())
@@ -118,7 +120,7 @@ sealed abstract class TradeTemplate<T extends ExtendedTrade>
                 .entityCode(this.entityCode)
                 .currCode(this.currCode)
                 .bookCode(refDataService.dummyBookCode())
-                .counterBookCode(msgTemplateHelper.isInterbookTransaction() ? refDataService.dummyCounterBookCode() : null) // Also a TransactionType dependent
+                .counterBookCode(trdTemplateHelper.isInterbookTransaction() ? refDataService.dummyCounterBookCode() : null) // Also a TransactionType dependent
                 // TransactionType dependent fields
                 .counterpartyCode(counterpartyCode)
                 // Event type and event action
@@ -129,7 +131,7 @@ sealed abstract class TradeTemplate<T extends ExtendedTrade>
                 ;
     }
 
-    protected T extTrd() {
+    protected T getExtendedTradeOfCurrentBuildCycle() {
         return extTrd;
     }
 

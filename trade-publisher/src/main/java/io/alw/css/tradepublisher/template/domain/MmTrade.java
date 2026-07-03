@@ -5,26 +5,34 @@ import io.alw.css.domain.trade.Trade;
 import io.alw.css.domain.trade.TradeDetail;
 import io.alw.css.domain.trade.TradeLeg;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
-public final class MmTrade implements ExtendedTrade {
+import static java.util.stream.Collectors.toSet;
+
+public final class MmTrade implements TradeLegGeneratableExtendedTrade {
     private final RateType rateType;
     private final InterestPayoutFrequency ipFrequency;
     private final InterestBasis interestBasis;
     private Trade trade;
+
+    // TradeLeg generation based on schedule
+    private final Map<Long, Set<TradeLegGenerationSchedule>> trdLegGenerationSchedules;
+    private long lastTradeLegGenerationDay;
 
     private int nextTradeLegId;
     private TradeLeg principalLeg;
     private TradeLeg maturityLeg;
     private final List<InterestTradeLeg> interestLegs;
 
-    public MmTrade(RateType rateType, InterestPayoutFrequency ipFrequency, InterestBasis interestBasis) {
+    public MmTrade(RateType rateType, InterestPayoutFrequency ipFrequency, InterestBasis interestBasis, long lastTradeLegGenerationDay) {
         this.rateType = rateType;
         this.ipFrequency = ipFrequency;
         this.interestBasis = interestBasis;
         this.interestLegs = new ArrayList<>();
         this.nextTradeLegId = resetTradeLegIdProvider();
+        this.trdLegGenerationSchedules = new HashMap<>();
+        this.lastTradeLegGenerationDay = lastTradeLegGenerationDay;
     }
 
 
@@ -111,5 +119,39 @@ public final class MmTrade implements ExtendedTrade {
         } else {
             return (TradeLeg) tradeDetail;
         }
+    }
+
+    @Override
+    public Map<Long, Set<TradeLegGenerationSchedule>> tradeLegGenerationSchedules() {
+        return trdLegGenerationSchedules;
+    }
+
+    @Override
+    public void addTradeLegGenerationSchedules(List<TradeLegGenerationSchedule> tradeLegGenerationSchedules) {
+        tradeLegGenerationSchedules.stream()
+                .collect(Collectors.groupingBy(TradeLegGenerationSchedule::scheduleDay, toSet()))
+                .forEach((day, newScheduleSet) -> this.trdLegGenerationSchedules.computeIfAbsent(day, _ -> new HashSet<>()).addAll(newScheduleSet));
+    }
+
+    @Override
+    public long lastTradeLegGenerationDay() {
+        return lastTradeLegGenerationDay;
+    }
+
+    @Override
+    public void setLastTradeLegGenerationDay(long lastTradeLegGenerationDay) {
+        this.lastTradeLegGenerationDay = lastTradeLegGenerationDay;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        MmTrade mmTrade = (MmTrade) o;
+        return Objects.equals(trade, mmTrade.trade);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(trade);
     }
 }
