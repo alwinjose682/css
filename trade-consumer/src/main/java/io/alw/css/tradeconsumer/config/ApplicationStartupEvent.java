@@ -2,10 +2,10 @@ package io.alw.css.tradeconsumer.config;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.alw.css.tradeconsumer.model.FoCashflowIdAndTradeId;
+import io.alw.css.tradeconsumer.cashflow.model.FoCashflowIdAndTradeId;
+import io.alw.css.tradeconsumer.cashflow.repository.CashflowRepository;
 import io.alw.css.tradeconsumer.model.generator.TradeGenerationInitialValues;
 import io.alw.css.tradeconsumer.model.generator.TradeGeneratorStartResponse;
-import io.alw.css.tradeconsumer.repository.CashflowRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

@@ -4,13 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.alw.css.dbshared.tx.TXRO;
 import io.alw.css.dbshared.tx.TXRW;
-import io.alw.css.tradeconsumer.model.properties.SuppressionConfig;
-import io.alw.css.tradeconsumer.processor.CashflowEnricher;
-import io.alw.css.tradeconsumer.processor.CashflowVersionManager;
-import io.alw.css.tradeconsumer.repository.CashflowRejectionRepository;
-import io.alw.css.tradeconsumer.repository.CashflowRepository;
-import io.alw.css.tradeconsumer.repository.CashflowStore;
-import io.alw.css.tradeconsumer.repository.TradeLinkRepository;
+import io.alw.css.tradeconsumer.cashflow.model.properties.SuppressionConfig;
+import io.alw.css.tradeconsumer.cashflow.processor.CashflowEnricher;
+import io.alw.css.tradeconsumer.cashflow.processor.CashflowVersionManager;
+import io.alw.css.tradeconsumer.cashflow.repository.CashflowRejectionRepository;
+import io.alw.css.tradeconsumer.cashflow.repository.CashflowRepository;
+import io.alw.css.tradeconsumer.cashflow.repository.CashflowStore;
+import io.alw.css.tradeconsumer.cashflow.repository.TradeLinkRepository;
 import io.alw.css.tradeconsumer.service.CacheService;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -25,7 +25,7 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 @EnableConfigurationProperties
 @EnableJpaRepositories(basePackages = "io.alw.css.tradeconsumer.repository")
-@EntityScan(basePackages = "io.alw.css.tradeconsumer.model.jpa")
+@EntityScan(basePackages = "io.alw.css.tradeconsumer.cashflow.jpa")
 // no @EnableTransactionManagement. Declarative tx is not used. Programmatic tx is used instead
 public class AppConfig {
 
