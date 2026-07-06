@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 // TODO: jdbc batching, disable auto-commit, disable open-session-in-view. Must be done one at a time
 // TODO: MDC logging
 @SpringBootApplication(scanBasePackages = "io.alw.css.tradeconsumer")
-@ConfigurationPropertiesScan(value = {"io.alw.css.tradeconsumer.cashflow.model.properties"})
+@ConfigurationPropertiesScan(value = {"io.alw.css.tradeconsumer.cashflow.model.properties","io.alw.css.tradeconsumer.confirmation.model.properties"})
 public class TradeConsumerApp {
     public static void main(String[] args) {
         SpringApplication.run(TradeConsumerApp.class, args);
