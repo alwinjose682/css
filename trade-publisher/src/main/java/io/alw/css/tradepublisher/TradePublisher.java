@@ -32,7 +32,7 @@ public class TradePublisher implements Consumer<List<Trade>> {
     public void publish(Trade trdMsg) {
         String outputTopic = kafkaTopicProperties.tradeOutputTopic();
         TradeAvro avroMsg = TradeAvroMapper.instance().domainToAvro(trdMsg);
-        String key = avroMsg.getTradeID() + "-" + avroMsg.getTradeVersion();
+        String key = String.valueOf(avroMsg.getTradeID());
         log.trace("Sending trade message: {} to topic: {}", key, outputTopic);
 
         kafkaTemplateTradeMessage
@@ -40,9 +40,9 @@ public class TradePublisher implements Consumer<List<Trade>> {
                 .whenCompleteAsync((result, e) -> {
                     if (e == null) {
                         RecordMetadata recordMetadata = result.getRecordMetadata();
-                        log.info("Published trade message[{}] to topic: {}, partition: {}, offset: {}", key, outputTopic, recordMetadata.partition(), recordMetadata.offset());
+                        log.info("Published Trade message[{}] to topic: {}, partition: {}, offset: {}", key, outputTopic, recordMetadata.partition(), recordMetadata.offset());
                     } else {
-                        log.error("An error occurred when publishing trade message[{}] to kafka topic: {}. Message: {}", key, outputTopic, avroMsg);
+                        log.error("An error occurred when publishing Trade message[{}] to kafka topic: {}. Message: {}", key, outputTopic, avroMsg);
                     }
                 }, cssTaskExecutor.executor());
     }
