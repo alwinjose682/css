@@ -1,6 +1,10 @@
 package io.alw.css.tradeconsumer.model.constants;
 
 public interface ExceptionSubCategoryType {
+    // Common
+    String INVALID_TRADE_LEG_TYPE = "INVALID_TRADE_LEG_TYPE";
+
+    // Cashflow related exceptions
     String INVALID_MESSAGE = "INVALID_MESSAGE";
     String INVALID_FO_VERSION = "INVALID_FO_VERSION";
     String INVALID_VALUE_DATE = "INVALID_VALUE_DATE";
@@ -8,7 +12,6 @@ public interface ExceptionSubCategoryType {
     String INVALID_AMOUNT = "INVALID_AMOUNT";
     String INVALID_TRANSACTION_TYPE = "INVALID_TRANSACTION_TYPE";
     String INVALID_TRADE_TYPE = "INVALID_TRADE_TYPE";
-    String INVALID_TRADE_LEG_TYPE = "INVALID_TRADE_LEG_TYPE";
     String INVALID_TRADE_EVENT_TYPE = "INVALID_TRADE_EVENT_TYPE";
     String INVALID_TRADE_EVENT_ACTION = "INVALID_TRADE_EVENT_ACTION";
     String REVISION_TYPE_RESOLUTION_FAILURE = "REVISION_TYPE_RESOLUTION_FAILURE";
@@ -27,4 +30,7 @@ public interface ExceptionSubCategoryType {
     String INACTIVE_CURRENCY = "INACTIVE_CURRENCY";
 
     String CASHFLOW_PERSISTENCE_FAILURE = "CASHFLOW_PERSISTENCE_FAILURE";
+
+    // Matching related exceptions
+    String CASHFLOWS_OF_MULTIPLE_TRADES = "CASHFLOWS_OF_MULTIPLE_TRADES";
 }

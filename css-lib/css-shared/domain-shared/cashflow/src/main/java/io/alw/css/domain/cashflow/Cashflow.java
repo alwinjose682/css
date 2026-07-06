@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 /// Why not simply map counterparty directly to a nostroId instead of the sla?
 /// The back office application I used to work for did not have such a simple mapping. Dont know about the complexities of designing and managing a reference data system
@@ -53,4 +54,15 @@ public record Cashflow(
         String inputByUserId,
         LocalDateTime inputDateTime
 ) {
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Cashflow cashflow = (Cashflow) o;
+        return cashflowId == cashflow.cashflowId && cashflowVersion == cashflow.cashflowVersion;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(cashflowId, cashflowVersion);
+    }
 }

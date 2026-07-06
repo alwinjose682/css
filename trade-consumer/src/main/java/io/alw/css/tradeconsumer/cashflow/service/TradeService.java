@@ -17,6 +17,7 @@ import io.alw.css.tradeconsumer.cashflow.processor.CashflowVersionManager;
 import io.alw.css.tradeconsumer.cashflow.processor.PreviousCashflowCheckOutcome;
 import io.alw.css.tradeconsumer.cashflow.processor.TradeMapper;
 import io.alw.css.tradeconsumer.cashflow.repository.CashflowStore;
+import io.alw.css.tradeconsumer.confirmation.service.TradeMatchService;
 import io.alw.css.tradeconsumer.model.constants.ExceptionSubCategoryType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,12 +35,14 @@ import static io.alw.css.tradeconsumer.cashflow.processor.PreviousCashflowCheckO
 @Service
 public class TradeService {
     private static final Logger log = LoggerFactory.getLogger(TradeService.class);
+    private final TradeMatchService tradeMatchService;
     private final CashflowStore cashflowStore;
     private final CashflowVersionManager cashflowVersionManager;
     private final CashflowEnricher cashflowEnricher;
     private final TXRW txrw;
 
-    public TradeService(CashflowStore cashflowStore, CashflowVersionManager cashflowVersionManager, CashflowEnricher cashflowEnricher, TXRW txrw) {
+    public TradeService(TradeMatchService tradeMatchService, CashflowStore cashflowStore, CashflowVersionManager cashflowVersionManager, CashflowEnricher cashflowEnricher, TXRW txrw) {
+        this.tradeMatchService = tradeMatchService;
         this.cashflowStore = cashflowStore;
         this.cashflowVersionManager = cashflowVersionManager;
         this.cashflowEnricher = cashflowEnricher;
@@ -84,10 +87,15 @@ public class TradeService {
         } catch (CategorizedRuntimeException e) {
             log.error("Failed to process trade. TradeType: {}. Msg: {}", tradeAvro.getTradeType(), e.getMessage(), e);
             rejectCashflow(tradeAvro, e, inputBy);
+            return;
         } catch (Exception e) {
             log.error("Failed to process trade. TradeType: {}. Msg: {}", tradeAvro.getTradeType(), e.getMessage(), e);
             rejectCashflow(tradeAvro, CategorizedRuntimeException.UNKNOWN(e.getMessage(), tradeAvro), inputBy);
+            return;
         }
+
+        // Sent trade for matching
+        tradeMatchService.sentForMatching(savedCashflows);
     }
 
     private void validateAndCreateCashflow(PreviousCashflowCheckOutcome outcome, CashflowBuilder bdr, Set<Cashflow> newCashflows, Set<Cashflow> lastProcessedCashflows) {
