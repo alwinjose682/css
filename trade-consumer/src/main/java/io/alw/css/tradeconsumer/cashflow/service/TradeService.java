@@ -11,7 +11,6 @@ import io.alw.css.domain.exception.ExceptionType;
 import io.alw.css.serialization.trade.TradeAvro;
 import io.alw.css.tradeconsumer.cashflow.model.CashflowRejectionRecord;
 import io.alw.css.tradeconsumer.cashflow.model.CashflowRejectionRecordBuilder;
-import io.alw.css.tradeconsumer.cashflow.model.jpa.CashflowEntity;
 import io.alw.css.tradeconsumer.cashflow.model.jpa.CashflowRejectionEntity;
 import io.alw.css.tradeconsumer.cashflow.processor.CashflowEnricher;
 import io.alw.css.tradeconsumer.cashflow.processor.CashflowVersionManager;
@@ -24,8 +23,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -50,6 +50,7 @@ public class TradeService {
         final long tradeID = tradeAvro.getTradeID();
         final int tradeVersion = tradeAvro.getTradeVersion();
         final int numOfTradeLegs = tradeAvro.getTradeLegs().size();
+        final Set<Cashflow> savedCashflows;
         log.info("Received TradeAvroMessage[tradeId: {}, tradeVersion: {}] with {} trade legs", tradeID, tradeVersion, numOfTradeLegs);
 
         try {
@@ -58,17 +59,17 @@ public class TradeService {
             // Map TradeLinks
             var tradeLinkEntities = TradeMapper.mapTradeLinksToEntity(tradeAvro);
 
-            List<Cashflow> newCashflows = new ArrayList<>();
-            List<Cashflow> lastProcessedCashflows = new ArrayList<>();
+            Set<Cashflow> newCashflows = new HashSet<>();
+            Set<Cashflow> lastProcessedCashflows = new HashSet<>();
             for (CashflowBuilder bdr : cashflowBuilders) {
                 // Check for cases defined by `PreviousCashflowCheckOutcome`
                 PreviousCashflowCheckOutcome outcome = cashflowVersionManager.checkAgainstLastProcessedCashflow(bdr.tradeId(), bdr.tradeVersion(), bdr.tradeLegId(), bdr.tradeLegVersion());
                 // Validate and Enrich cashflows with nostroId, ssiId etc
-                validateAndCreateCashflow(outcome, bdr, newCashflows, lastProcessedCashflows, tradeAvro);
+                validateAndCreateCashflow(outcome, bdr, newCashflows, lastProcessedCashflows);
             }
 
             // Persist the cashflows and tradeLinks to database in a single transaction
-            Supplier<List<CashflowEntity>> persistAction = () -> {
+            Supplier<Set<Cashflow>> persistAction = () -> {
                 var savedCfs = cashflowStore.saveCashflows(newCashflows, lastProcessedCashflows);
                 if (tradeLinkEntities != null) {
                     cashflowStore.saveTradeLinks(tradeLinkEntities);
@@ -76,20 +77,20 @@ public class TradeService {
                 return savedCfs;
             };
             // Execute the DB transaction
-            var savedCashflows = txrw.execute(persistAction, Exception.class);
+            savedCashflows = txrw.execute(persistAction, Exception.class);
 
-            var savedCfIds = savedCashflows.stream().map(cf -> cf.getCashflowEntityPK().cashflowId() + "-" + cf.getCashflowEntityPK().cashflowVersion()).collect(Collectors.joining(", "));
+            var savedCfIds = savedCashflows.stream().map(cf -> cf.cashflowId() + "-" + cf.cashflowVersion()).collect(Collectors.joining(", "));
             log.info("Successfully processed cashflow for ALL trade legs. TradeType: {}, CashflowIds: {{}}", tradeAvro.getTradeType(), savedCfIds);
         } catch (CategorizedRuntimeException e) {
-            log.info("Failed to process trade. TradeType: {}. Msg: {}", tradeAvro.getTradeType(), e.getMessage(), e);
+            log.error("Failed to process trade. TradeType: {}. Msg: {}", tradeAvro.getTradeType(), e.getMessage(), e);
             rejectCashflow(tradeAvro, e, inputBy);
         } catch (Exception e) {
-            log.info("Failed to process trade. TradeType: {}. Msg: {}", tradeAvro.getTradeType(), e.getMessage(), e);
+            log.error("Failed to process trade. TradeType: {}. Msg: {}", tradeAvro.getTradeType(), e.getMessage(), e);
             rejectCashflow(tradeAvro, CategorizedRuntimeException.UNKNOWN(e.getMessage(), tradeAvro), inputBy);
         }
     }
 
-    private void validateAndCreateCashflow(PreviousCashflowCheckOutcome outcome, CashflowBuilder bdr, List<Cashflow> newCashflows, List<Cashflow> lastProcessedCashflows, TradeAvro tradeAvro) {
+    private void validateAndCreateCashflow(PreviousCashflowCheckOutcome outcome, CashflowBuilder bdr, Set<Cashflow> newCashflows, Set<Cashflow> lastProcessedCashflows) {
         switch (outcome) {
             case InitialVersion _ -> {
                 cashflowEnricher.validateAndEnrich(bdr);

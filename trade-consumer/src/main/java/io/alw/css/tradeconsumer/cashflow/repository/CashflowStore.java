@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class CashflowStore {
     private final static Logger log = LoggerFactory.getLogger(CashflowStore.class);
@@ -71,7 +73,7 @@ public final class CashflowStore {
     /// 1. Update each last processed cashflow's 'latest' field to 'N' TODO: change this to a DB procedure to avoid multiple DB round trips
     /// 2. If exactly ONE row is updated in step 1, continues to step 3. If zero or more than 1 rows are updated, throws a [io.alw.css.domain.exception.CategorizedRuntimeException]
     /// 3. inserts the offset cashflow(CAN) and correction cashflow(COR) to DB. (Correction cashflow is created with latest='Y')
-    public List<CashflowEntity> saveCashflows(List<Cashflow> newCashflows, List<Cashflow> lastProcessedCashflows) {
+    public Set<Cashflow> saveCashflows(Set<Cashflow> newCashflows, Set<Cashflow> lastProcessedCashflows) {
         // Step 1: Update last processed cashflow's 'latest' field to 'N'
         for (Cashflow lpcf : lastProcessedCashflows) {
             long lpcfId = lpcf.cashflowId();
@@ -96,7 +98,8 @@ public final class CashflowStore {
                 .peek(cf -> log.trace("Saving Cashflow[{}-{}] to DB. TradeLeg[{}-{}]", cf.cashflowId(), cf.cashflowVersion(), cf.tradeLegId(), cf.tradeLegVersion()))
                 .map(CashflowMapper::mapToEntity)
                 .map(cashflowRepository::save)
-                .toList();
+                .map(CashflowMapper.instance()::mapToDomain_excludingAssociations)
+                .collect(Collectors.toSet());
     }
 
     public List<TradeLinkEntity> saveTradeLinks(List<TradeLinkEntity> tradeLinkEntities) {
