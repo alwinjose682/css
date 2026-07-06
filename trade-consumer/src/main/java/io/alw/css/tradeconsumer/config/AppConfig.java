@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.alw.css.dbshared.tx.TXRO;
 import io.alw.css.dbshared.tx.TXRW;
+import io.alw.css.serialization.confirmation.TradeMatchRequestAvro;
+import io.alw.css.tradeconsumer.CssTaskExecutor;
 import io.alw.css.tradeconsumer.cashflow.model.properties.SuppressionConfig;
 import io.alw.css.tradeconsumer.cashflow.processor.CashflowEnricher;
 import io.alw.css.tradeconsumer.cashflow.processor.CashflowVersionManager;
@@ -11,6 +13,8 @@ import io.alw.css.tradeconsumer.cashflow.repository.CashflowRejectionRepository;
 import io.alw.css.tradeconsumer.cashflow.repository.CashflowRepository;
 import io.alw.css.tradeconsumer.cashflow.repository.CashflowStore;
 import io.alw.css.tradeconsumer.cashflow.repository.TradeLinkRepository;
+import io.alw.css.tradeconsumer.confirmation.TradeMatchRequestPublisher;
+import io.alw.css.tradeconsumer.confirmation.model.properties.KafkaTopicProperties;
 import io.alw.css.tradeconsumer.service.CacheService;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -19,6 +23,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.web.client.RestTemplate;
 
@@ -77,5 +82,15 @@ public class AppConfig {
     @Bean
     public CashflowStore cashflowStore(CashflowRepository cashflowRepository, CashflowRejectionRepository cashflowRejectionRepository, TradeLinkRepository tradeLinkRepository) {
         return new CashflowStore(cashflowRepository, cashflowRejectionRepository, tradeLinkRepository);
+    }
+
+    @Bean
+    public CssTaskExecutor cssTaskExecutor() {
+        return new CssTaskExecutor();
+    }
+
+    @Bean
+    public TradeMatchRequestPublisher tradeMatchRequestPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, TradeMatchRequestAvro> kafkaTemplateMatchRequest, CssTaskExecutor cssTaskExecutor) {
+        return new TradeMatchRequestPublisher(kafkaTopicProperties, kafkaTemplateMatchRequest, cssTaskExecutor);
     }
 }

@@ -16,11 +16,15 @@ import java.util.Set;
 @Service
 public class TradeMatchService {
     private static final Logger log = LoggerFactory.getLogger(TradeMatchService.class);
-    private TradeMatchRequestPublisher tradeMatchRequestPublisher;
+    private final TradeMatchRequestPublisher tradeMatchRequestPublisher;
+
+    public TradeMatchService(TradeMatchRequestPublisher tradeMatchRequestPublisher) {
+        this.tradeMatchRequestPublisher = tradeMatchRequestPublisher;
+    }
 
     /// Sends the processed cashflows for matching with counterparty confirmation. Note: A confirmation message(ex: MT300) is not created
     /// The given List of cashflows may produce multiple TradeMatchRequests. Ex: for a list of Mm Cashflows
-    public void sentForMatching(Set<Cashflow> cashflows) {
+    public void sendForMatching(Set<Cashflow> cashflows) {
         Iterator<Cashflow> it = cashflows.iterator();
         final Cashflow cf;
         if (it.hasNext()) {
@@ -41,7 +45,7 @@ public class TradeMatchService {
             case PAYMENT, FX_NDF, BOND, REPO, MM, OPTION -> throw new RuntimeException("No implementation yet for generating TradeMatchRequest for TradeType: " + tradeType);
         };
 
-
-        tradeMatchRequestPublisher.sentForMatching(tradeMatchRequests);
+        // TODO: write database audit record
+        tradeMatchRequestPublisher.publish(tradeMatchRequests);
     }
 }

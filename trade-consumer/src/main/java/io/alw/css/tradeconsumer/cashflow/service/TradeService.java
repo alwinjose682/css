@@ -95,7 +95,7 @@ public class TradeService {
         }
 
         // Sent trade for matching
-        tradeMatchService.sentForMatching(savedCashflows);
+        tradeMatchService.sendForMatching(savedCashflows);
     }
 
     private void validateAndCreateCashflow(PreviousCashflowCheckOutcome outcome, CashflowBuilder bdr, Set<Cashflow> newCashflows, Set<Cashflow> lastProcessedCashflows) {
