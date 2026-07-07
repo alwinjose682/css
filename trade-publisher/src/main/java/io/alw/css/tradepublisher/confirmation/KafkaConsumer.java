@@ -16,6 +16,6 @@ public class KafkaConsumer {
 
     @KafkaListener(topics = "${app.kafka.topic.trade-match-request}", groupId = "${spring.kafka.consumer.group-id}", containerFactory = "tradeMatchRequestListenerContainerFactory")
     public void consume(Message<TradeMatchRequestAvro> msg) {
-        matchService.processMatchRequest(msg);
+        matchService.processMatchRequest(msg.getPayload());
     }
 }
