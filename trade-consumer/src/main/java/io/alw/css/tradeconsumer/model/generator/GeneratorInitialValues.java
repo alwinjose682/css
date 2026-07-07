@@ -5,8 +5,9 @@ import jakarta.validation.constraints.Positive;
 
 import java.time.LocalDate;
 
-public record TradeGenerationInitialValues(
+public record GeneratorInitialValues(
         @NotNull LocalDate valueDate,
-        @Positive long tradeId
+        @Positive long tradeId,
+        @Positive long matchStatusEventId
 ) {
 }

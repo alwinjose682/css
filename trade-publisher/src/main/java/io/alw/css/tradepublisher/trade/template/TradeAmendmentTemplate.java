@@ -2,13 +2,15 @@ package io.alw.css.tradepublisher.trade.template;
 
 import io.alw.css.domain.common.*;
 import io.alw.css.domain.trade.*;
+import io.alw.css.tradepublisher.IdProvider;
+import io.alw.css.tradepublisher.generator.DayTicker;
+import io.alw.css.tradepublisher.store.ItemStoreHelper;
 import io.alw.css.tradepublisher.trade.model.Entity;
 import io.alw.css.tradepublisher.trade.model.TradeEventActionPair;
 import io.alw.css.tradepublisher.trade.model.properties.TradeTemplateProperties;
 import io.alw.css.tradepublisher.trade.service.RefDataService;
 import io.alw.css.tradepublisher.trade.template.domain.ExtendedTrade;
 import io.alw.css.tradepublisher.trade.template.model.*;
-import io.alw.css.tradepublisher.trade.tradegenerator.DayTicker;
 import io.alw.datagen.template.AggregateTemplateBuilderResult;
 import io.alw.datagen.template.ChildBuildDirective;
 import io.alw.datagen.template.ChildBuildDirective.ChildBuildDirectiveType1;
@@ -41,7 +43,7 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
     /// All the trade legs selected for amendment must belong only to the trdCtx being passed via this method
     protected abstract void buildTradeAmendmentContext(Consumer<TradeAmendmentContext> trdAmendmentBuilderFunc, T trdCtxForAmendment);
 
-    protected abstract TradeStoreHelper<T> trdStoreHelper();
+    protected abstract ItemStoreHelper<T> trdStoreHelper();
 
     /// Both primary and secondary criteria will be applied to select a tradeContext for amendment.
     /// This applies both for the selecting a tradeContext for first time and each time after amendment
@@ -79,7 +81,7 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
 
     protected TT withTradeAmendmentDirectives() {
         // 1. Get trades that need to be amended
-        final List<T> extTrds = trdStoreHelper().retrieveTradesForCurrentDay(TradeStoreHelper.TradeRetrievalPurpose.AMEND);
+        final List<T> extTrds = trdStoreHelper().retrieve(ItemStoreHelper.Purpose.AMEND, trdTemplateHelper.currentDayForTrdTemplate());
         // 2. Create trade amendment directive
         for (T extTrd : extTrds) {
             // Trade amendment builder function
@@ -354,7 +356,7 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
 
     protected void saveForFutureAmendment(T extTrd) {
         if (amendmentCandidateSelectionCriteria().test(extTrd)) {
-            trdStoreHelper().storeTradeForFutureRndmRetrievalDay(extTrd, TradeStoreHelper.TradeRetrievalPurpose.AMEND);
+            trdStoreHelper().storeForFutureRndmRetrievalDay(extTrd, ItemStoreHelper.Purpose.AMEND);
         }
     }
 }

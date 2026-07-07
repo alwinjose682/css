@@ -1,28 +1,31 @@
-package io.alw.css.tradepublisher.trade.template;
+package io.alw.css.tradepublisher;
 
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class IdProvider {
     private static IdProvider instance;
     public static final long defaultInitialTradeId = 1054321L;
+    public static final long defaultMatchStatusEventId = 58255L;
 
     private final AtomicLong tradeIdGenerator;
+    private final AtomicLong matchStatusEventIdGenerator;
 
-    private IdProvider(long initialTradeId) {
+    private IdProvider(long initialTradeId, long matchEventId) {
         this.tradeIdGenerator = new AtomicLong(initialTradeId);
+        this.matchStatusEventIdGenerator = new AtomicLong(matchEventId);
     }
 
-    public static void init(long initialTradeId) {
+    public static void init(long initialTradeId, long initialMatchEventId) {
         if (instance == null) {
             synchronized (IdProvider.class) {
                 if (instance == null) {
-                    instance = new IdProvider(initialTradeId);
+                    instance = new IdProvider(initialTradeId, initialMatchEventId);
                 }
             }
         }
     }
 
-    static IdProvider singleton() {
+    public static IdProvider singleton() {
         if (instance == null) {
             synchronized (IdProvider.class) {
                 if (instance == null) {
@@ -34,10 +37,14 @@ public final class IdProvider {
     }
 
     private static IdProvider newIdProviderWithDefaultValues() {
-        return new IdProvider(defaultInitialTradeId);
+        return new IdProvider(defaultInitialTradeId, defaultMatchStatusEventId);
     }
 
-    long nextTradeId() {
+    public long nextTradeId() {
         return tradeIdGenerator.getAndIncrement();
+    }
+
+    public long nextMatchStatusEventId() {
+        return matchStatusEventIdGenerator.getAndIncrement();
     }
 }

@@ -5,12 +5,13 @@ import io.alw.css.domain.common.TradeEventType;
 import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.common.TransactionType;
 import io.alw.css.domain.trade.*;
+import io.alw.css.tradepublisher.IdProvider;
+import io.alw.css.tradepublisher.generator.DayTicker;
 import io.alw.css.tradepublisher.trade.model.Entity;
 import io.alw.css.tradepublisher.trade.model.TradeEventActionPair;
 import io.alw.css.tradepublisher.trade.model.properties.TradeTemplateProperties;
 import io.alw.css.tradepublisher.trade.service.RefDataService;
 import io.alw.css.tradepublisher.trade.template.domain.ExtendedTrade;
-import io.alw.css.tradepublisher.trade.tradegenerator.DayTicker;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
 import io.alw.datagen.template.AggregateTemplateBuilder;
 

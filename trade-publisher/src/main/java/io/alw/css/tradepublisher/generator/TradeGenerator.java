@@ -1,4 +1,4 @@
-package io.alw.css.tradepublisher.trade.tradegenerator;
+package io.alw.css.tradepublisher.generator;
 
 import io.alw.css.domain.trade.Trade;
 import io.alw.css.tradepublisher.trade.TradePublisher;

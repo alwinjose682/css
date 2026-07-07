@@ -1,18 +1,18 @@
-package io.alw.css.tradepublisher.trade.tradegenerator;
+package io.alw.css.tradepublisher.generator;
 
 import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.common.TransactionType;
 import io.alw.css.domain.trade.Trade;
 import io.alw.css.tradepublisher.CssTaskExecutor;
+import io.alw.css.tradepublisher.IdProvider;
 import io.alw.css.tradepublisher.trade.TradePublisher;
 import io.alw.css.tradepublisher.trade.model.Entity;
 import io.alw.css.tradepublisher.trade.model.GeneratorDetail;
-import io.alw.css.tradepublisher.trade.model.TradeGenerationInitialValues;
+import io.alw.css.tradepublisher.trade.model.GeneratorInitialValues;
 import io.alw.css.tradepublisher.trade.model.properties.TradeGeneratorProperties;
 import io.alw.css.tradepublisher.trade.model.properties.TradeTemplateProperties;
 import io.alw.css.tradepublisher.trade.service.RefDataService;
 import io.alw.css.tradepublisher.trade.template.FxTemplate;
-import io.alw.css.tradepublisher.trade.template.IdProvider;
 import io.alw.css.tradepublisher.trade.template.MmTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,8 +30,8 @@ import java.util.random.RandomGenerator;
 
 import static io.alw.css.domain.common.TradeType.*;
 
-public final class TradeGeneratorHandler {
-    private final static Logger log = LoggerFactory.getLogger(TradeGeneratorHandler.class);
+public final class GeneratorHandler {
+    private final static Logger log = LoggerFactory.getLogger(GeneratorHandler.class);
     private final static String GENERATOR_KEY_PART_SEPARATOR = "-";
     private final AtomicBoolean activeHandlerOperation;
     private final Map<String, List<TradeGenerator>> generatorMap;
@@ -44,9 +44,9 @@ public final class TradeGeneratorHandler {
     private final CssTaskExecutor cssTaskExecutor;
 
     // Initial Generator Values - initialized only once
-    private TradeGenerationInitialValues cfGenerationInitialValues;
+    private GeneratorInitialValues generatorInitialValues;
 
-    public TradeGeneratorHandler(TradeGeneratorProperties tradeGeneratorProperties, TradeTemplateProperties tradeTemplateProperties, TradePublisher tradePublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
+    public GeneratorHandler(TradeGeneratorProperties tradeGeneratorProperties, TradeTemplateProperties tradeTemplateProperties, TradePublisher tradePublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
         this.tradeGeneratorProperties = tradeGeneratorProperties;
         this.tradeTemplateProperties = tradeTemplateProperties;
         this.tradePublisher = tradePublisher;
@@ -65,27 +65,28 @@ public final class TradeGeneratorHandler {
         return activeHandlerOperation.compareAndSet(true, false);
     }
 
-    public TradeGeneratorHandlerOutcome startAllGenerators(TradeGenerationInitialValues tradeGenerationInitialValues) {
-        setTradeGenerationInitialValues(tradeGenerationInitialValues);
+    public GeneratorHandlerOutcome startAllGenerators(GeneratorInitialValues generatorInitialValues) {
+        setGeneratorInitialValues(generatorInitialValues);
         return startAllGenerators();
     }
 
     /// Sets trade generation initial values IF they are not set already.
     /// Trade generation initial values can be provided explicitly via the REST API. If not provided explicitly, then default values are used
-    private void setTradeGenerationInitialValues(TradeGenerationInitialValues initValues) {
-        if (this.cfGenerationInitialValues == null) {
+    private void setGeneratorInitialValues(GeneratorInitialValues initValues) {
+        if (this.generatorInitialValues == null) {
             synchronized (this) {
-                if (this.cfGenerationInitialValues == null && initValues == null) {
-                    this.cfGenerationInitialValues = TradeGenerationInitialValues.defaultValues();
-                    log.info("Initial values for trade generation are not provided explicitly. Starting trade generation with default initial values: {}", this.cfGenerationInitialValues);
+                if (this.generatorInitialValues == null && initValues == null) {
+                    this.generatorInitialValues = GeneratorInitialValues.defaultValues();
+                    log.info("Initial values for trade generation are not provided explicitly. Starting trade generation with default initial values: {}", this.generatorInitialValues);
                 } else {
                     var valueDate = initValues.valueDate();
                     var tradeId = initValues.tradeId();
-                    this.cfGenerationInitialValues = new TradeGenerationInitialValues(valueDate, tradeId);
-                    log.info("Initial values for trade generation are provided explicitly via REST API. Starting trade generation with the explicit initial values: {}", this.cfGenerationInitialValues);
+                    var matchStatusEventId = initValues.matchStatusEventId();
+                    this.generatorInitialValues = new GeneratorInitialValues(valueDate, tradeId, matchStatusEventId);
+                    log.info("Initial values for trade generation are provided explicitly via REST API. Starting trade generation with the explicit initial values: {}", this.generatorInitialValues);
                 }
                 //Initialize the singleton instance of IdProvider
-                IdProvider.init(this.cfGenerationInitialValues.tradeId());
+                IdProvider.init(this.generatorInitialValues.tradeId(), this.generatorInitialValues.matchStatusEventId());
             }
         }
     }
@@ -96,12 +97,12 @@ public final class TradeGeneratorHandler {
     /// Atomic boolean is used instead of just making this method synchronized because:
     /// concurrent invocations of this method that are blocked should not attempt to start the generators again.
     /// But sequential invocations of this method will start another instance of all the generators, which is considered ok
-    public TradeGeneratorHandlerOutcome startAllGenerators() {
-        setTradeGenerationInitialValues(cfGenerationInitialValues);
+    public GeneratorHandlerOutcome startAllGenerators() {
+        setGeneratorInitialValues(generatorInitialValues);
 
         boolean ok = beginHandlerOperation();
         if (!ok) {
-            return new TradeGeneratorHandlerOutcome.ConcurrentOperation("Another TradeGeneratorHandler operation is in progress");
+            return new GeneratorHandlerOutcome.ConcurrentOperation("Another TradeGeneratorHandler operation is in progress");
         }
 
         // If already started, calling this method has no effect
@@ -130,7 +131,7 @@ public final class TradeGeneratorHandler {
                     } catch (Exception e) {
                         startedGenerators.stream().map(GeneratorDetail::generatorKey).forEach(this::stop);
                         dayTicker.stop();
-                        return new TradeGeneratorHandlerOutcome.Failure(e.getMessage(), startedGenerators.stream().map(GeneratorDetail::generatorKey).toList(), List.of(key));
+                        return new GeneratorHandlerOutcome.Failure(e.getMessage(), startedGenerators.stream().map(GeneratorDetail::generatorKey).toList(), List.of(key));
                     }
                 }
             }
@@ -139,7 +140,7 @@ public final class TradeGeneratorHandler {
         // End handler operation
         endHandlerOperation(); //TODO: What to do if not ok
 
-        return new TradeGeneratorHandlerOutcome.Success("Successfully started all trade generators", startedGenerators);
+        return new GeneratorHandlerOutcome.Success("Successfully started all trade generators", startedGenerators);
     }
 
     private long getGeneratorSleepDurationFor(String generatorKey) {
@@ -156,8 +157,8 @@ public final class TradeGeneratorHandler {
         return tradeGeneratorProperties.frequencySecondsDefault();
     }
 
-    public List<TradeGeneratorHandlerOutcome> stopAllGenerators() {
-        List<TradeGeneratorHandlerOutcome> outcome = generatorMap.keySet().stream().map(this::stop).toList();
+    public List<GeneratorHandlerOutcome> stopAllGenerators() {
+        List<GeneratorHandlerOutcome> outcome = generatorMap.keySet().stream().map(this::stop).toList();
         dayTicker.stop();
         return outcome;
     }
@@ -181,7 +182,7 @@ public final class TradeGeneratorHandler {
     }
 
     private Supplier<List<Trade>> createTradeSupplier(TransactionType transactionType, TradeType tradeType, Entity entity) {
-        LocalDate initialValueDate = cfGenerationInitialValues.valueDate();
+        LocalDate initialValueDate = generatorInitialValues.valueDate();
         RandomGenerator rndm = RandomGenerator.getDefault();
         return switch (tradeType) {
             case FX -> new FxTemplate(entity, transactionType, rndm, initialValueDate, refDataService, dayTicker, tradeTemplateProperties);
@@ -195,18 +196,18 @@ public final class TradeGeneratorHandler {
     /// 2. if the
     /// This method is Concurrent Safe. Performs this computation atomically.
     /// TODO: dayTicker is not stopped if all the generators are stopped in an adhoc manner
-    private TradeGeneratorHandlerOutcome stop(String key) {
-        TradeGeneratorHandlerOutcome[] outcome = new TradeGeneratorHandlerOutcome[1];
+    private GeneratorHandlerOutcome stop(String key) {
+        GeneratorHandlerOutcome[] outcome = new GeneratorHandlerOutcome[1];
 
         // Performs this computation atomically. generatorMap is ConcurrentHashMap
         generatorMap.compute(key, (_, generators) -> {
             if (generators == null) {
-                outcome[0] = new TradeGeneratorHandlerOutcome.GenericMessage("No handler with given name exists or incorrect Trade Generator name. Key: " + key);
+                outcome[0] = new GeneratorHandlerOutcome.GenericMessage("No handler with given name exists or incorrect Trade Generator name. Key: " + key);
                 return null;
             } else {
                 TradeGenerator generator = generators.removeFirst();
                 performStop(generator, key);
-                outcome[0] = new TradeGeneratorHandlerOutcome.GenericMessage("Successfully signalled stop for generator: " + key + ". The generator is expected to stop shortly. Current remaining number of generators of the same type: " + generators.size());
+                outcome[0] = new GeneratorHandlerOutcome.GenericMessage("Successfully signalled stop for generator: " + key + ". The generator is expected to stop shortly. Current remaining number of generators of the same type: " + generators.size());
                 if (generators.isEmpty()) {
                     return null;
                 } else {

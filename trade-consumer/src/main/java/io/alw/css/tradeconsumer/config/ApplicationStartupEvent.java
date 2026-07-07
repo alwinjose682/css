@@ -2,9 +2,9 @@ package io.alw.css.tradeconsumer.config;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.alw.css.tradeconsumer.cashflow.model.FoCashflowIdAndTradeId;
+import io.alw.css.tradeconsumer.cashflow.model.GeneratorIds;
 import io.alw.css.tradeconsumer.cashflow.repository.CashflowRepository;
-import io.alw.css.tradeconsumer.model.generator.TradeGenerationInitialValues;
+import io.alw.css.tradeconsumer.model.generator.GeneratorInitialValues;
 import io.alw.css.tradeconsumer.model.generator.TradeGeneratorStartResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,15 +73,15 @@ public class ApplicationStartupEvent implements ApplicationListener<ApplicationR
         }
     }
 
-    private TradeGenerationInitialValues getTradeGenerationInitialValues() {
-        FoCashflowIdAndTradeId maxIds = cashflowRepository.findMaxTradeId();
+    private GeneratorInitialValues getTradeGenerationInitialValues() {
+        GeneratorIds maxIds = cashflowRepository.findMaxTradeId();
         if (maxIds == null || maxIds.tradeId() == null) {
-            var initValues = new TradeGenerationInitialValues(LocalDate.now(), 1054321L);
+            var initValues = new GeneratorInitialValues(LocalDate.now(), 1054321L, 58255L);
             log.info("Staring Trade Generators with initial values: {}", initValues);
             return initValues;
         }
 
-        var initValues = new TradeGenerationInitialValues(LocalDate.now(), 1L + maxIds.tradeId());
+        var initValues = new GeneratorInitialValues(LocalDate.now(), 1L + maxIds.tradeId(), maxIds.matchStatusEventId());
         log.info("Staring Trade Generators with initial values greater than the values of last processed cashflow: {}", initValues);
         return initValues;
     }

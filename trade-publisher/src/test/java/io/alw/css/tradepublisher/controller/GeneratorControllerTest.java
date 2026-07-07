@@ -1,8 +1,8 @@
-package io.alw.css.tradepublisher.trade.controller;
+package io.alw.css.tradepublisher.controller;
 
-import io.alw.css.tradepublisher.trade.model.TradeGenerationInitialValues;
-import io.alw.css.tradepublisher.trade.service.TradeGeneratorService;
-import io.alw.css.tradepublisher.trade.tradegenerator.TradeGeneratorHandlerOutcomeDtoBuilder;
+import io.alw.css.tradepublisher.trade.model.GeneratorInitialValues;
+import io.alw.css.tradepublisher.trade.service.GeneratorService;
+import io.alw.css.tradepublisher.trade.tradegenerator.GeneratorHandlerOutcomeDtoBuilder;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -24,28 +24,28 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest
-@ContextConfiguration(classes = TradeGeneratorController.class)
-class TradeGeneratorControllerTest {
+@ContextConfiguration(classes = GeneratorController.class)
+class GeneratorControllerTest {
 
     @Captor
-    ArgumentCaptor<TradeGenerationInitialValues> cfGeneratorValCaptor;
+    ArgumentCaptor<GeneratorInitialValues> cfGeneratorValCaptor;
 
     @Autowired
     MockMvc mockMvc;
 
     @MockitoBean
-    TradeGeneratorService tradeGeneratorService;
+    GeneratorService generatorService;
 
     @Test
     void start() throws Exception {
         var SUCCESS = "Success";
-        var successOutcome = TradeGeneratorHandlerOutcomeDtoBuilder.builder().msgs(List.of(SUCCESS)).build();
+        var successOutcome = GeneratorHandlerOutcomeDtoBuilder.builder().msgs(List.of(SUCCESS)).build();
 
         //given
-        when(tradeGeneratorService.start(any(TradeGenerationInitialValues.class)))
+        when(generatorService.start(any(GeneratorInitialValues.class)))
                 .thenReturn(successOutcome);
         //when-then
-        mockMvc.perform(MockMvcRequestBuilders.put(TradeGeneratorController.CF_GEN_URL + "/start/" + TradeGeneratorController.ALL_GENERATORS_KEY)
+        mockMvc.perform(MockMvcRequestBuilders.put(GeneratorController.CF_GEN_URL + "/start/" + GeneratorController.ALL_GENERATORS_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"valueDate":"2025-08-14",
@@ -55,8 +55,8 @@ class TradeGeneratorControllerTest {
                 .andExpect(status().isAccepted())
                 .andReturn();
 
-        verify(tradeGeneratorService).start(cfGeneratorValCaptor.capture());
-        TradeGenerationInitialValues cfGeneratorInitialValues = cfGeneratorValCaptor.getValue();
+        verify(generatorService).start(cfGeneratorValCaptor.capture());
+        GeneratorInitialValues cfGeneratorInitialValues = cfGeneratorValCaptor.getValue();
         assertThat(cfGeneratorInitialValues.valueDate()).isEqualTo("2025-08-14");
         assertThat(cfGeneratorInitialValues.tradeId()).isEqualTo(1054321);
     }

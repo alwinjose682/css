@@ -8,8 +8,10 @@ import io.alw.css.domain.trade.TradeDetail;
 import io.alw.css.domain.trade.TradeLeg;
 import io.alw.css.domain.trade.TradeLegBuilder;
 import io.alw.css.domain.trade.TradeLegType;
-import io.alw.css.tradepublisher.store.InMemoryTradeStore;
-import io.alw.css.tradepublisher.store.TradeStore;
+import io.alw.css.tradepublisher.generator.DayTicker;
+import io.alw.css.tradepublisher.store.InMemoryItemStore;
+import io.alw.css.tradepublisher.store.ItemStore;
+import io.alw.css.tradepublisher.store.ItemStoreHelper;
 import io.alw.css.tradepublisher.trade.model.Entity;
 import io.alw.css.tradepublisher.trade.model.TradeEventActionPair;
 import io.alw.css.tradepublisher.trade.model.properties.TradeTemplateProperties;
@@ -19,7 +21,6 @@ import io.alw.css.tradepublisher.trade.template.domain.InterestTradeLeg;
 import io.alw.css.tradepublisher.trade.template.domain.MmTrade;
 import io.alw.css.tradepublisher.trade.template.domain.TradeLegGenerationSchedule;
 import io.alw.css.tradepublisher.trade.template.model.*;
-import io.alw.css.tradepublisher.trade.tradegenerator.DayTicker;
 import io.alw.datagen.template.AggregateTemplateBuilder;
 import io.alw.datagen.template.ChildBuildDirective;
 
@@ -43,13 +44,13 @@ import static io.alw.css.tradepublisher.trade.template.domain.InterestBasis.Thir
 import static io.alw.css.tradepublisher.trade.template.domain.InterestPayoutFrequency.*;
 
 public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemplate> {
-    private final TradeStoreHelper<MmTrade> trdStoreHelper;
+    private final ItemStoreHelper<MmTrade> trdStoreHelper;
 
     public MmTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, TradeTemplateProperties trdTemplateProps) {
         super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, trdTemplateProps);
 
-        TradeStore<MmTrade> trdStore = new InMemoryTradeStore<>();
-        this.trdStoreHelper = new TradeStoreHelper<>(dayTicker, trdStore, rndm, trdTemplateHelper);
+        ItemStore<MmTrade> trdStore = new InMemoryItemStore<>();
+        this.trdStoreHelper = new ItemStoreHelper<>(dayTicker, trdStore, rndm);
     }
 
     /// Build new template for MM trade. A new MM trade can have 1 to 3 trade legs depending on whether it is a TERM or CALL and depending on the interest tradeLeg
@@ -507,7 +508,7 @@ public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemp
     }
 
     @Override
-    protected TradeStoreHelper<MmTrade> trdStoreHelper() {
+    protected ItemStoreHelper<MmTrade> trdStoreHelper() {
         return trdStoreHelper;
     }
 

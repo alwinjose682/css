@@ -2,15 +2,16 @@ package io.alw.css.tradepublisher.trade.template;
 
 import io.alw.css.domain.common.*;
 import io.alw.css.domain.trade.TradeLegBuilder;
-import io.alw.css.tradepublisher.store.InMemoryTradeStore;
-import io.alw.css.tradepublisher.store.TradeStore;
+import io.alw.css.tradepublisher.generator.DayTicker;
+import io.alw.css.tradepublisher.store.InMemoryItemStore;
+import io.alw.css.tradepublisher.store.ItemStore;
+import io.alw.css.tradepublisher.store.ItemStoreHelper;
 import io.alw.css.tradepublisher.trade.model.Entity;
 import io.alw.css.tradepublisher.trade.model.TradeEventActionPair;
 import io.alw.css.tradepublisher.trade.model.properties.TradeTemplateProperties;
 import io.alw.css.tradepublisher.trade.service.RefDataService;
 import io.alw.css.tradepublisher.trade.template.domain.FxTrade;
 import io.alw.css.tradepublisher.trade.template.model.*;
-import io.alw.css.tradepublisher.trade.tradegenerator.DayTicker;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
 
 import java.math.BigDecimal;
@@ -27,14 +28,14 @@ import static io.alw.css.domain.trade.TradeLegType.FX_SIDE2;
 import static io.alw.css.tradepublisher.trade.template.model.AmendableFieldType.*;
 
 public final class FxTemplate extends TradeAmendmentTemplate<FxTrade, FxTemplate> {
-    private final TradeStoreHelper<FxTrade> trdStoreHelper;
+    private final ItemStoreHelper<FxTrade> trdStoreHelper;
     private static final Supplier<Set<AmendableFieldType>> cyclicAmendableTradeMessageFieldTypeProvider = new CyclicAmendableTradeMessageFieldProvider(getListOfAmendableTradeMessageFieldTypes());
 
     public FxTemplate(Entity entity, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, TradeTemplateProperties tradeTemplateProperties) {
         super(entity, TradeType.FX, transactionType, rndm, initialValueDate, refDataService, dayTicker, tradeTemplateProperties);
 
-        TradeStore<FxTrade> trdStore = new InMemoryTradeStore<>();
-        this.trdStoreHelper = new TradeStoreHelper<>(dayTicker, trdStore, rndm, trdTemplateHelper);
+        ItemStore<FxTrade> trdStore = new InMemoryItemStore<>();
+        this.trdStoreHelper = new ItemStoreHelper<>(dayTicker, trdStore, rndm);
     }
 
     @Override
@@ -186,7 +187,7 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade, FxTemplate
     }
 
     @Override
-    protected TradeStoreHelper<FxTrade> trdStoreHelper() {
+    protected ItemStoreHelper<FxTrade> trdStoreHelper() {
         return trdStoreHelper;
     }
 

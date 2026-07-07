@@ -5,13 +5,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/// [InMemoryTradeStore] is not thread safe. It is intended to be used exclusively by a single thread
-/// NOTE: Generic array creation is not allowed. Therefor decided to use 2 stores instead of letting the classes that use [TradeStore] to select the number of stores required
-public final class InMemoryTradeStore<T> implements TradeStore<T> {
+/// [InMemoryItemStore] is not thread safe. It is intended to be used exclusively by a single thread
+/// NOTE: Generic array creation is not allowed. Therefor decided to use 2 stores instead of letting the classes that use [ItemStore] to select the number of stores required
+public final class InMemoryItemStore<T> implements ItemStore<T> {
     private final Map<Long, List<T>> store1;
     private final Map<Long, List<T>> store2;
 
-    public InMemoryTradeStore() {
+    public InMemoryItemStore() {
         this.store1 = new HashMap<>();
         this.store2 = new HashMap<>();
     }
@@ -30,10 +30,10 @@ public final class InMemoryTradeStore<T> implements TradeStore<T> {
     }
 
     private Map<Long, List<T>> getStore(int storeIdx) {
-        if (storeIdx == TradeStore.storeIndexes[0]) {
+        if (storeIdx == ItemStore.storeIndexes[0]) {
             return store1;
         } else {
-            if (storeIdx == TradeStore.storeIndexes[1]) {
+            if (storeIdx == ItemStore.storeIndexes[1]) {
                 return store2;
             } else {
                 throw new RuntimeException("Invalid Trade Store Idx");

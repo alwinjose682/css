@@ -1,4 +1,4 @@
-package io.alw.css.tradepublisher.trade.tradegenerator;
+package io.alw.css.tradepublisher.generator;
 
 import io.alw.css.tradepublisher.CssTaskExecutor;
 import org.slf4j.Logger;

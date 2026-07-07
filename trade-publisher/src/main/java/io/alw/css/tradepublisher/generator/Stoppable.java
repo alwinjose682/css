@@ -1,6 +1,6 @@
-package io.alw.css.tradepublisher.trade.tradegenerator;
+package io.alw.css.tradepublisher.generator;
 
-sealed abstract class Stoppable permits TradeGenerator, DayTicker {
+public sealed abstract class Stoppable permits TradeGenerator, DayTicker {
 
     private volatile boolean stopSignalled;
 
