@@ -2,12 +2,12 @@ package io.alw.css.confirmation;
 
 import io.alw.css.domain.common.TradeType;
 
-import java.util.List;
+import java.util.Set;
 
 public record TradeMatchRequest(
         long tradeId,
         int tradeVersion,
-        List<TradeLegMatchAttribute> tradeLegMatchAttributes,
+        Set<TradeLegMatchAttribute> tradeLegMatchAttributes,
         TradeType tradeType
 ) {
 }

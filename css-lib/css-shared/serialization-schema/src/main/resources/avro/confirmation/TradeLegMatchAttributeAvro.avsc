@@ -18,6 +18,13 @@
     {
       "name": "tradeLegVersion",
       "type": "int"
+    },
+    {
+      "name": "valueDate",
+      "type": {
+        "type": "int",
+        "logicalType":"date"
+      }
     }
   ]
 }

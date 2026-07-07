@@ -72,7 +72,7 @@ public class TradeMatchRequestCreator {
         requiredTradeLegTypes.put(TradeLegType.FX_SIDE1, "v");
         requiredTradeLegTypes.put(TradeLegType.FX_SIDE2, "v");
 
-        List<TradeLegMatchAttribute> tradeLegMatchAttributes = buildTradeLegMatchAttributes(cashflows, requiredTradeLegTypes, tradeId, tradeVersion, remainingCashflows);
+        Set<TradeLegMatchAttribute> tradeLegMatchAttributes = buildTradeLegMatchAttributes(cashflows, requiredTradeLegTypes, tradeId, tradeVersion, remainingCashflows);
         tradeMatchRequests.add(createTradeMatchRequest(tradeLegMatchAttributes, tradeId, tradeVersion, tradeType));
 
         return tradeMatchRequests;
@@ -80,8 +80,8 @@ public class TradeMatchRequestCreator {
 
     /// The Map `requiredTradeLegTypes` must be mutable because elements are removed
     /// A new mutable Set of remaining cashflows `remainingCashflows` is needed because the Set `allCashflows` is immutable
-    private static List<TradeLegMatchAttribute> buildTradeLegMatchAttributes(Set<Cashflow> allCashflows, Map<TradeLegType, String> requiredTradeLegTypes, long tradeId, int tradeVersion, Set<Cashflow> remainingCashflows) {
-        List<TradeLegMatchAttribute> tradeLegMatchAttributes = new ArrayList<>();
+    private static Set<TradeLegMatchAttribute> buildTradeLegMatchAttributes(Set<Cashflow> allCashflows, Map<TradeLegType, String> requiredTradeLegTypes, long tradeId, int tradeVersion, Set<Cashflow> remainingCashflows) {
+        Set<TradeLegMatchAttribute> tradeLegMatchAttributes = new HashSet<>();
         for (Cashflow cashflow : allCashflows) {
             long tradeLegId = cashflow.tradeLegId();
             int tradeLegVersion = cashflow.tradeLegVersion();
@@ -99,7 +99,7 @@ public class TradeMatchRequestCreator {
             if (val == null) {
                 remainingCashflows.add(cashflow);
             } else {
-                TradeLegMatchAttribute attribute = new TradeLegMatchAttribute(tradeLegId, tradeLegVersion, nostroId, ssiId);
+                TradeLegMatchAttribute attribute = new TradeLegMatchAttribute(tradeLegId, tradeLegVersion, nostroId, ssiId, cashflow.valueDate());
                 tradeLegMatchAttributes.add(attribute);
             }
         }
@@ -117,7 +117,7 @@ public class TradeMatchRequestCreator {
         return tradeLegMatchAttributes.keySet().stream().map(TradeLegType::name).collect(Collectors.joining(","));
     }
 
-    private static TradeMatchRequest createTradeMatchRequest(List<TradeLegMatchAttribute> tradeLegMatchAttributes, long tradeId, int tradeVersion, TradeType tradeType) {
+    private static TradeMatchRequest createTradeMatchRequest(Set<TradeLegMatchAttribute> tradeLegMatchAttributes, long tradeId, int tradeVersion, TradeType tradeType) {
         return new TradeMatchRequest(tradeId, tradeVersion, tradeLegMatchAttributes, tradeType);
     }
 }

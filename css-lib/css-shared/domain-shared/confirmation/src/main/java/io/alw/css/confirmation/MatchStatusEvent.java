@@ -5,7 +5,7 @@ import io.alw.datagen.DataGeneratable;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.Set;
 
 @RecordBuilder
 public record MatchStatusEvent(
@@ -13,7 +13,7 @@ public record MatchStatusEvent(
         int eventVersion,
         long tradeId,
         int tradeVersion,
-        List<TradeLegMatchAttribute> tradeLegMatchAttributes,
+        Set<TradeLegMatchAttribute> tradeLegMatchAttributes,
         TradeType tradeType,
         MatchStatus matchStatus,
         LocalDate matchDate
