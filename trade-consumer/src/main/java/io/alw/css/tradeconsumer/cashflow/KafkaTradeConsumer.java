@@ -15,7 +15,7 @@ public class KafkaTradeConsumer {
         this.tradeService = tradeService;
     }
 
-    @KafkaListener(topics = "${app.kafka.topic.trade-input}", groupId = "${spring.kafka.consumer.group-id}", containerFactory = "tradeMessageListenerContainerFactory")
+    @KafkaListener(topics = "${app.kafka.topic.trade-cash-generation-event}", groupId = "${spring.kafka.consumer.group-id}", containerFactory = "tradeMessageListenerContainerFactory")
     public void accept(Message<TradeAvro> message) {
         tradeService.process(message.getPayload(), InputBy.CSS_SYS);
     }
