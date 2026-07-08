@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 @SpringBootApplication(scanBasePackages = "io.alw.css.tradepublisher")
-@ConfigurationPropertiesScan("io.alw.css.tradepublisher.trade.model.properties")
+@ConfigurationPropertiesScan("io.alw.css.tradepublisher.properties")
 public class TradePublisherApp {
     public static void main(String[] args) {
         SpringApplication.run(TradePublisherApp.class, args);

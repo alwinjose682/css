@@ -7,8 +7,8 @@ import io.alw.css.confirmation.TradeMatchRequest;
 import io.alw.css.tradepublisher.IdProvider;
 import io.alw.css.tradepublisher.confirmation.MatchStatusEventPublisher;
 import io.alw.css.tradepublisher.generator.DayTicker;
-import io.alw.css.tradepublisher.generator.MatchStatusEventGenerator;
 import io.alw.css.tradepublisher.store.ItemStoreHelper;
+import io.alw.css.tradepublisher.trade.service.RefDataService;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -17,10 +17,11 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 
-public final class MatchStatusTemplate implements Supplier<List<MatchStatusEvent>> {
+public final class MatchStatusEventTemplate implements Supplier<List<MatchStatusEvent>> {
     private static final int VERSION_ONE = 1;
 
     private final DayTicker dayTicker;
+    private final RefDataService refDataService;
     private final ItemStoreHelper<TradeMatchRequest> matchRequestStoreHelper;
     private final ItemStoreHelper<MatchStatusEvent> matchStatusEventStoreHelper;
     private final MatchStatusEventPublisher eventPublisher;
@@ -29,8 +30,9 @@ public final class MatchStatusTemplate implements Supplier<List<MatchStatusEvent
 
     private long dayForTemplate;
 
-    public MatchStatusTemplate(DayTicker dayTicker, ItemStoreHelper<TradeMatchRequest> matchRequestStoreHelper, ItemStoreHelper<MatchStatusEvent> matchStatusEventStoreHelper, MatchStatusEventPublisher eventPublisher, LocalDate initialValueDate, RandomGenerator rndm) {
+    public MatchStatusEventTemplate(DayTicker dayTicker, RefDataService refDataService, MatchStatusEventPublisher eventPublisher, LocalDate initialValueDate, RandomGenerator rndm) {
         this.dayTicker = dayTicker;
+        this.refDataService = refDataService;
         this.matchRequestStoreHelper = matchRequestStoreHelper;
         this.matchStatusEventStoreHelper = matchStatusEventStoreHelper;
         this.eventPublisher = eventPublisher;
@@ -41,7 +43,7 @@ public final class MatchStatusTemplate implements Supplier<List<MatchStatusEvent
 
     /// Generates [MatchStatusEvent] immediately or on a future date.
     /// The events generated immediately are publisher to CSS.
-    /// The match requests and event amendments queued for a future date are obtained by [MatchStatusEventGenerator] at pre-configured intervals and then published to CSS
+    /// The match requests and event amendments queued for a future date are obtained by [io.alw.css.tradepublisher.generator.Generator] at pre-configured intervals and then published to CSS
     public void consume(TradeMatchRequest matchRequest) {
         if (isMatchStatusGeneratableForFutureDate(matchRequest)) {
             matchRequestStoreHelper.storeForFutureRndmRetrievalDay(matchRequest, ItemStoreHelper.Purpose.ITEM_SPECIFIC_EVENT);
@@ -49,7 +51,7 @@ public final class MatchStatusTemplate implements Supplier<List<MatchStatusEvent
             updateTemplateDay();
             MatchStatusEvent matchStatusEvent = generateMatchStatus(matchRequest);
             saveForFutureAmendment(matchStatusEvent);
-            eventPublisher.publish(matchStatusEvent);
+            eventPublisher.accept(matchStatusEvent);
         }
     }
 

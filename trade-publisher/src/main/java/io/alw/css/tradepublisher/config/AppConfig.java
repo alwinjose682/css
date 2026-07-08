@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.alw.css.serialization.trade.TradeAvro;
 import io.alw.css.tradepublisher.CssTaskExecutor;
+import io.alw.css.tradepublisher.confirmation.MatchStatusEventPublisher;
 import io.alw.css.tradepublisher.generator.GeneratorHandler;
+import io.alw.css.tradepublisher.properties.KafkaTopicProperties;
+import io.alw.css.tradepublisher.properties.MatchStatusEventGeneratorProperties;
+import io.alw.css.tradepublisher.properties.TradeGeneratorProperties;
+import io.alw.css.tradepublisher.properties.TradeTemplateProperties;
 import io.alw.css.tradepublisher.trade.TradePublisher;
-import io.alw.css.tradepublisher.trade.model.properties.KafkaTopicProperties;
-import io.alw.css.tradepublisher.trade.model.properties.TradeGeneratorProperties;
-import io.alw.css.tradepublisher.trade.model.properties.TradeTemplateProperties;
 import io.alw.css.tradepublisher.trade.service.RefDataService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,8 +32,8 @@ public class AppConfig {
     }
 
     @Bean
-    public GeneratorHandler tradeGeneratorHandler(TradeGeneratorProperties tradeGeneratorProperties, TradeTemplateProperties tradeTemplateProperties, TradePublisher tradePublisher, CssTaskExecutor cssTaskExecutor, RefDataService refDataService) {
-        return new GeneratorHandler(tradeGeneratorProperties, tradeTemplateProperties, tradePublisher, refDataService, cssTaskExecutor);
+    public GeneratorHandler tradeGeneratorHandler(TradeGeneratorProperties tradeGeneratorProperties, MatchStatusEventGeneratorProperties matchStatusEventGeneratorProperties, TradeTemplateProperties tradeTemplateProperties, TradePublisher tradePublisher, MatchStatusEventPublisher matchStatusEventPublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
+        return new GeneratorHandler(tradeGeneratorProperties, matchStatusEventGeneratorProperties, tradeTemplateProperties, tradePublisher, matchStatusEventPublisher, refDataService, cssTaskExecutor);
     }
 
     @Bean

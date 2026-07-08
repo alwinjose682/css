@@ -1,7 +1,5 @@
 package io.alw.css.tradepublisher.generator;
 
-import io.alw.css.domain.trade.Trade;
-import io.alw.css.tradepublisher.trade.TradePublisher;
 import io.alw.css.tradepublisher.trade.model.GeneratorDetail;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,21 +9,21 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 
-public final class TradeGenerator extends Stoppable implements Runnable {
-    private final static Logger log = LoggerFactory.getLogger(TradeGenerator.class);
-    private final Supplier<List<Trade>> tradeSupplier;
-    private final Consumer<List<Trade>> tradePublisher;
+public final class Generator<T> extends Stoppable implements Runnable {
+    private final static Logger log = LoggerFactory.getLogger(Generator.class);
+    private final Supplier<List<T>> supplier;
+    private final Consumer<List<T>> publisher;
     private final GeneratorDetail generatorDetail;
     private final long pauseIntervalSeconds;
     private final RandomGenerator rndm;
 
-    public TradeGenerator(GeneratorDetail generatorDetail, Supplier<List<Trade>> tradeSupplier, TradePublisher tradePublisher) {
+    public Generator(GeneratorDetail generatorDetail, Supplier<List<T>> supplier, Consumer<List<T>> publisher) {
         super();
         this.generatorDetail = generatorDetail;
-        this.tradeSupplier = tradeSupplier;
+        this.supplier = supplier;
         this.pauseIntervalSeconds = generatorDetail.generationFrequency() * 1_000;
         this.rndm = RandomGenerator.getDefault();
-        this.tradePublisher = tradePublisher;
+        this.publisher = publisher;
     }
 
     @Override
@@ -36,8 +34,8 @@ public final class TradeGenerator extends Stoppable implements Runnable {
             Thread.sleep(pauseTimeBeforeActualStart);
             // Start
             while (!isStopSignalled()) {
-                List<Trade> trades = tradeSupplier.get();
-                tradePublisher.accept(trades);
+                List<T> trades = supplier.get();
+                publisher.accept(trades);
                 Thread.sleep(pauseIntervalSeconds);
             }
         } catch (InterruptedException e) {
