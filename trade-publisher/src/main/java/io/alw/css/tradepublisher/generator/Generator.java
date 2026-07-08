@@ -34,8 +34,8 @@ public final class Generator<T> extends Stoppable implements Runnable {
             Thread.sleep(pauseTimeBeforeActualStart);
             // Start
             while (!isStopSignalled()) {
-                List<T> trades = supplier.get();
-                publisher.accept(trades);
+                List<T> items = supplier.get();
+                publisher.accept(items);
                 Thread.sleep(pauseIntervalSeconds);
             }
         } catch (InterruptedException e) {

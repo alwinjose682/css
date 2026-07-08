@@ -2,6 +2,7 @@ package io.alw.css.tradepublisher.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.alw.css.serialization.confirmation.MatchStatusEventAvro;
 import io.alw.css.serialization.trade.TradeAvro;
 import io.alw.css.tradepublisher.CssTaskExecutor;
 import io.alw.css.tradepublisher.confirmation.MatchStatusEventPublisher;
@@ -37,7 +38,12 @@ public class AppConfig {
     }
 
     @Bean
-    public TradePublisher tradePublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, TradeAvro> kafkaTemplateTradeMessage, CssTaskExecutor cssTaskExecutor) {
-        return new TradePublisher(kafkaTopicProperties, kafkaTemplateTradeMessage, cssTaskExecutor);
+    public TradePublisher tradePublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, TradeAvro> kafkaTemplateTradeCashGenerationEvent, CssTaskExecutor cssTaskExecutor) {
+        return new TradePublisher(kafkaTopicProperties, kafkaTemplateTradeCashGenerationEvent, cssTaskExecutor);
+    }
+
+    @Bean
+    public MatchStatusEventPublisher matchStatusEventPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, MatchStatusEventAvro> kafkaTemplateMatchStatusEvent, CssTaskExecutor cssTaskExecutor) {
+        return new MatchStatusEventPublisher(kafkaTopicProperties, kafkaTemplateMatchStatusEvent, cssTaskExecutor);
     }
 }

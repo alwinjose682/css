@@ -7,6 +7,7 @@ import io.alw.css.confirmation.TradeMatchRequest;
 import io.alw.css.tradepublisher.IdProvider;
 import io.alw.css.tradepublisher.confirmation.MatchStatusEventPublisher;
 import io.alw.css.tradepublisher.generator.DayTicker;
+import io.alw.css.tradepublisher.store.InMemoryItemStore;
 import io.alw.css.tradepublisher.store.ItemStoreHelper;
 import io.alw.css.tradepublisher.trade.service.RefDataService;
 
@@ -33,8 +34,8 @@ public final class MatchStatusEventTemplate implements Supplier<List<MatchStatus
     public MatchStatusEventTemplate(DayTicker dayTicker, RefDataService refDataService, MatchStatusEventPublisher eventPublisher, LocalDate initialValueDate, RandomGenerator rndm) {
         this.dayTicker = dayTicker;
         this.refDataService = refDataService;
-        this.matchRequestStoreHelper = matchRequestStoreHelper;
-        this.matchStatusEventStoreHelper = matchStatusEventStoreHelper;
+        this.matchRequestStoreHelper = new ItemStoreHelper<>(dayTicker, new InMemoryItemStore<>(), rndm);
+        this.matchStatusEventStoreHelper = new ItemStoreHelper<>(dayTicker, new InMemoryItemStore<>(), rndm);
         this.eventPublisher = eventPublisher;
         this.initialValueDate = initialValueDate;
         this.rndm = rndm;
@@ -51,7 +52,7 @@ public final class MatchStatusEventTemplate implements Supplier<List<MatchStatus
             updateTemplateDay();
             MatchStatusEvent matchStatusEvent = generateMatchStatus(matchRequest);
             saveForFutureAmendment(matchStatusEvent);
-            eventPublisher.accept(matchStatusEvent);
+            eventPublisher.accept(List.of(matchStatusEvent));
         }
     }
 

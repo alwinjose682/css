@@ -24,8 +24,8 @@ public final class ItemStoreHelper<T> {
         }
     }
 
-    public ItemStoreHelper(DayTicker lastRetrievalDay, ItemStore<T> msgStore, RandomGenerator rndm) {
-        this.lastRetrievalDay = lastRetrievalDay.firstDay();
+    public ItemStoreHelper(DayTicker dayTicker, ItemStore<T> msgStore, RandomGenerator rndm) {
+        this.lastRetrievalDay = dayTicker.firstDay();
         this.msgStore = msgStore;
         this.rndm = rndm;
     }

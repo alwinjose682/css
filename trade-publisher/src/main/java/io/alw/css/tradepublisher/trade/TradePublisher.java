@@ -16,12 +16,12 @@ import java.util.function.Consumer;
 public class TradePublisher implements Consumer<List<Trade>> {
     private final static Logger log = LoggerFactory.getLogger(TradePublisher.class);
     private final KafkaTopicProperties kafkaTopicProperties;
-    private final KafkaTemplate<String, TradeAvro> kafkaTemplateTradeMessage;
+    private final KafkaTemplate<String, TradeAvro> kafkaTemplateTradeCashGenerationEvent;
     private final CssTaskExecutor cssTaskExecutor;
 
-    public TradePublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, TradeAvro> kafkaTemplateTradeMessage, CssTaskExecutor cssTaskExecutor) {
+    public TradePublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, TradeAvro> kafkaTemplateTradeCashGenerationEvent, CssTaskExecutor cssTaskExecutor) {
         this.kafkaTopicProperties = kafkaTopicProperties;
-        this.kafkaTemplateTradeMessage = kafkaTemplateTradeMessage;
+        this.kafkaTemplateTradeCashGenerationEvent = kafkaTemplateTradeCashGenerationEvent;
         this.cssTaskExecutor = cssTaskExecutor;
     }
 
@@ -36,7 +36,7 @@ public class TradePublisher implements Consumer<List<Trade>> {
         String key = String.valueOf(avroMsg.getTradeID());
         log.trace("Sending trade message: {} to topic: {}", key, outputTopic);
 
-        kafkaTemplateTradeMessage
+        kafkaTemplateTradeCashGenerationEvent
                 .send(outputTopic, key, avroMsg)
                 .whenCompleteAsync((result, e) -> {
                     if (e == null) {

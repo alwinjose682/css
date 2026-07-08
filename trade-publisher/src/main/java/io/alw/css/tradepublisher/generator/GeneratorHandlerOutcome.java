@@ -1,7 +1,6 @@
 package io.alw.css.tradepublisher.generator;
 
 import io.alw.css.tradepublisher.trade.model.GeneratorDetail;
-import io.alw.css.tradepublisher.trade.tradegenerator.GeneratorHandlerOutcomeDtoBuilder;
 
 import java.util.ArrayList;
 import java.util.List;

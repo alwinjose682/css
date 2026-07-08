@@ -1,8 +1,8 @@
 package io.alw.css.tradepublisher.controller;
 
+import io.alw.css.tradepublisher.generator.GeneratorHandlerOutcomeDtoBuilder;
 import io.alw.css.tradepublisher.trade.model.GeneratorInitialValues;
 import io.alw.css.tradepublisher.trade.service.GeneratorService;
-import io.alw.css.tradepublisher.trade.tradegenerator.GeneratorHandlerOutcomeDtoBuilder;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -48,8 +48,9 @@ class GeneratorControllerTest {
         mockMvc.perform(MockMvcRequestBuilders.put(GeneratorController.CF_GEN_URL + "/start/" + GeneratorController.ALL_GENERATORS_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"valueDate":"2025-08-14",
-                                "tradeId":1054321}
+                                {"valueDate":"2026-07-08",
+                                "tradeId":100054321,
+                                "matchStatusEventId":54321}
                                 """))
                 .andExpect(jsonPath("$.msgs").value(SUCCESS))
                 .andExpect(status().isAccepted())
@@ -57,7 +58,8 @@ class GeneratorControllerTest {
 
         verify(generatorService).start(cfGeneratorValCaptor.capture());
         GeneratorInitialValues cfGeneratorInitialValues = cfGeneratorValCaptor.getValue();
-        assertThat(cfGeneratorInitialValues.valueDate()).isEqualTo("2025-08-14");
-        assertThat(cfGeneratorInitialValues.tradeId()).isEqualTo(1054321);
+        assertThat(cfGeneratorInitialValues.valueDate()).isEqualTo("2026-07-08");
+        assertThat(cfGeneratorInitialValues.tradeId()).isEqualTo(100054321);
+        assertThat(cfGeneratorInitialValues.matchStatusEventId()).isEqualTo(54321);
     }
 }
