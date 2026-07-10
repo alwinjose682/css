@@ -16,12 +16,12 @@ import java.util.function.Consumer;
 public final class ConfirmationMatchStatusPublisher implements Consumer<List<ConfirmationMatchStatus>> {
     private static final Logger log = LoggerFactory.getLogger(ConfirmationMatchStatusPublisher.class);
     private final KafkaTopicProperties kafkaTopicProperties;
-    private final KafkaTemplate<String, ConfirmationMatchStatusAvro> kafkaTemplateMatchStatusEvent;
+    private final KafkaTemplate<String, ConfirmationMatchStatusAvro> kafkaTemplateConfMatchStatusEvent;
     private final CssTaskExecutor cssTaskExecutor;
 
-    public ConfirmationMatchStatusPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, ConfirmationMatchStatusAvro> kafkaTemplateMatchStatusEvent, CssTaskExecutor cssTaskExecutor) {
+    public ConfirmationMatchStatusPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, ConfirmationMatchStatusAvro> kafkaTemplateConfMatchStatusEvent, CssTaskExecutor cssTaskExecutor) {
         this.kafkaTopicProperties = kafkaTopicProperties;
-        this.kafkaTemplateMatchStatusEvent = kafkaTemplateMatchStatusEvent;
+        this.kafkaTemplateConfMatchStatusEvent = kafkaTemplateConfMatchStatusEvent;
         this.cssTaskExecutor = cssTaskExecutor;
     }
 
@@ -31,19 +31,19 @@ public final class ConfirmationMatchStatusPublisher implements Consumer<List<Con
     }
 
     public void publish(ConfirmationMatchStatus event) {
-        String outputTopic = kafkaTopicProperties.tradeMatchStatusEvent();
+        String outputTopic = kafkaTopicProperties.confirmationMatchStatusTopic();
         ConfirmationMatchStatusAvro avroMsg = ConfirmationMatchStatusMapper.instance().domainToAvro(event);
         String key = String.valueOf(avroMsg.getTradeId());
-        log.trace("Sending MatchStatusEvent {} to topic: {}", key, outputTopic);
+        log.trace("Sending ConfirmationMatchStatusEvent {} to topic: {}", key, outputTopic);
 
-        kafkaTemplateMatchStatusEvent
+        kafkaTemplateConfMatchStatusEvent
                 .send(outputTopic, key, avroMsg)
                 .whenCompleteAsync((result, e) -> {
                     if (e == null) {
                         RecordMetadata recordMetadata = result.getRecordMetadata();
-                        log.info("Published MatchStatusEvent[{}] to topic: {}, partition: {}, offset: {}", key, outputTopic, recordMetadata.partition(), recordMetadata.offset());
+                        log.info("Published ConfirmationMatchStatusEvent[{}] to topic: {}, partition: {}, offset: {}", key, outputTopic, recordMetadata.partition(), recordMetadata.offset());
                     } else {
-                        log.error("An error occurred when publishing MatchStatusEvent[{}] to kafka topic: {}. Message: {}", key, outputTopic, avroMsg);
+                        log.error("An error occurred when publishing ConfirmationMatchStatusEvent[{}] to kafka topic: {}. Message: {}", key, outputTopic, avroMsg);
                     }
                 }, cssTaskExecutor.executor());
     }

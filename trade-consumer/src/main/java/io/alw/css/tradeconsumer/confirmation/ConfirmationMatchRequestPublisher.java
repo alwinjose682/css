@@ -15,30 +15,30 @@ import java.util.List;
 public final class ConfirmationMatchRequestPublisher {
     private final static Logger log = LoggerFactory.getLogger(ConfirmationMatchRequestPublisher.class);
     private final KafkaTopicProperties kafkaTopicProperties;
-    private final KafkaTemplate<String, ConfirmationMatchRequestAvro> kafkaTemplateMatchRequest;
+    private final KafkaTemplate<String, ConfirmationMatchRequestAvro> kafkaTemplateConfMatchRequest;
     private final CssTaskExecutor cssTaskExecutor;
 
-    public ConfirmationMatchRequestPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, ConfirmationMatchRequestAvro> kafkaTemplateMatchRequest, CssTaskExecutor cssTaskExecutor) {
+    public ConfirmationMatchRequestPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, ConfirmationMatchRequestAvro> kafkaTemplateConfMatchRequest, CssTaskExecutor cssTaskExecutor) {
         this.kafkaTopicProperties = kafkaTopicProperties;
-        this.kafkaTemplateMatchRequest = kafkaTemplateMatchRequest;
+        this.kafkaTemplateConfMatchRequest = kafkaTemplateConfMatchRequest;
         this.cssTaskExecutor = cssTaskExecutor;
     }
 
-    public void publish(List<ConfirmationMatchRequest> tradeMatchRequests) {
+    public void publish(List<ConfirmationMatchRequest> confMatchRequests) {
         String outputTopic = kafkaTopicProperties.tradeMatchRequestTopic();
-        for (ConfirmationMatchRequest tradeMatchRequest : tradeMatchRequests) {
-            ConfirmationMatchRequestAvro avro = ConfirmationMatchRequestMapper.instance().domainToAvro(tradeMatchRequest);
+        for (ConfirmationMatchRequest confMatchRequest : confMatchRequests) {
+            ConfirmationMatchRequestAvro avro = ConfirmationMatchRequestMapper.instance().domainToAvro(confMatchRequest);
             String key = String.valueOf(avro.getTradeId());
-            log.trace("Sending trade message: {} to topic: {}", key, outputTopic);
+            log.trace("Sending ConfirmationMatchRequest message: {} to topic: {}", key, outputTopic);
 
-            kafkaTemplateMatchRequest
+            kafkaTemplateConfMatchRequest
                     .send(outputTopic, key, avro)
                     .whenCompleteAsync((result, e) -> {
                         if (e == null) {
                             RecordMetadata recordMetadata = result.getRecordMetadata();
-                            log.info("Published TradeMatchRequest message[{}] to topic: {}, partition: {}, offset: {}", key, outputTopic, recordMetadata.partition(), recordMetadata.offset());
+                            log.info("Published ConfirmationMatchRequest message[{}] to topic: {}, partition: {}, offset: {}", key, outputTopic, recordMetadata.partition(), recordMetadata.offset());
                         } else {
-                            log.error("An error occurred when publishing TradeMatchRequest message[{}] to kafka topic: {}. Message: {}", key, outputTopic, avro);
+                            log.error("An error occurred when publishing ConfirmationMatchRequest message[{}] to kafka topic: {}. Message: {}", key, outputTopic, avro);
                         }
                     }, cssTaskExecutor.executor());
         }

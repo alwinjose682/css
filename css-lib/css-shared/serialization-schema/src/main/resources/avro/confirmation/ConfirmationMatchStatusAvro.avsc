@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "MatchStatusEventAvro",
+  "name": "ConfirmationMatchStatusAvro",
   "namespace": "io.alw.css.serialization.confirmation",
   "fields": [
     {

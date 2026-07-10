@@ -6,19 +6,19 @@ import org.springframework.boot.context.properties.bind.ConstructorBinding;
 @ConfigurationProperties("app.kafka.topic")
 public class KafkaTopicProperties {
     private final String tradeMatchRequest;
-    private final String tradeMatchStatusEvent;
+    private final String confirmationMatchStatus;
 
     @ConstructorBinding
-    public KafkaTopicProperties(String tradeMatchRequest, String tradeMatchStatusEvent) {
+    public KafkaTopicProperties(String tradeMatchRequest, String confirmationMatchStatus) {
         this.tradeMatchRequest = tradeMatchRequest;
-        this.tradeMatchStatusEvent = tradeMatchStatusEvent;
+        this.confirmationMatchStatus = confirmationMatchStatus;
     }
 
     public String tradeMatchRequestTopic() {
         return tradeMatchRequest;
     }
 
-    public String tradeMatchStatusEvent() {
-        return tradeMatchStatusEvent;
+    public String confirmationMatchStatusTopic() {
+        return confirmationMatchStatus;
     }
 }

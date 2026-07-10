@@ -7,19 +7,19 @@ import org.springframework.boot.context.properties.bind.ConstructorBinding;
 public class KafkaTopicProperties {
     // These are not named as *Topic because @ConstructorBinding is used and when naming a kafka topic it does not make sense to suffix 'Topic' for every topic
     private final String tradeCashGenerationEvent;
-    private final String tradeMatchStatusEvent;
+    private final String confirmationMatchStatus;
 
     @ConstructorBinding
-    public KafkaTopicProperties(String tradeCashGenerationEvent, String tradeMatchStatusEvent) {
+    public KafkaTopicProperties(String tradeCashGenerationEvent, String confirmationMatchStatus) {
         this.tradeCashGenerationEvent = tradeCashGenerationEvent;
-        this.tradeMatchStatusEvent = tradeMatchStatusEvent;
+        this.confirmationMatchStatus = confirmationMatchStatus;
     }
 
     public String tradeOutputTopic() {
         return tradeCashGenerationEvent;
     }
 
-    public String tradeMatchStatusEvent() {
-        return tradeMatchStatusEvent;
+    public String confirmationMatchStatusTopic() {
+        return confirmationMatchStatus;
     }
 }

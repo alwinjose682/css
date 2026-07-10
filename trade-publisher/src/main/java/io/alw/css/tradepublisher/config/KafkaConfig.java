@@ -18,8 +18,8 @@ import java.util.Map;
 @EnableKafka
 public class KafkaConfig {
 
-    @Bean("tradeMatchRequestListenerContainerFactory")
-    public ConcurrentKafkaListenerContainerFactory<String, ConfirmationMatchRequestAvro> tradeMatchRequestListenerContainerFactory(KafkaProperties kafkaProperties) {
+    @Bean("confMatchRequestListenerContainerFactory")
+    public ConcurrentKafkaListenerContainerFactory<String, ConfirmationMatchRequestAvro> confMatchRequestListenerContainerFactory(KafkaProperties kafkaProperties) {
         Map<String, Object> properties = kafkaProperties.buildConsumerProperties(null);
         DefaultKafkaConsumerFactory<String, ConfirmationMatchRequestAvro> consumerFactory = new DefaultKafkaConsumerFactory<>(properties);
 
@@ -35,8 +35,8 @@ public class KafkaConfig {
         return new KafkaTemplate<>(producerFactory);
     }
 
-    @Bean("kafkaTemplateMatchStatusEvent")
-    public KafkaTemplate<String, ConfirmationMatchStatusAvro> kafkaTemplateMatchStatusEvent(KafkaProperties kafkaProperties) {
+    @Bean("kafkaTemplateConfMatchStatusEvent")
+    public KafkaTemplate<String, ConfirmationMatchStatusAvro> kafkaTemplateConfMatchStatusEvent(KafkaProperties kafkaProperties) {
         var producerPropMap = kafkaProperties.buildProducerProperties(null);
         var producerFactory = new DefaultKafkaProducerFactory<String, ConfirmationMatchStatusAvro>(producerPropMap);
         return new KafkaTemplate<>(producerFactory);

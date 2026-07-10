@@ -28,8 +28,8 @@ public class KafkaConfig {
         return listenerContainerFactory;
     }
 
-    @Bean("matchStatusEventListenerContainerFactory")
-    public ConcurrentKafkaListenerContainerFactory<String, ConfirmationMatchStatusAvro> matchStatusEventListenerContainerFactory(KafkaProperties kafkaProperties){
+    @Bean("confMatchStatusListenerContainerFactory")
+    public ConcurrentKafkaListenerContainerFactory<String, ConfirmationMatchStatusAvro> confMatchStatusListenerContainerFactory(KafkaProperties kafkaProperties){
         Map<String, Object> properties = kafkaProperties.buildProducerProperties(null);
         DefaultKafkaConsumerFactory<String, ConfirmationMatchStatusAvro> consumerFactory = new DefaultKafkaConsumerFactory<>(properties);
 
@@ -38,8 +38,8 @@ public class KafkaConfig {
         return listenerContainerFactory;
     }
 
-    @Bean("kafkaTemplateMatchRequest")
-    public KafkaTemplate<String, ConfirmationMatchRequestAvro> kafkaTemplateMatchRequest(KafkaProperties kafkaProperties) {
+    @Bean("kafkaTemplateConfMatchRequest")
+    public KafkaTemplate<String, ConfirmationMatchRequestAvro> kafkaTemplateConfMatchRequest(KafkaProperties kafkaProperties) {
         Map<String, Object> properties = kafkaProperties.buildProducerProperties(null);
         DefaultKafkaProducerFactory<String, ConfirmationMatchRequestAvro> factory = new DefaultKafkaProducerFactory<>(properties);
 

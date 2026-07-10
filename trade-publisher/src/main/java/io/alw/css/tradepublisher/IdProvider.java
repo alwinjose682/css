@@ -5,14 +5,14 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class IdProvider {
     private static IdProvider instance;
     public static final long defaultInitialTradeId = 1054321L;
-    public static final long defaultMatchStatusEventId = 58255L;
+    public static final long defaultConfMatchStatusEventId = 58255L;
 
     private final AtomicLong tradeIdGenerator;
-    private final AtomicLong confirmationMatchStatusEventIdGenerator;
+    private final AtomicLong confMatchStatusEventIdGenerator;
 
     private IdProvider(long initialTradeId, long matchEventId) {
         this.tradeIdGenerator = new AtomicLong(initialTradeId);
-        this.confirmationMatchStatusEventIdGenerator = new AtomicLong(matchEventId);
+        this.confMatchStatusEventIdGenerator = new AtomicLong(matchEventId);
     }
 
     public static void init(long initialTradeId, long initialMatchEventId) {
@@ -37,7 +37,7 @@ public final class IdProvider {
     }
 
     private static IdProvider newIdProviderWithDefaultValues() {
-        return new IdProvider(defaultInitialTradeId, defaultMatchStatusEventId);
+        return new IdProvider(defaultInitialTradeId, defaultConfMatchStatusEventId);
     }
 
     public long nextTradeId() {
@@ -45,6 +45,6 @@ public final class IdProvider {
     }
 
     public long nextMatchStatusEventId() {
-        return confirmationMatchStatusEventIdGenerator.getAndIncrement();
+        return confMatchStatusEventIdGenerator.getAndIncrement();
     }
 }

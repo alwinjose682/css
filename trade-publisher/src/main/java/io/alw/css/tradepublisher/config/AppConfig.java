@@ -7,8 +7,8 @@ import io.alw.css.serialization.trade.TradeAvro;
 import io.alw.css.tradepublisher.CssTaskExecutor;
 import io.alw.css.tradepublisher.confirmation.ConfirmationMatchStatusPublisher;
 import io.alw.css.tradepublisher.generator.GeneratorHandler;
+import io.alw.css.tradepublisher.properties.ConfirmationMatchStatusGeneratorProperties;
 import io.alw.css.tradepublisher.properties.KafkaTopicProperties;
-import io.alw.css.tradepublisher.properties.MatchStatusEventGeneratorProperties;
 import io.alw.css.tradepublisher.properties.TradeGeneratorProperties;
 import io.alw.css.tradepublisher.properties.TradeTemplateProperties;
 import io.alw.css.tradepublisher.trade.TradePublisher;
@@ -33,8 +33,8 @@ public class AppConfig {
     }
 
     @Bean
-    public GeneratorHandler tradeGeneratorHandler(TradeGeneratorProperties tradeGeneratorProperties, MatchStatusEventGeneratorProperties matchStatusEventGeneratorProperties, TradeTemplateProperties tradeTemplateProperties, TradePublisher tradePublisher, ConfirmationMatchStatusPublisher confirmationMatchStatusPublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
-        return new GeneratorHandler(tradeGeneratorProperties, matchStatusEventGeneratorProperties, tradeTemplateProperties, tradePublisher, confirmationMatchStatusPublisher, refDataService, cssTaskExecutor);
+    public GeneratorHandler tradeGeneratorHandler(TradeGeneratorProperties tradeGeneratorProperties, ConfirmationMatchStatusGeneratorProperties confirmationMatchStatusGeneratorProperties, TradeTemplateProperties tradeTemplateProperties, TradePublisher tradePublisher, ConfirmationMatchStatusPublisher confirmationMatchStatusPublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
+        return new GeneratorHandler(tradeGeneratorProperties, confirmationMatchStatusGeneratorProperties, tradeTemplateProperties, tradePublisher, confirmationMatchStatusPublisher, refDataService, cssTaskExecutor);
     }
 
     @Bean
@@ -43,7 +43,7 @@ public class AppConfig {
     }
 
     @Bean
-    public ConfirmationMatchStatusPublisher matchStatusEventPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, ConfirmationMatchStatusAvro> kafkaTemplateMatchStatusEvent, CssTaskExecutor cssTaskExecutor) {
-        return new ConfirmationMatchStatusPublisher(kafkaTopicProperties, kafkaTemplateMatchStatusEvent, cssTaskExecutor);
+    public ConfirmationMatchStatusPublisher matchStatusEventPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, ConfirmationMatchStatusAvro> kafkaTemplateConfMatchStatusEvent, CssTaskExecutor cssTaskExecutor) {
+        return new ConfirmationMatchStatusPublisher(kafkaTopicProperties, kafkaTemplateConfMatchStatusEvent, cssTaskExecutor);
     }
 }

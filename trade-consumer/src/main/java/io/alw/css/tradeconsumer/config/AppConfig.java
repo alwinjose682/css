@@ -90,7 +90,7 @@ public class AppConfig {
     }
 
     @Bean
-    public ConfirmationMatchRequestPublisher tradeMatchRequestPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, ConfirmationMatchRequestAvro> kafkaTemplateMatchRequest, CssTaskExecutor cssTaskExecutor) {
-        return new ConfirmationMatchRequestPublisher(kafkaTopicProperties, kafkaTemplateMatchRequest, cssTaskExecutor);
+    public ConfirmationMatchRequestPublisher tradeMatchRequestPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, ConfirmationMatchRequestAvro> kafkaTemplateConfMatchRequest, CssTaskExecutor cssTaskExecutor) {
+        return new ConfirmationMatchRequestPublisher(kafkaTopicProperties, kafkaTemplateConfMatchRequest, cssTaskExecutor);
     }
 }

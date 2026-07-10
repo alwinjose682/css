@@ -8,7 +8,7 @@ import io.alw.css.tradepublisher.CssTaskExecutor;
 import io.alw.css.tradepublisher.IdProvider;
 import io.alw.css.tradepublisher.confirmation.ConfirmationMatchStatusPublisher;
 import io.alw.css.tradepublisher.confirmation.template.ConfirmationMatchStatusTemplate;
-import io.alw.css.tradepublisher.properties.MatchStatusEventGeneratorProperties;
+import io.alw.css.tradepublisher.properties.ConfirmationMatchStatusGeneratorProperties;
 import io.alw.css.tradepublisher.properties.TradeGeneratorProperties;
 import io.alw.css.tradepublisher.properties.TradeTemplateProperties;
 import io.alw.css.tradepublisher.trade.TradePublisher;
@@ -44,7 +44,7 @@ public final class GeneratorHandler {
     private final Map<String, List<Generator<ConfirmationMatchStatus>>> matchStatusGeneratorMap;
 
     private final TradeGeneratorProperties tradeGeneratorProperties;
-    private final MatchStatusEventGeneratorProperties matchStatusEventGeneratorProperties;
+    private final ConfirmationMatchStatusGeneratorProperties confirmationMatchStatusGeneratorProperties;
     private final TradeTemplateProperties tradeTemplateProperties;
     private final TradePublisher tradePublisher;
     private final ConfirmationMatchStatusPublisher confirmationMatchStatusPublisher;
@@ -55,9 +55,9 @@ public final class GeneratorHandler {
     // Initial Generator Values - initialized only once
     private GeneratorInitialValues generatorInitialValues;
 
-    public GeneratorHandler(TradeGeneratorProperties tradeGeneratorProperties, MatchStatusEventGeneratorProperties matchStatusEventGeneratorProperties, TradeTemplateProperties tradeTemplateProperties, TradePublisher tradePublisher, ConfirmationMatchStatusPublisher confirmationMatchStatusPublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
+    public GeneratorHandler(TradeGeneratorProperties tradeGeneratorProperties, ConfirmationMatchStatusGeneratorProperties confirmationMatchStatusGeneratorProperties, TradeTemplateProperties tradeTemplateProperties, TradePublisher tradePublisher, ConfirmationMatchStatusPublisher confirmationMatchStatusPublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
         this.tradeGeneratorProperties = tradeGeneratorProperties;
-        this.matchStatusEventGeneratorProperties = matchStatusEventGeneratorProperties;
+        this.confirmationMatchStatusGeneratorProperties = confirmationMatchStatusGeneratorProperties;
         this.tradeTemplateProperties = tradeTemplateProperties;
         this.tradePublisher = tradePublisher;
         this.confirmationMatchStatusPublisher = confirmationMatchStatusPublisher;
@@ -178,10 +178,10 @@ public final class GeneratorHandler {
 
         // Start a single instance of ConfirmationMatchStatus generator
         String key = GeneratorType.MATCH_STATUS_EVENT.name();
-        long generatorSleepDurationSeconds = matchStatusEventGeneratorProperties.amendmentFrequencySeconds();
+        long generatorSleepDurationSeconds = confirmationMatchStatusGeneratorProperties.amendmentFrequencySeconds();
         try {
             // Create ConfirmationMatchStatus Supplier
-            Supplier<List<ConfirmationMatchStatus>> matchStatusEventSupplier = createMatchStatusEventSupplier(rndm);
+            Supplier<List<ConfirmationMatchStatus>> matchStatusEventSupplier = createConfirmationMatchStatusEventSupplier(rndm);
 
             // Create ConfirmationMatchStatus Generator
             GeneratorDetail generatorDetail = new GeneratorDetail(key, generatorSleepDurationSeconds);
@@ -206,7 +206,7 @@ public final class GeneratorHandler {
         return new GeneratorHandlerOutcome.Success("Successfully started all trade generators", Collections.unmodifiableList(startedGenerators));
     }
 
-    private Supplier<List<ConfirmationMatchStatus>> createMatchStatusEventSupplier(RandomGenerator rndm) {
+    private Supplier<List<ConfirmationMatchStatus>> createConfirmationMatchStatusEventSupplier(RandomGenerator rndm) {
         LocalDate initialValueDate = generatorInitialValues.valueDate();
         return new ConfirmationMatchStatusTemplate(dayTicker, refDataService, confirmationMatchStatusPublisher, initialValueDate, rndm);
     }
