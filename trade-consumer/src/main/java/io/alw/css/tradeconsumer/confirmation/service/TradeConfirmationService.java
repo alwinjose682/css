@@ -2,7 +2,9 @@ package io.alw.css.tradeconsumer.confirmation.service;
 
 import io.alw.css.confirmation.TradeMatchRequest;
 import io.alw.css.domain.cashflow.Cashflow;
+import io.alw.css.domain.common.InputBy;
 import io.alw.css.domain.common.TradeType;
+import io.alw.css.serialization.confirmation.MatchStatusEventAvro;
 import io.alw.css.tradeconsumer.confirmation.TradeMatchRequestCreator;
 import io.alw.css.tradeconsumer.confirmation.TradeMatchRequestPublisher;
 import org.slf4j.Logger;
@@ -14,15 +16,25 @@ import java.util.List;
 import java.util.Set;
 
 @Service
-public class TradeMatchService {
-    private static final Logger log = LoggerFactory.getLogger(TradeMatchService.class);
+public class TradeConfirmationService {
+    private static final Logger log = LoggerFactory.getLogger(TradeConfirmationService.class);
     private final TradeMatchRequestPublisher tradeMatchRequestPublisher;
 
-    public TradeMatchService(TradeMatchRequestPublisher tradeMatchRequestPublisher) {
+    public TradeConfirmationService(TradeMatchRequestPublisher tradeMatchRequestPublisher) {
         this.tradeMatchRequestPublisher = tradeMatchRequestPublisher;
     }
 
-    /// Sends the processed cashflows for matching with counterparty confirmation. Note: A confirmation message(ex: MT300) is not created
+    public void process(MatchStatusEventAvro avro, InputBy inputBy) {
+        long tradeId = avro.getTradeId();
+        int tradeVersion = avro.getTradeVersion();
+        String tradeType = avro.getTradeType();
+        int numOfTradeLegs = avro.getTradeLegMatchAttributes().size();
+        log.info("Received TradeAvroMessage[tradeId: {}, tradeVersion: {}, tradeType: {}] with {} trade legs", tradeId, tradeVersion, tradeType, numOfTradeLegs);
+
+
+    }
+
+    /// Sends the processed cashflows for matching with counterparty confirmation. Note: A confirmation message(ex: MT300) is not created by this CSS component.
     /// The given List of cashflows may produce multiple TradeMatchRequests. Ex: for a list of Mm Cashflows
     public void sendForMatching(Set<Cashflow> cashflows) {
         Iterator<Cashflow> it = cashflows.iterator();

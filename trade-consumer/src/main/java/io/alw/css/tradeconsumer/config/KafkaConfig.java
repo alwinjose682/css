@@ -1,5 +1,6 @@
 package io.alw.css.tradeconsumer.config;
 
+import io.alw.css.serialization.confirmation.MatchStatusEventAvro;
 import io.alw.css.serialization.confirmation.TradeMatchRequestAvro;
 import io.alw.css.serialization.trade.TradeAvro;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
@@ -17,12 +18,22 @@ import java.util.Map;
 @EnableKafka
 public class KafkaConfig {
 
-    @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, TradeAvro> tradeMessageListenerContainerFactory(KafkaProperties kafkaProperties) {
-        Map<String, Object> consumerProperties = kafkaProperties.buildConsumerProperties(null);
-        DefaultKafkaConsumerFactory<String, TradeAvro> consumerFactory = new DefaultKafkaConsumerFactory<>(consumerProperties);
+    @Bean("tradeCashGenerationListenerContainerFactory")
+    public ConcurrentKafkaListenerContainerFactory<String, TradeAvro> tradeCashGenerationListenerContainerFactory(KafkaProperties kafkaProperties) {
+        Map<String, Object> properties = kafkaProperties.buildConsumerProperties(null);
+        DefaultKafkaConsumerFactory<String, TradeAvro> consumerFactory = new DefaultKafkaConsumerFactory<>(properties);
 
         ConcurrentKafkaListenerContainerFactory<String, TradeAvro> listenerContainerFactory = new ConcurrentKafkaListenerContainerFactory<>();
+        listenerContainerFactory.setConsumerFactory(consumerFactory);
+        return listenerContainerFactory;
+    }
+
+    @Bean("matchStatusEventListenerContainerFactory")
+    public ConcurrentKafkaListenerContainerFactory<String, MatchStatusEventAvro> matchStatusEventListenerContainerFactory(KafkaProperties kafkaProperties){
+        Map<String, Object> properties = kafkaProperties.buildProducerProperties(null);
+        DefaultKafkaConsumerFactory<String, MatchStatusEventAvro> consumerFactory = new DefaultKafkaConsumerFactory<>(properties);
+
+        ConcurrentKafkaListenerContainerFactory<String, MatchStatusEventAvro> listenerContainerFactory = new ConcurrentKafkaListenerContainerFactory<>();
         listenerContainerFactory.setConsumerFactory(consumerFactory);
         return listenerContainerFactory;
     }
