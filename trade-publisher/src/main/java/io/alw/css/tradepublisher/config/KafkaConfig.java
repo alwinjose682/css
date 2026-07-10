@@ -1,7 +1,7 @@
 package io.alw.css.tradepublisher.config;
 
-import io.alw.css.serialization.confirmation.MatchStatusEventAvro;
-import io.alw.css.serialization.confirmation.TradeMatchRequestAvro;
+import io.alw.css.serialization.confirmation.ConfirmationMatchRequestAvro;
+import io.alw.css.serialization.confirmation.ConfirmationMatchStatusAvro;
 import io.alw.css.serialization.trade.TradeAvro;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
@@ -19,11 +19,11 @@ import java.util.Map;
 public class KafkaConfig {
 
     @Bean("tradeMatchRequestListenerContainerFactory")
-    public ConcurrentKafkaListenerContainerFactory<String, TradeMatchRequestAvro> tradeMatchRequestListenerContainerFactory(KafkaProperties kafkaProperties) {
+    public ConcurrentKafkaListenerContainerFactory<String, ConfirmationMatchRequestAvro> tradeMatchRequestListenerContainerFactory(KafkaProperties kafkaProperties) {
         Map<String, Object> properties = kafkaProperties.buildConsumerProperties(null);
-        DefaultKafkaConsumerFactory<String, TradeMatchRequestAvro> consumerFactory = new DefaultKafkaConsumerFactory<>(properties);
+        DefaultKafkaConsumerFactory<String, ConfirmationMatchRequestAvro> consumerFactory = new DefaultKafkaConsumerFactory<>(properties);
 
-        ConcurrentKafkaListenerContainerFactory<String, TradeMatchRequestAvro> listenerContainerFactory = new ConcurrentKafkaListenerContainerFactory<>();
+        ConcurrentKafkaListenerContainerFactory<String, ConfirmationMatchRequestAvro> listenerContainerFactory = new ConcurrentKafkaListenerContainerFactory<>();
         listenerContainerFactory.setConsumerFactory(consumerFactory);
         return listenerContainerFactory;
     }
@@ -36,9 +36,9 @@ public class KafkaConfig {
     }
 
     @Bean("kafkaTemplateMatchStatusEvent")
-    public KafkaTemplate<String, MatchStatusEventAvro> kafkaTemplateMatchStatusEvent(KafkaProperties kafkaProperties) {
+    public KafkaTemplate<String, ConfirmationMatchStatusAvro> kafkaTemplateMatchStatusEvent(KafkaProperties kafkaProperties) {
         var producerPropMap = kafkaProperties.buildProducerProperties(null);
-        var producerFactory = new DefaultKafkaProducerFactory<String, MatchStatusEventAvro>(producerPropMap);
+        var producerFactory = new DefaultKafkaProducerFactory<String, ConfirmationMatchStatusAvro>(producerPropMap);
         return new KafkaTemplate<>(producerFactory);
     }
 }

@@ -8,11 +8,11 @@ public final class IdProvider {
     public static final long defaultMatchStatusEventId = 58255L;
 
     private final AtomicLong tradeIdGenerator;
-    private final AtomicLong matchStatusEventIdGenerator;
+    private final AtomicLong confirmationMatchStatusEventIdGenerator;
 
     private IdProvider(long initialTradeId, long matchEventId) {
         this.tradeIdGenerator = new AtomicLong(initialTradeId);
-        this.matchStatusEventIdGenerator = new AtomicLong(matchEventId);
+        this.confirmationMatchStatusEventIdGenerator = new AtomicLong(matchEventId);
     }
 
     public static void init(long initialTradeId, long initialMatchEventId) {
@@ -45,6 +45,6 @@ public final class IdProvider {
     }
 
     public long nextMatchStatusEventId() {
-        return matchStatusEventIdGenerator.getAndIncrement();
+        return confirmationMatchStatusEventIdGenerator.getAndIncrement();
     }
 }

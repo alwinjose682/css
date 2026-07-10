@@ -4,7 +4,7 @@ import io.alw.css.domain.common.TradeType;
 
 import java.util.Set;
 
-public record TradeMatchRequest(
+public record ConfirmationMatchRequest(
         long tradeId,
         int tradeVersion,
         Set<TradeLegMatchAttribute> tradeLegMatchAttributes,

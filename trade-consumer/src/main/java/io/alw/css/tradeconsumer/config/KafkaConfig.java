@@ -1,7 +1,7 @@
 package io.alw.css.tradeconsumer.config;
 
-import io.alw.css.serialization.confirmation.MatchStatusEventAvro;
-import io.alw.css.serialization.confirmation.TradeMatchRequestAvro;
+import io.alw.css.serialization.confirmation.ConfirmationMatchRequestAvro;
+import io.alw.css.serialization.confirmation.ConfirmationMatchStatusAvro;
 import io.alw.css.serialization.trade.TradeAvro;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
@@ -29,19 +29,19 @@ public class KafkaConfig {
     }
 
     @Bean("matchStatusEventListenerContainerFactory")
-    public ConcurrentKafkaListenerContainerFactory<String, MatchStatusEventAvro> matchStatusEventListenerContainerFactory(KafkaProperties kafkaProperties){
+    public ConcurrentKafkaListenerContainerFactory<String, ConfirmationMatchStatusAvro> matchStatusEventListenerContainerFactory(KafkaProperties kafkaProperties){
         Map<String, Object> properties = kafkaProperties.buildProducerProperties(null);
-        DefaultKafkaConsumerFactory<String, MatchStatusEventAvro> consumerFactory = new DefaultKafkaConsumerFactory<>(properties);
+        DefaultKafkaConsumerFactory<String, ConfirmationMatchStatusAvro> consumerFactory = new DefaultKafkaConsumerFactory<>(properties);
 
-        ConcurrentKafkaListenerContainerFactory<String, MatchStatusEventAvro> listenerContainerFactory = new ConcurrentKafkaListenerContainerFactory<>();
+        ConcurrentKafkaListenerContainerFactory<String, ConfirmationMatchStatusAvro> listenerContainerFactory = new ConcurrentKafkaListenerContainerFactory<>();
         listenerContainerFactory.setConsumerFactory(consumerFactory);
         return listenerContainerFactory;
     }
 
     @Bean("kafkaTemplateMatchRequest")
-    public KafkaTemplate<String, TradeMatchRequestAvro> kafkaTemplateMatchRequest(KafkaProperties kafkaProperties) {
+    public KafkaTemplate<String, ConfirmationMatchRequestAvro> kafkaTemplateMatchRequest(KafkaProperties kafkaProperties) {
         Map<String, Object> properties = kafkaProperties.buildProducerProperties(null);
-        DefaultKafkaProducerFactory<String, TradeMatchRequestAvro> factory = new DefaultKafkaProducerFactory<>(properties);
+        DefaultKafkaProducerFactory<String, ConfirmationMatchRequestAvro> factory = new DefaultKafkaProducerFactory<>(properties);
 
         return new KafkaTemplate<>(factory);
     }

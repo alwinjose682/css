@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.alw.css.dbshared.tx.TXRO;
 import io.alw.css.dbshared.tx.TXRW;
-import io.alw.css.serialization.confirmation.TradeMatchRequestAvro;
+import io.alw.css.serialization.confirmation.ConfirmationMatchRequestAvro;
 import io.alw.css.tradeconsumer.CssTaskExecutor;
 import io.alw.css.tradeconsumer.cashflow.model.properties.SuppressionConfig;
 import io.alw.css.tradeconsumer.cashflow.processor.CashflowEnricher;
@@ -13,7 +13,7 @@ import io.alw.css.tradeconsumer.cashflow.repository.CashflowRejectionRepository;
 import io.alw.css.tradeconsumer.cashflow.repository.CashflowRepository;
 import io.alw.css.tradeconsumer.cashflow.repository.CashflowStore;
 import io.alw.css.tradeconsumer.cashflow.repository.TradeLinkRepository;
-import io.alw.css.tradeconsumer.confirmation.TradeMatchRequestPublisher;
+import io.alw.css.tradeconsumer.confirmation.ConfirmationMatchRequestPublisher;
 import io.alw.css.tradeconsumer.confirmation.model.properties.KafkaTopicProperties;
 import io.alw.css.tradeconsumer.service.CacheService;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -90,7 +90,7 @@ public class AppConfig {
     }
 
     @Bean
-    public TradeMatchRequestPublisher tradeMatchRequestPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, TradeMatchRequestAvro> kafkaTemplateMatchRequest, CssTaskExecutor cssTaskExecutor) {
-        return new TradeMatchRequestPublisher(kafkaTopicProperties, kafkaTemplateMatchRequest, cssTaskExecutor);
+    public ConfirmationMatchRequestPublisher tradeMatchRequestPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, ConfirmationMatchRequestAvro> kafkaTemplateMatchRequest, CssTaskExecutor cssTaskExecutor) {
+        return new ConfirmationMatchRequestPublisher(kafkaTopicProperties, kafkaTemplateMatchRequest, cssTaskExecutor);
     }
 }

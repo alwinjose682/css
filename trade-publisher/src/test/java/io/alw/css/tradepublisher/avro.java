@@ -1,6 +1,6 @@
 package io.alw.css.tradepublisher;
 
-import io.alw.css.confirmation.MatchStatusEvent;
+import io.alw.css.confirmation.ConfirmationMatchStatus;
 import org.apache.avro.Schema;
 import org.apache.avro.reflect.ReflectData;
 import org.junit.jupiter.api.Test;
@@ -10,7 +10,7 @@ public class avro {
     @Test
     void getAvroSchema_notATest() {
         Schema schema = ReflectData.get()
-                .getSchema(MatchStatusEvent.class)
+                .getSchema(ConfirmationMatchStatus.class)
 //                .getSchema(TradeLeg.class)
                 ;
 

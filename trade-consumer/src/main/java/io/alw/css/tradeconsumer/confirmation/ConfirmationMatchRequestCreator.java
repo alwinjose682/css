@@ -1,7 +1,7 @@
 package io.alw.css.tradeconsumer.confirmation;
 
+import io.alw.css.confirmation.ConfirmationMatchRequest;
 import io.alw.css.confirmation.TradeLegMatchAttribute;
-import io.alw.css.confirmation.TradeMatchRequest;
 import io.alw.css.domain.cashflow.Cashflow;
 import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.exception.CategorizedRuntimeException;
@@ -14,9 +14,9 @@ import java.util.stream.Collectors;
 import static io.alw.css.tradeconsumer.model.constants.ExceptionSubCategoryType.CASHFLOWS_OF_MULTIPLE_TRADES;
 import static io.alw.css.tradeconsumer.model.constants.ExceptionSubCategoryType.INVALID_TRADE_LEG_TYPE;
 
-public class TradeMatchRequestCreator {
+public class ConfirmationMatchRequestCreator {
 
-    public static List<TradeMatchRequest> forMmTerm(Set<Cashflow> cashflows, long tradeId, int tradeVersion, TradeType tradeType) {
+    public static List<ConfirmationMatchRequest> forMmTerm(Set<Cashflow> cashflows, long tradeId, int tradeVersion, TradeType tradeType) {
         Map<TradeLegType, String> primaryTradeLegTypes = new EnumMap<>(TradeLegType.class);
         primaryTradeLegTypes.put(TradeLegType.MM_PRINCIPAL, "v");
         primaryTradeLegTypes.put(TradeLegType.MM_MATURITY, "v");
@@ -24,7 +24,7 @@ public class TradeMatchRequestCreator {
         return forGenericMm(cashflows, tradeId, tradeVersion, tradeType, primaryTradeLegTypes);
     }
 
-    public static List<TradeMatchRequest> forMmCall(Set<Cashflow> cashflows, long tradeId, int tradeVersion, TradeType tradeType) {
+    public static List<ConfirmationMatchRequest> forMmCall(Set<Cashflow> cashflows, long tradeId, int tradeVersion, TradeType tradeType) {
         boolean hasMaturityLeg = cashflows.stream().anyMatch(cf -> cf.tradeLegType() == TradeLegType.MM_MATURITY);
         Map<TradeLegType, String> primaryTradeLegTypes = new EnumMap<>(TradeLegType.class);
         if (hasMaturityLeg) {
@@ -37,13 +37,13 @@ public class TradeMatchRequestCreator {
         return forGenericMm(cashflows, tradeId, tradeVersion, tradeType, primaryTradeLegTypes);
     }
 
-    private static List<TradeMatchRequest> forGenericMm(Set<Cashflow> cashflows, long tradeId, int tradeVersion, TradeType tradeType, Map<TradeLegType, String> primaryTradeLegTypes) {
-        List<TradeMatchRequest> tradeMatchRequests = new ArrayList<>();
+    private static List<ConfirmationMatchRequest> forGenericMm(Set<Cashflow> cashflows, long tradeId, int tradeVersion, TradeType tradeType, Map<TradeLegType, String> primaryTradeLegTypes) {
+        List<ConfirmationMatchRequest> confMatchRequests = new ArrayList<>();
         Set<Cashflow> remainingCashflows = new HashSet<>();
 
         // For Principal and Maturity legs
-        tradeMatchRequests.add(
-                createTradeMatchRequest(
+        confMatchRequests.add(
+                createConfMatchRequest(
                         buildTradeLegMatchAttributes(cashflows, primaryTradeLegTypes, tradeId, tradeVersion, remainingCashflows),
                         tradeId, tradeVersion, tradeType));
 
@@ -54,28 +54,28 @@ public class TradeMatchRequestCreator {
             var actionableCashflows = remainingCashflows;
             remainingCashflows = new HashSet<>();
 
-            tradeMatchRequests.add(
-                    createTradeMatchRequest(
+            confMatchRequests.add(
+                    createConfMatchRequest(
                             buildTradeLegMatchAttributes(actionableCashflows, interestTradeLegTypes, tradeId, tradeVersion, remainingCashflows),
                             tradeId, tradeVersion, tradeType));
 
-            return tradeMatchRequests;
+            return confMatchRequests;
         }
 
-        return tradeMatchRequests;
+        return confMatchRequests;
     }
 
-    public static List<TradeMatchRequest> forFx(Set<Cashflow> cashflows, long tradeId, int tradeVersion, TradeType tradeType) {
-        List<TradeMatchRequest> tradeMatchRequests = new ArrayList<>();
+    public static List<ConfirmationMatchRequest> forFx(Set<Cashflow> cashflows, long tradeId, int tradeVersion, TradeType tradeType) {
+        List<ConfirmationMatchRequest> confMatchRequests = new ArrayList<>();
         Set<Cashflow> remainingCashflows = new HashSet<>();
         Map<TradeLegType, String> requiredTradeLegTypes = new EnumMap<>(TradeLegType.class);
         requiredTradeLegTypes.put(TradeLegType.FX_SIDE1, "v");
         requiredTradeLegTypes.put(TradeLegType.FX_SIDE2, "v");
 
         Set<TradeLegMatchAttribute> tradeLegMatchAttributes = buildTradeLegMatchAttributes(cashflows, requiredTradeLegTypes, tradeId, tradeVersion, remainingCashflows);
-        tradeMatchRequests.add(createTradeMatchRequest(tradeLegMatchAttributes, tradeId, tradeVersion, tradeType));
+        confMatchRequests.add(createConfMatchRequest(tradeLegMatchAttributes, tradeId, tradeVersion, tradeType));
 
-        return tradeMatchRequests;
+        return confMatchRequests;
     }
 
     /// The Map `requiredTradeLegTypes` must be mutable because elements are removed
@@ -94,7 +94,7 @@ public class TradeMatchRequestCreator {
                 throw CategorizedRuntimeException.TECHNICAL_UNRECOVERABLE("Invalid group of cashflows received for generating matching request. Only the cashflows that belong to the same trade are expected", new ExceptionSubCategory(CASHFLOWS_OF_MULTIPLE_TRADES, cashflow));
             }
 
-            // Verify that the tradeLegTypes required for creating TradeMatchRequest are present
+            // Verify that the tradeLegTypes required for creating ConfirmationMatchRequest are present
             String val = requiredTradeLegTypes.remove(tradeLegType);
             if (val == null) {
                 remainingCashflows.add(cashflow);
@@ -107,7 +107,7 @@ public class TradeMatchRequestCreator {
         // This check also prevents infinite loop
         if (!requiredTradeLegTypes.isEmpty()) {
             var requiredLegTypes = getKeysAsDelimitedString(requiredTradeLegTypes);
-            throw CategorizedRuntimeException.TECHNICAL_UNRECOVERABLE("All the required TradeLegTypes are not present for the trade in order to build TradeMatchRequest. The required TradeLegTypes are: " + requiredLegTypes, new ExceptionSubCategory(INVALID_TRADE_LEG_TYPE, allCashflows));
+            throw CategorizedRuntimeException.TECHNICAL_UNRECOVERABLE("All the required TradeLegTypes are not present for the trade in order to build ConfirmationMatchRequest. The required TradeLegTypes are: " + requiredLegTypes, new ExceptionSubCategory(INVALID_TRADE_LEG_TYPE, allCashflows));
         }
 
         return tradeLegMatchAttributes;
@@ -117,7 +117,7 @@ public class TradeMatchRequestCreator {
         return tradeLegMatchAttributes.keySet().stream().map(TradeLegType::name).collect(Collectors.joining(","));
     }
 
-    private static TradeMatchRequest createTradeMatchRequest(Set<TradeLegMatchAttribute> tradeLegMatchAttributes, long tradeId, int tradeVersion, TradeType tradeType) {
-        return new TradeMatchRequest(tradeId, tradeVersion, tradeLegMatchAttributes, tradeType);
+    private static ConfirmationMatchRequest createConfMatchRequest(Set<TradeLegMatchAttribute> tradeLegMatchAttributes, long tradeId, int tradeVersion, TradeType tradeType) {
+        return new ConfirmationMatchRequest(tradeId, tradeVersion, tradeLegMatchAttributes, tradeType);
     }
 }

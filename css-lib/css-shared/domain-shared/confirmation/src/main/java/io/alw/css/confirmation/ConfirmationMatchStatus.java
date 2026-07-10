@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import java.util.Set;
 
 @RecordBuilder
-public record MatchStatusEvent(
+public record ConfirmationMatchStatus(
         long eventId,
         int eventVersion,
         long tradeId,

@@ -28,7 +28,7 @@ public class GeneratorController {
             produces = "application/json")
     public ResponseEntity<GeneratorHandlerOutcomeDto> start(@PathVariable String generatorKey,
                                                             @RequestBody GeneratorInitialValues initialGeneratorValues) throws JsonProcessingException {
-        log.debug("Received Generator(Trade and MatchStatusEvent) start request with params- generatorKey: {}, initialGeneratorValues: {}", generatorKey, initialGeneratorValues);
+        log.debug("Received Generator(Trade and ConfirmationMatchStatus) start request with params- generatorKey: {}, initialGeneratorValues: {}", generatorKey, initialGeneratorValues);
 
         final GeneratorHandlerOutcomeDto outcome;
         if (generatorKey.equalsIgnoreCase(ALL_GENERATORS_KEY)) {
