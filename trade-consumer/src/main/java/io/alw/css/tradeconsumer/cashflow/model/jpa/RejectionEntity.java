@@ -198,8 +198,9 @@ public class RejectionEntity {
         return service;
     }
 
-    public void setService(String service) {
+    public RejectionEntity setService(String service) {
         this.service = service;
+        return this;
     }
 
     public String getExceptionType() {

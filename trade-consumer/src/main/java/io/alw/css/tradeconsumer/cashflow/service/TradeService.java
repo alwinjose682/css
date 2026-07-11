@@ -16,6 +16,7 @@ import io.alw.css.tradeconsumer.cashflow.model.PreviousCashflowCheckOutcome;
 import io.alw.css.tradeconsumer.cashflow.model.jpa.RejectionEntity;
 import io.alw.css.tradeconsumer.cashflow.repository.CashflowStore;
 import io.alw.css.tradeconsumer.confirmation.service.TradeConfirmationService;
+import io.alw.css.tradeconsumer.model.constants.ExceptionServiceName;
 import io.alw.css.tradeconsumer.model.constants.ExceptionSubCategoryType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,6 +152,7 @@ public class TradeService {
                 .setCounterpartyCode(bdr.counterpartyCode())
                 .setAmount(bdr.amount())
                 .setCurrCode(bdr.currCode())
+                .setService(ExceptionServiceName.TRADE.value())
                 .setExceptionType(rec.exceptionType().name())
                 .setExceptionCategory(rec.exceptionCategory().name())
                 .setExceptionSubCategory(rec.exceptionSubCategory())
@@ -176,6 +178,7 @@ public class TradeService {
                 .setTradeId(tradeAvro.getTradeID())
                 .setTradeVersion(tradeAvro.getTradeVersion())
                 .setTradeType(tradeAvro.getTradeType())
+                .setService(ExceptionServiceName.TRADE.value())
                 .setExceptionType(cre.type().name())
                 .setExceptionCategory(cre.category().name())
                 .setExceptionSubCategory(cre.subCategory().type())
