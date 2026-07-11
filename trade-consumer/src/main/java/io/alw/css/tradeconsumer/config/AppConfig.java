@@ -23,9 +23,13 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.jdbc.support.incrementer.DataFieldMaxValueIncrementer;
+import org.springframework.jdbc.support.incrementer.OracleSequenceMaxValueIncrementer;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.web.client.RestTemplate;
+
+import javax.sql.DataSource;
 
 @Configuration
 @EnableConfigurationProperties
@@ -33,6 +37,12 @@ import org.springframework.web.client.RestTemplate;
 @EntityScan(basePackages = "io.alw.css.tradeconsumer.cashflow.jpa")
 // no @EnableTransactionManagement. Declarative tx is not used. Programmatic tx is used instead
 public class AppConfig {
+
+    @Bean("cashflowIdSeqIncrementer")
+    public DataFieldMaxValueIncrementer cashflowIdSeqIncrementer(DataSource dataSource){
+        return new OracleSequenceMaxValueIncrementer(dataSource, "cashflow_seq");
+        // NOTE: Spring does not cache result produced by a sequence. But it does for ids generated via other means like table
+    }
 
     @Bean
     public ObjectMapper objectMapper() {
@@ -80,8 +90,8 @@ public class AppConfig {
     }
 
     @Bean
-    public CashflowStore cashflowStore(CashflowRepository cashflowRepository, CashflowRejectionRepository cashflowRejectionRepository, TradeLinkRepository tradeLinkRepository) {
-        return new CashflowStore(cashflowRepository, cashflowRejectionRepository, tradeLinkRepository);
+    public CashflowStore cashflowStore(CashflowRepository cashflowRepository, CashflowRejectionRepository cashflowRejectionRepository, TradeLinkRepository tradeLinkRepository, DataFieldMaxValueIncrementer cashflowIdSeqIncrementer) {
+        return new CashflowStore(cashflowRepository, cashflowRejectionRepository, tradeLinkRepository, cashflowIdSeqIncrementer);
     }
 
     @Bean

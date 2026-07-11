@@ -12,8 +12,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.support.incrementer.DataFieldMaxValueIncrementer;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -26,16 +26,16 @@ public final class CashflowStore {
     private final CashflowRepository cashflowRepository;
     private final CashflowRejectionRepository cashflowRejectionRepository;
     private final TradeLinkRepository tradeLinkRepository;
+    private final DataFieldMaxValueIncrementer cashflowIdSeqIncrementer;
 
-    public CashflowStore(CashflowRepository cashflowRepository, CashflowRejectionRepository cashflowRejectionRepository, TradeLinkRepository tradeLinkRepository) {
+    public CashflowStore(CashflowRepository cashflowRepository, CashflowRejectionRepository cashflowRejectionRepository, TradeLinkRepository tradeLinkRepository, DataFieldMaxValueIncrementer cashflowIdSeqIncrementer) {
         this.cashflowRepository = cashflowRepository;
         this.cashflowRejectionRepository = cashflowRejectionRepository;
         this.tradeLinkRepository = tradeLinkRepository;
+        this.cashflowIdSeqIncrementer = cashflowIdSeqIncrementer;
     }
 
-    /// **TODO**: When switching to Oracle DB, check whether Hibernate still returns Long
-    ///
-    /// **SUBTLE ISSUE**:
+    /// ** SUBTLE ISSUE when using Hibernate's EntityManager **:
     ///
     /// When below property is set, the nextval of the sequence returned by Hibernate is of type java.lang.Long. When this property is not set, Hibernate returns java.math.BigDecimal
     /// - property: spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.OracleDialect
@@ -51,8 +51,9 @@ public final class CashflowStore {
     ///
     /// Example: Hibernate 6.X maps Oracle NUMBER type based on its width to java.lang.Integer, Long, BigDecimal etc. instead of the behaviour of old Hibernate versions that used to map oracle NUMBER to BigDecimal. Float types are mapped differently
     public long getNewCashflowID() {
-        return ((BigDecimal) em.createNativeQuery("select CSS.cashflow_seq.nextval from dual").getSingleResult()).longValue();
+//        return ((BigDecimal) em.createNativeQuery("select CSS.cashflow_seq.nextval from dual").getSingleResult()).longValue();
 //        return (long) em.createNativeQuery("select CSS.cashflow_seq.nextval from dual").getSingleResult();
+        return cashflowIdSeqIncrementer.nextLongValue();
     }
 
     /// This method returns null if no result. Does not use Optional
