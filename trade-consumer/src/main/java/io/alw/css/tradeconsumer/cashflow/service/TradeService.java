@@ -138,31 +138,31 @@ public class TradeService {
     private void rejectCashflow(CashflowRejectionRecord rec) {
         CashflowBuilder bdr = rec.cashflowBdr();
 
-        try {
-            RejectionEntity cfr = new RejectionEntity();
-            cfr
-                    .setTradeId(bdr.tradeId())
-                    .setTradeVersion(bdr.tradeVersion())
-                    .setTradeLegId(bdr.tradeLegId())
-                    .setTradeLegVersion(bdr.tradeLegVersion())
-                    .setTradeType(bdr.tradeType().name())
-                    .setTradeLegType(bdr.tradeLegType().name())
-                    .setValueDate(bdr.valueDate() == null ? null : bdr.valueDate())
-                    .setEntityCode(bdr.entityCode())
-                    .setCounterpartyCode(bdr.counterpartyCode())
-                    .setAmount(bdr.amount())
-                    .setCurrCode(bdr.currCode())
-                    .setExceptionType(rec.exceptionType().name())
-                    .setExceptionCategory(rec.exceptionCategory().name())
-                    .setExceptionSubCategory(rec.exceptionSubCategory())
-                    .setMsg(rec.msg())
-                    .setReplayable(rec.replayable() ? YesNo.Y : YesNo.N)
-                    .setNumOfRetries(rec.numOfRetries())
-                    .setCreatedDateTime(rec.createdDateTime())
-                    .setInputBy(rec.inputBy())
-                    .setUpdatedDateTime(LocalDateTime.now())
-            ;
+        RejectionEntity cfr = new RejectionEntity();
+        cfr
+                .setTradeId(bdr.tradeId())
+                .setTradeVersion(bdr.tradeVersion())
+                .setTradeLegId(bdr.tradeLegId())
+                .setTradeLegVersion(bdr.tradeLegVersion())
+                .setTradeType(bdr.tradeType().name())
+                .setTradeLegType(bdr.tradeLegType().name())
+                .setValueDate(bdr.valueDate() == null ? null : bdr.valueDate())
+                .setEntityCode(bdr.entityCode())
+                .setCounterpartyCode(bdr.counterpartyCode())
+                .setAmount(bdr.amount())
+                .setCurrCode(bdr.currCode())
+                .setExceptionType(rec.exceptionType().name())
+                .setExceptionCategory(rec.exceptionCategory().name())
+                .setExceptionSubCategory(rec.exceptionSubCategory())
+                .setMsg(rec.msg())
+                .setReplayable(rec.replayable() ? YesNo.Y : YesNo.N)
+                .setNumOfRetries(rec.numOfRetries())
+                .setCreatedDateTime(rec.createdDateTime())
+                .setInputBy(rec.inputBy())
+                .setUpdatedDateTime(LocalDateTime.now())
+        ;
 
+        try {
             txrw.executeWithoutResult(() -> cashflowStore.saveRejection(cfr), Exception.class);
         } catch (Exception e) {
             log.error("Failed to save cashflow rejection to database. TradeId-Ver: {}-{}", bdr.tradeId(), bdr.tradeVersion(), e);
@@ -186,5 +186,12 @@ public class TradeService {
                 .setInputBy(inputBy)
                 .setUpdatedDateTime(LocalDateTime.now())
         ;
+
+        try {
+            txrw.executeWithoutResult(() -> cashflowStore.saveRejection(cfr), Exception.class);
+        } catch (Exception e) {
+            log.error("Failed to save cashflow rejection to database. TradeId-Ver: {}-{}", tradeAvro.getTradeID(), tradeAvro.getTradeVersion(), e);
+            throw new RuntimeException(e);
+        }
     }
 }
