@@ -14,8 +14,8 @@ prompt ->->->  *** CREATING TABLES ***
 prompt ->->->  cashflow
 @scripts/tables/cashflow
 
-prompt ->->->  cashflow_rejection
-@scripts/tables/cashflow_rejection
+prompt ->->->  rejection
+@scripts/tables/rejection
 
 prompt ->->->  trade_link
 @scripts/tables/trade_link

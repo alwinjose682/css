@@ -4,7 +4,7 @@ import io.alw.css.domain.cashflow.Cashflow;
 import io.alw.css.domain.exception.CategorizedRuntimeException;
 import io.alw.css.domain.exception.ExceptionSubCategory;
 import io.alw.css.tradeconsumer.cashflow.model.jpa.CashflowEntity;
-import io.alw.css.tradeconsumer.cashflow.model.jpa.CashflowRejectionEntity;
+import io.alw.css.tradeconsumer.cashflow.model.jpa.RejectionEntity;
 import io.alw.css.tradeconsumer.cashflow.model.jpa.TradeLinkEntity;
 import io.alw.css.tradeconsumer.cashflow.repository.mapper.CashflowMapper;
 import io.alw.css.tradeconsumer.model.constants.ExceptionSubCategoryType;
@@ -66,7 +66,7 @@ public final class CashflowStore {
         }
     }
 
-    public void saveRejection(CashflowRejectionEntity cfr) {
+    public void saveRejection(RejectionEntity cfr) {
         cashflowRejectionRepository.save(cfr);
     }
 

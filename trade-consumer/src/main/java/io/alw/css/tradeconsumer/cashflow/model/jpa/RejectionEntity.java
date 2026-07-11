@@ -11,12 +11,12 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Entity
-@Table(name = "CASHFLOW_REJECTION", schema = "CSS")
-public class CashflowRejectionEntity {
+@Table(name = "REJECTION", schema = "CSS")
+public class RejectionEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "cashflowRejectionSeq")
-    @SequenceGenerator(sequenceName = "css_common_seq", allocationSize = 50, name = "cashflowRejectionSeq")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "rejectionSeq")
+    @SequenceGenerator(sequenceName = "css_common_seq", allocationSize = 50, name = "rejectionSeq")
     @Column(name = "ID")
     Long id;
 
@@ -54,6 +54,9 @@ public class CashflowRejectionEntity {
     @Column(name = "CURR_CODE")
     String currCode;
 
+    @Column(name = "SERVICE")
+    String service;
+
     @Column(name = "EXCEPTION_TYPE")
     String exceptionType;
 
@@ -87,7 +90,7 @@ public class CashflowRejectionEntity {
         return id;
     }
 
-    public CashflowRejectionEntity setId(Long id) {
+    public RejectionEntity setId(Long id) {
         this.id = id;
         return this;
     }
@@ -96,7 +99,7 @@ public class CashflowRejectionEntity {
         return tradeId;
     }
 
-    public CashflowRejectionEntity setTradeId(Long tradeId) {
+    public RejectionEntity setTradeId(Long tradeId) {
         this.tradeId = tradeId;
         return this;
     }
@@ -105,7 +108,7 @@ public class CashflowRejectionEntity {
         return tradeVersion;
     }
 
-    public CashflowRejectionEntity setTradeVersion(Integer tradeVersion) {
+    public RejectionEntity setTradeVersion(Integer tradeVersion) {
         this.tradeVersion = tradeVersion;
         return this;
     }
@@ -114,7 +117,7 @@ public class CashflowRejectionEntity {
         return tradeLegId;
     }
 
-    public CashflowRejectionEntity setTradeLegId(Long tradeLegId) {
+    public RejectionEntity setTradeLegId(Long tradeLegId) {
         this.tradeLegId = tradeLegId;
         return this;
     }
@@ -123,7 +126,7 @@ public class CashflowRejectionEntity {
         return tradeLegVersion;
     }
 
-    public CashflowRejectionEntity setTradeLegVersion(Integer tradeLegVersion) {
+    public RejectionEntity setTradeLegVersion(Integer tradeLegVersion) {
         this.tradeLegVersion = tradeLegVersion;
         return this;
     }
@@ -132,7 +135,7 @@ public class CashflowRejectionEntity {
         return tradeType;
     }
 
-    public CashflowRejectionEntity setTradeType(String tradeType) {
+    public RejectionEntity setTradeType(String tradeType) {
         this.tradeType = tradeType;
         return this;
     }
@@ -141,7 +144,7 @@ public class CashflowRejectionEntity {
         return tradeLegType;
     }
 
-    public CashflowRejectionEntity setTradeLegType(String tradeLegType) {
+    public RejectionEntity setTradeLegType(String tradeLegType) {
         this.tradeLegType = tradeLegType;
         return this;
     }
@@ -150,7 +153,7 @@ public class CashflowRejectionEntity {
         return valueDate;
     }
 
-    public CashflowRejectionEntity setValueDate(LocalDate valueDate) {
+    public RejectionEntity setValueDate(LocalDate valueDate) {
         this.valueDate = valueDate;
         return this;
     }
@@ -159,7 +162,7 @@ public class CashflowRejectionEntity {
         return entityCode;
     }
 
-    public CashflowRejectionEntity setEntityCode(String entityCode) {
+    public RejectionEntity setEntityCode(String entityCode) {
         this.entityCode = entityCode;
         return this;
     }
@@ -168,7 +171,7 @@ public class CashflowRejectionEntity {
         return counterpartyCode;
     }
 
-    public CashflowRejectionEntity setCounterpartyCode(String counterpartyCode) {
+    public RejectionEntity setCounterpartyCode(String counterpartyCode) {
         this.counterpartyCode = counterpartyCode;
         return this;
     }
@@ -177,7 +180,7 @@ public class CashflowRejectionEntity {
         return amount;
     }
 
-    public CashflowRejectionEntity setAmount(BigDecimal amount) {
+    public RejectionEntity setAmount(BigDecimal amount) {
         this.amount = amount;
         return this;
     }
@@ -186,16 +189,24 @@ public class CashflowRejectionEntity {
         return currCode;
     }
 
-    public CashflowRejectionEntity setCurrCode(String currCode) {
+    public RejectionEntity setCurrCode(String currCode) {
         this.currCode = currCode;
         return this;
+    }
+
+    public String getService() {
+        return service;
+    }
+
+    public void setService(String service) {
+        this.service = service;
     }
 
     public String getExceptionType() {
         return exceptionType;
     }
 
-    public CashflowRejectionEntity setExceptionType(String exceptionType) {
+    public RejectionEntity setExceptionType(String exceptionType) {
         this.exceptionType = exceptionType;
         return this;
     }
@@ -204,7 +215,7 @@ public class CashflowRejectionEntity {
         return exceptionCategory;
     }
 
-    public CashflowRejectionEntity setExceptionCategory(String exceptionCategory) {
+    public RejectionEntity setExceptionCategory(String exceptionCategory) {
         this.exceptionCategory = exceptionCategory;
         return this;
     }
@@ -213,7 +224,7 @@ public class CashflowRejectionEntity {
         return exceptionSubCategory;
     }
 
-    public CashflowRejectionEntity setExceptionSubCategory(String exceptionSubCategory) {
+    public RejectionEntity setExceptionSubCategory(String exceptionSubCategory) {
         this.exceptionSubCategory = exceptionSubCategory;
         return this;
     }
@@ -222,7 +233,7 @@ public class CashflowRejectionEntity {
         return msg;
     }
 
-    public CashflowRejectionEntity setMsg(String msg) {
+    public RejectionEntity setMsg(String msg) {
         this.msg = msg;
         return this;
     }
@@ -231,7 +242,7 @@ public class CashflowRejectionEntity {
         return replayable;
     }
 
-    public CashflowRejectionEntity setReplayable(YesNo replayable) {
+    public RejectionEntity setReplayable(YesNo replayable) {
         this.replayable = replayable;
         return this;
     }
@@ -240,7 +251,7 @@ public class CashflowRejectionEntity {
         return numOfRetries;
     }
 
-    public CashflowRejectionEntity setNumOfRetries(Integer numOfRetries) {
+    public RejectionEntity setNumOfRetries(Integer numOfRetries) {
         this.numOfRetries = numOfRetries;
         return this;
     }
@@ -249,7 +260,7 @@ public class CashflowRejectionEntity {
         return inputBy;
     }
 
-    public CashflowRejectionEntity setInputBy(InputBy inputBy) {
+    public RejectionEntity setInputBy(InputBy inputBy) {
         this.inputBy = inputBy;
         return this;
     }
@@ -258,7 +269,7 @@ public class CashflowRejectionEntity {
         return createdDateTime;
     }
 
-    public CashflowRejectionEntity setCreatedDateTime(LocalDateTime createdDateTime) {
+    public RejectionEntity setCreatedDateTime(LocalDateTime createdDateTime) {
         this.createdDateTime = createdDateTime;
         return this;
     }
@@ -267,7 +278,7 @@ public class CashflowRejectionEntity {
         return updatedDateTime;
     }
 
-    public CashflowRejectionEntity setUpdatedDateTime(LocalDateTime updatedDateTime) {
+    public RejectionEntity setUpdatedDateTime(LocalDateTime updatedDateTime) {
         this.updatedDateTime = updatedDateTime;
         return this;
     }
@@ -275,7 +286,7 @@ public class CashflowRejectionEntity {
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
-        CashflowRejectionEntity that = (CashflowRejectionEntity) o;
+        RejectionEntity that = (RejectionEntity) o;
         return Objects.equals(id, that.id);
     }
 

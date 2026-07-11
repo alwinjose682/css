@@ -11,7 +11,7 @@ import io.alw.css.domain.exception.ExceptionType;
 import io.alw.css.serialization.trade.TradeAvro;
 import io.alw.css.tradeconsumer.cashflow.model.CashflowRejectionRecord;
 import io.alw.css.tradeconsumer.cashflow.model.CashflowRejectionRecordBuilder;
-import io.alw.css.tradeconsumer.cashflow.model.jpa.CashflowRejectionEntity;
+import io.alw.css.tradeconsumer.cashflow.model.jpa.RejectionEntity;
 import io.alw.css.tradeconsumer.cashflow.processor.CashflowEnricher;
 import io.alw.css.tradeconsumer.cashflow.processor.CashflowVersionManager;
 import io.alw.css.tradeconsumer.cashflow.processor.PreviousCashflowCheckOutcome;
@@ -145,7 +145,7 @@ public class TradeService {
         CashflowBuilder bdr = rec.cashflowBdr();
 
         try {
-            CashflowRejectionEntity cfr = new CashflowRejectionEntity();
+            RejectionEntity cfr = new RejectionEntity();
             cfr
                     .setTradeId(bdr.tradeId())
                     .setTradeVersion(bdr.tradeVersion())
@@ -177,7 +177,7 @@ public class TradeService {
     }
 
     private void rejectCashflow(TradeAvro tradeAvro, CategorizedRuntimeException cre, InputBy inputBy) {
-        CashflowRejectionEntity cfr = new CashflowRejectionEntity();
+        RejectionEntity cfr = new RejectionEntity();
         cfr
                 .setTradeId(tradeAvro.getTradeID())
                 .setTradeVersion(tradeAvro.getTradeVersion())
