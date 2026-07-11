@@ -81,6 +81,10 @@ public class CashflowEntity {
     @Column(name = "SSI_ID")
     String ssiId;
 
+    @Column(name = "CONFIRMATION_STATUS", nullable = false)
+    @Enumerated(EnumType.STRING)
+    CashflowConfirmationStatus confirmationStatus;
+
     @Column(name = "PAYMENT_SUPPRESSION_CATEGORY")
     @Enumerated(EnumType.STRING)
     PaymentSuppressionCategory paymentSuppressionCategory;

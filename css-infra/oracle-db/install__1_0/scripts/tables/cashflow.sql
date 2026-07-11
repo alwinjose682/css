@@ -24,6 +24,7 @@ curr_code VARCHAR2(3),                                                 				-- { 
 internal VARCHAR2(1) NOT NULL CONSTRAINT cf_internal_chk CHECK(internal IN ('Y','N')), -- { internal | STRING }
 nostro_id VARCHAR2(5),                                                   			-- { nostroID }
 ssi_id VARCHAR2(8),                                                      			-- { ssiID }
+confirmation_status VARCHAR2(13) NOT NULL,
 payment_suppression_category VARCHAR2(30) NOT NULL,				        			-- { paymentSuppressionCategory }
 input_by VARCHAR2(10),                                                     			-- { inputBy | ORDINAL }
 input_by_user_id VARCHAR2(10),                                          			-- { inputByUserID }
