@@ -23,16 +23,16 @@ public class CashflowEntity {
     @Enumerated(EnumType.STRING)
     RevisionType revisionType;
 
-    @Column(name = "TRADE_ID")
+    @Column(name = "TRADE_ID", nullable = false)
     Long tradeId;
 
-    @Column(name = "TRADE_VERSION")
+    @Column(name = "TRADE_VERSION", nullable = false)
     Integer tradeVersion;
 
-    @Column(name = "TRADE_LEG_ID")
+    @Column(name = "TRADE_LEG_ID", nullable = false)
     Long tradeLegId;
 
-    @Column(name = "TRADE_LEG_VERSION")
+    @Column(name = "TRADE_LEG_VERSION", nullable = false)
     Integer tradeLegVersion;
 
     // Trade and Cashflow Data

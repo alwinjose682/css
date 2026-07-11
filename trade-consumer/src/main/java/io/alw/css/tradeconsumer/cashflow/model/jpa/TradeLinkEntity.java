@@ -9,7 +9,8 @@ import java.util.Objects;
 public class TradeLinkEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "tradeLinkEntitySeq")
-    @SequenceGenerator(sequenceName = "css_common_seq", allocationSize = 1, name = "tradeLinkEntitySeq")
+    @SequenceGenerator(sequenceName = "css_common_seq", allocationSize = 50, name = "tradeLinkEntitySeq")
+    @Column(name = "ID")
     Long id;
 
     @Column(name = "TRADE_ID", nullable = false)

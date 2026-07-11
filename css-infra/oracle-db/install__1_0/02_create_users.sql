@@ -1,7 +1,5 @@
 --css
-create user css
-identified by freepass;
-
+create user css identified by freepass;
 alter user css quota unlimited on USERS;
 
 create role css_role not identified;
@@ -10,18 +8,16 @@ grant create session to css_role;
 grant create sequence to css_role;
 grant css_role to css;
 grant css_role to sys with admin option;
-alter user css default role all; --to re-grant the roles at login
+alter user css default role all; --to automatically activate all the defined roles at login
 
 --css_refdata
-create user css_refdata
-identified by freepass;
-
+create user css_refdata identified by freepass;
 alter user css_refdata quota unlimited on USERS;
 
 grant css_role to css_refdata;
-grant css_role to sys with admin option;
-prompt *** S-1 ***
+alter user css_refdata default role all;
+prompt ->->->  *** S-1 ***
 --Seems like Oracle express:21.3.0-xe gets stuck at this step
 --alter user css_refdata default role all; --to re-grant the roles at login
-prompt *** S-2 ***
+prompt ->->->  *** S-2 ***
 exit

@@ -16,7 +16,7 @@ public class CashflowRejectionEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "cashflowRejectionSeq")
-    @SequenceGenerator(sequenceName = "css_common_seq", allocationSize = 1, name = "cashflowRejectionSeq")
+    @SequenceGenerator(sequenceName = "css_common_seq", allocationSize = 50, name = "cashflowRejectionSeq")
     @Column(name = "ID")
     Long id;
 
