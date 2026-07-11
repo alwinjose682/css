@@ -7,9 +7,9 @@ import io.alw.css.dbshared.tx.TXRW;
 import io.alw.css.serialization.confirmation.ConfirmationMatchRequestAvro;
 import io.alw.css.tradeconsumer.CssTaskExecutor;
 import io.alw.css.tradeconsumer.cashflow.model.properties.SuppressionConfig;
-import io.alw.css.tradeconsumer.cashflow.repository.CashflowRejectionRepository;
 import io.alw.css.tradeconsumer.cashflow.repository.CashflowRepository;
 import io.alw.css.tradeconsumer.cashflow.repository.CashflowStore;
+import io.alw.css.tradeconsumer.cashflow.repository.RejectionRepository;
 import io.alw.css.tradeconsumer.cashflow.repository.TradeLinkRepository;
 import io.alw.css.tradeconsumer.cashflow.service.CashflowEnrichmentService;
 import io.alw.css.tradeconsumer.cashflow.service.CashflowVersionService;
@@ -90,8 +90,8 @@ public class AppConfig {
     }
 
     @Bean
-    public CashflowStore cashflowStore(CashflowRepository cashflowRepository, CashflowRejectionRepository cashflowRejectionRepository, TradeLinkRepository tradeLinkRepository, DataFieldMaxValueIncrementer cashflowIdSeqIncrementer) {
-        return new CashflowStore(cashflowRepository, cashflowRejectionRepository, tradeLinkRepository, cashflowIdSeqIncrementer);
+    public CashflowStore cashflowStore(CashflowRepository cashflowRepository, RejectionRepository rejectionRepository, TradeLinkRepository tradeLinkRepository, DataFieldMaxValueIncrementer cashflowIdSeqIncrementer) {
+        return new CashflowStore(cashflowRepository, rejectionRepository, tradeLinkRepository, cashflowIdSeqIncrementer);
     }
 
     @Bean

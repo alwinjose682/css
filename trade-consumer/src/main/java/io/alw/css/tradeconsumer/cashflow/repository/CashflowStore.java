@@ -24,13 +24,13 @@ public final class CashflowStore {
     @PersistenceContext
     private EntityManager em;
     private final CashflowRepository cashflowRepository;
-    private final CashflowRejectionRepository cashflowRejectionRepository;
+    private final RejectionRepository rejectionRepository;
     private final TradeLinkRepository tradeLinkRepository;
     private final DataFieldMaxValueIncrementer cashflowIdSeqIncrementer;
 
-    public CashflowStore(CashflowRepository cashflowRepository, CashflowRejectionRepository cashflowRejectionRepository, TradeLinkRepository tradeLinkRepository, DataFieldMaxValueIncrementer cashflowIdSeqIncrementer) {
+    public CashflowStore(CashflowRepository cashflowRepository, RejectionRepository rejectionRepository, TradeLinkRepository tradeLinkRepository, DataFieldMaxValueIncrementer cashflowIdSeqIncrementer) {
         this.cashflowRepository = cashflowRepository;
-        this.cashflowRejectionRepository = cashflowRejectionRepository;
+        this.rejectionRepository = rejectionRepository;
         this.tradeLinkRepository = tradeLinkRepository;
         this.cashflowIdSeqIncrementer = cashflowIdSeqIncrementer;
     }
@@ -67,7 +67,7 @@ public final class CashflowStore {
     }
 
     public void saveRejection(RejectionEntity cfr) {
-        cashflowRejectionRepository.save(cfr);
+        rejectionRepository.save(cfr);
     }
 
     /// This method does following actions atomically:
