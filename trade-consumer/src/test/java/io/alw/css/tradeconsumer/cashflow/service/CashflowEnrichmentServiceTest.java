@@ -1,4 +1,4 @@
-package io.alw.css.tradeconsumer.cashflow.processor;
+package io.alw.css.tradeconsumer.cashflow.service;
 
 import io.alw.css.domain.cashflow.Cashflow;
 import io.alw.css.domain.cashflow.CashflowBuilder;
@@ -42,18 +42,18 @@ import static org.mockito.Mockito.when;
 // -- OR --
 @ExtendWith(SpringExtension.class)
 @EnableConfigurationProperties(value = SuppressionConfig.class)
-@ContextConfiguration(initializers = ConfigDataApplicationContextInitializer.class, classes = CashflowEnricher.class)
+@ContextConfiguration(initializers = ConfigDataApplicationContextInitializer.class, classes = CashflowEnrichmentService.class)
 //@TestPropertySource("classpath:application.yml") -- This annotation does not support loading yaml files
 //
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 //@ActiveProfiles({"test"})
-class CashflowEnricherTest {
+class CashflowEnrichmentServiceTest {
 
     @MockitoBean
     CacheService cacheService;
 
     @Autowired
-    CashflowEnricher cashflowEnricher;
+    CashflowEnrichmentService cashflowEnrichmentService;
 
     @Test
     void testEntityAndCurrCodeValidation() {
@@ -66,12 +66,12 @@ class CashflowEnricherTest {
         // When both entity and currency are ACTIVE
         when(cacheService.isEntityActive(entityCode)).thenReturn(true);
         when(cacheService.isCurrencyActive(currCode)).thenReturn(true);
-        assertDoesNotThrow(() -> cashflowEnricher.validateEntityAndCurrCode(builder));
+        assertDoesNotThrow(() -> cashflowEnrichmentService.validateEntityAndCurrCode(builder));
 
         // When entity is INACTIVE and currency is ACTIVE
         when(cacheService.isEntityActive(entityCode)).thenReturn(false);
         when(cacheService.isCurrencyActive(currCode)).thenReturn(true);
-        CategorizedRuntimeException entityIsInactiveException = assertThrows(CategorizedRuntimeException.class, () -> cashflowEnricher.validateEntityAndCurrCode(builder));
+        CategorizedRuntimeException entityIsInactiveException = assertThrows(CategorizedRuntimeException.class, () -> cashflowEnrichmentService.validateEntityAndCurrCode(builder));
         assertEquals(ExceptionType.BUSINESS, entityIsInactiveException.type());
         assertEquals(ExceptionCategory.RECOVERABLE, entityIsInactiveException.category());
         assertEquals(new ExceptionSubCategory(ExceptionSubCategoryType.INACTIVE_ENTITY, null).type(), entityIsInactiveException.subCategory().type());
@@ -79,7 +79,7 @@ class CashflowEnricherTest {
         // When entity is ACTIVE and currency is INACTIVE
         when(cacheService.isEntityActive(entityCode)).thenReturn(true);
         when(cacheService.isCurrencyActive(currCode)).thenReturn(false);
-        CategorizedRuntimeException currencyIsInactiveException = assertThrows(CategorizedRuntimeException.class, () -> cashflowEnricher.validateEntityAndCurrCode(builder));
+        CategorizedRuntimeException currencyIsInactiveException = assertThrows(CategorizedRuntimeException.class, () -> cashflowEnrichmentService.validateEntityAndCurrCode(builder));
         assertEquals(ExceptionType.BUSINESS, currencyIsInactiveException.type());
         assertEquals(ExceptionCategory.RECOVERABLE, currencyIsInactiveException.category());
         assertEquals(new ExceptionSubCategory(ExceptionSubCategoryType.INACTIVE_CURRENCY, null).type(), currencyIsInactiveException.subCategory().type());
@@ -95,7 +95,7 @@ class CashflowEnricherTest {
                 .transactionType(TransactionType.INTER_BOOK);
 
         // Create a distinct CashflowEnricher instance with mocked SuppressionConfig
-        CashflowEnricher cfEnricher = new CashflowEnricher(suppressionConfigMock, cacheService);
+        CashflowEnrichmentService cfEnricher = new CashflowEnrichmentService(suppressionConfigMock, cacheService);
         cfEnricher.setPaymentSuppressionValue(builder);
 
         assertEquals(PaymentSuppressionCategory.INTERBOOK, builder.paymentSuppressionCategory());
@@ -109,12 +109,12 @@ class CashflowEnricherTest {
             final var builder = CashflowBuilder.builder(genericCashflow()).transactionType(TransactionType.INTER_COMPANY);
             // When transaction type IS INTER_COMPANY and counterparty IS internal
             when(cpData.internal()).thenReturn(true);
-            cashflowEnricher.setInternalValue(builder, cpData);
+            cashflowEnrichmentService.setInternalValue(builder, cpData);
             assertTrue(builder.internal());
 
             // When transaction type IS INTER_COMPANY and counterparty is NOT internal
             when(cpData.internal()).thenReturn(false);
-            cashflowEnricher.setInternalValue(builder, cpData);
+            cashflowEnrichmentService.setInternalValue(builder, cpData);
             assertFalse(builder.internal());
         }
 
@@ -122,12 +122,12 @@ class CashflowEnricherTest {
             // When transaction type IS CORPORATE_ACTION and counterparty IS internal
             final var builder2 = CashflowBuilder.builder(genericCashflow()).transactionType(TransactionType.CORPORATE_ACTION);
             when(cpData.internal()).thenReturn(true);
-            cashflowEnricher.setInternalValue(builder2, cpData);
+            cashflowEnrichmentService.setInternalValue(builder2, cpData);
             assertFalse(builder2.internal());
 
             // When transaction type IS CORPORATE_ACTION and counterparty is NOT internal
             when(cpData.internal()).thenReturn(false);
-            cashflowEnricher.setInternalValue(builder2, cpData);
+            cashflowEnrichmentService.setInternalValue(builder2, cpData);
             assertFalse(builder2.internal());
         }
     }
@@ -140,7 +140,7 @@ class CashflowEnricherTest {
                 .transactionType(TransactionType.MARKET)
                 .currCode("INR")
                 .amount(new BigDecimal("-33755.10005"));
-        cashflowEnricher.setPaymentSuppressionValue(builder);
+        cashflowEnrichmentService.setPaymentSuppressionValue(builder);
 
         assertEquals(PaymentSuppressionCategory.NONE, builder.paymentSuppressionCategory());
     }
@@ -152,7 +152,7 @@ class CashflowEnricherTest {
                 .transactionType(TransactionType.MARKET)
                 .currCode("INR")
                 .amount(new BigDecimal("-09.10005"));
-        cashflowEnricher.setPaymentSuppressionValue(builder);
+        cashflowEnrichmentService.setPaymentSuppressionValue(builder);
 
         assertEquals(PaymentSuppressionCategory.AMOUNT_TOO_SMALL, builder.paymentSuppressionCategory());
     }
@@ -164,7 +164,7 @@ class CashflowEnricherTest {
                 .transactionType(TransactionType.MARKET)
                 .currCode("USD")
                 .amount(new BigDecimal("1.1"));
-        cashflowEnricher.setPaymentSuppressionValue(builder);
+        cashflowEnrichmentService.setPaymentSuppressionValue(builder);
 
         assertEquals(PaymentSuppressionCategory.NONE, builder.paymentSuppressionCategory());
     }
@@ -176,7 +176,7 @@ class CashflowEnricherTest {
                 .transactionType(TransactionType.MARKET)
                 .currCode("USD")
                 .amount(new BigDecimal("1.0"));
-        cashflowEnricher.setPaymentSuppressionValue(builder);
+        cashflowEnrichmentService.setPaymentSuppressionValue(builder);
 
         assertEquals(PaymentSuppressionCategory.AMOUNT_TOO_SMALL, builder.paymentSuppressionCategory());
     }

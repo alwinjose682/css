@@ -1,4 +1,4 @@
-package io.alw.css.tradeconsumer.cashflow.processor;
+package io.alw.css.tradeconsumer.cashflow.service;
 
 import io.alw.css.domain.cashflow.CashflowBuilder;
 import io.alw.css.domain.common.PaymentSuppressionCategory;
@@ -21,12 +21,12 @@ import static io.alw.css.domain.common.TransactionType.INTER_BOOK;
 /// Enriches Cashflow
 ///
 /// @see
-public class CashflowEnricher {
-    private final static Logger log = LoggerFactory.getLogger(CashflowEnricher.class);
+public class CashflowEnrichmentService {
+    private final static Logger log = LoggerFactory.getLogger(CashflowEnrichmentService.class);
     private final SuppressionConfig suppressionConfig;
     private final CacheService cacheService;
 
-    public CashflowEnricher(SuppressionConfig suppressionConfig, CacheService cacheService) {
+    public CashflowEnrichmentService(SuppressionConfig suppressionConfig, CacheService cacheService) {
         this.suppressionConfig = suppressionConfig;
         this.cacheService = cacheService;
     }

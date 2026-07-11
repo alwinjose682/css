@@ -1,4 +1,4 @@
-package io.alw.css.tradeconsumer.cashflow.repository.mapper;
+package io.alw.css.tradeconsumer.cashflow.mapper;
 
 import io.alw.css.domain.cashflow.Cashflow;
 import io.alw.css.tradeconsumer.cashflow.model.jpa.CashflowEntity;

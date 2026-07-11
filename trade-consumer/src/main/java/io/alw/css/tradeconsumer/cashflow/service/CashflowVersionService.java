@@ -1,4 +1,4 @@
-package io.alw.css.tradeconsumer.cashflow.processor;
+package io.alw.css.tradeconsumer.cashflow.service;
 
 import io.alw.css.dbshared.tx.TXRO;
 import io.alw.css.dbshared.tx.TXRW;
@@ -12,6 +12,7 @@ import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.exception.CategorizedRuntimeException;
 import io.alw.css.domain.exception.ExceptionSubCategory;
 import io.alw.css.domain.trade.TradeLeg;
+import io.alw.css.tradeconsumer.cashflow.model.PreviousCashflowCheckOutcome;
 import io.alw.css.tradeconsumer.cashflow.repository.CashflowStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,14 +34,14 @@ import static io.alw.css.tradeconsumer.model.constants.ExceptionSubCategoryType.
 /// - There is no extra identifier to determine this.
 /// It is ensured that the CFs are processed sequentially in order to guarantee that an N+2 version of a CF does not offset a live Nth version.
 /// This is ensured by verifying the sequential order of [io.alw.css.domain.trade.Trade#tradeVersion] and [TradeLeg#tradeLegVersion()]
-public class CashflowVersionManager {
-    private static final Logger log = LoggerFactory.getLogger(CashflowVersionManager.class);
+public class CashflowVersionService {
+    private static final Logger log = LoggerFactory.getLogger(CashflowVersionService.class);
 
     private final CashflowStore cashflowStore;
     private final TXRW txrw;
     private final TXRO txro;
 
-    public CashflowVersionManager(CashflowStore cashflowStore, TXRW txrw, TXRO txro) {
+    public CashflowVersionService(CashflowStore cashflowStore, TXRW txrw, TXRO txro) {
         this.cashflowStore = cashflowStore;
         this.txrw = txrw;
         this.txro = txro;

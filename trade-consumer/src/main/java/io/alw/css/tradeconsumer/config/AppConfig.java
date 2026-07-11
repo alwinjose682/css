@@ -7,12 +7,12 @@ import io.alw.css.dbshared.tx.TXRW;
 import io.alw.css.serialization.confirmation.ConfirmationMatchRequestAvro;
 import io.alw.css.tradeconsumer.CssTaskExecutor;
 import io.alw.css.tradeconsumer.cashflow.model.properties.SuppressionConfig;
-import io.alw.css.tradeconsumer.cashflow.processor.CashflowEnricher;
-import io.alw.css.tradeconsumer.cashflow.processor.CashflowVersionManager;
 import io.alw.css.tradeconsumer.cashflow.repository.CashflowRejectionRepository;
 import io.alw.css.tradeconsumer.cashflow.repository.CashflowRepository;
 import io.alw.css.tradeconsumer.cashflow.repository.CashflowStore;
 import io.alw.css.tradeconsumer.cashflow.repository.TradeLinkRepository;
+import io.alw.css.tradeconsumer.cashflow.service.CashflowEnrichmentService;
+import io.alw.css.tradeconsumer.cashflow.service.CashflowVersionService;
 import io.alw.css.tradeconsumer.confirmation.ConfirmationMatchRequestPublisher;
 import io.alw.css.tradeconsumer.confirmation.model.properties.KafkaTopicProperties;
 import io.alw.css.tradeconsumer.service.CacheService;
@@ -80,13 +80,13 @@ public class AppConfig {
     }
 
     @Bean
-    public CashflowVersionManager cashflowVersionManager(CashflowStore cashflowStore, TXRW txrw, TXRO txro) {
-        return new CashflowVersionManager(cashflowStore, txrw, txro);
+    public CashflowVersionService cashflowVersionManager(CashflowStore cashflowStore, TXRW txrw, TXRO txro) {
+        return new CashflowVersionService(cashflowStore, txrw, txro);
     }
 
     @Bean
-    public CashflowEnricher cashflowEnricher(SuppressionConfig suppressionConfig, CacheService cacheService) {
-        return new CashflowEnricher(suppressionConfig, cacheService);
+    public CashflowEnrichmentService cashflowEnricher(SuppressionConfig suppressionConfig, CacheService cacheService) {
+        return new CashflowEnrichmentService(suppressionConfig, cacheService);
     }
 
     @Bean

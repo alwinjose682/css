@@ -9,13 +9,11 @@ import io.alw.css.domain.exception.CategorizedRuntimeException;
 import io.alw.css.domain.exception.ExceptionCategory;
 import io.alw.css.domain.exception.ExceptionType;
 import io.alw.css.serialization.trade.TradeAvro;
+import io.alw.css.tradeconsumer.cashflow.mapper.TradeMapper;
 import io.alw.css.tradeconsumer.cashflow.model.CashflowRejectionRecord;
 import io.alw.css.tradeconsumer.cashflow.model.CashflowRejectionRecordBuilder;
+import io.alw.css.tradeconsumer.cashflow.model.PreviousCashflowCheckOutcome;
 import io.alw.css.tradeconsumer.cashflow.model.jpa.RejectionEntity;
-import io.alw.css.tradeconsumer.cashflow.processor.CashflowEnricher;
-import io.alw.css.tradeconsumer.cashflow.processor.CashflowVersionManager;
-import io.alw.css.tradeconsumer.cashflow.processor.PreviousCashflowCheckOutcome;
-import io.alw.css.tradeconsumer.cashflow.processor.TradeMapper;
 import io.alw.css.tradeconsumer.cashflow.repository.CashflowStore;
 import io.alw.css.tradeconsumer.confirmation.service.TradeConfirmationService;
 import io.alw.css.tradeconsumer.model.constants.ExceptionSubCategoryType;
@@ -30,32 +28,28 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static io.alw.css.tradeconsumer.cashflow.processor.PreviousCashflowCheckOutcome.*;
+import static io.alw.css.tradeconsumer.cashflow.model.PreviousCashflowCheckOutcome.*;
 
 @Service
 public class TradeService {
     private static final Logger log = LoggerFactory.getLogger(TradeService.class);
     private final TradeConfirmationService tradeConfirmationService;
     private final CashflowStore cashflowStore;
-    private final CashflowVersionManager cashflowVersionManager;
-    private final CashflowEnricher cashflowEnricher;
+    private final CashflowVersionService cashflowVersionService;
+    private final CashflowEnrichmentService cashflowEnrichmentService;
     private final TXRW txrw;
 
-    public TradeService(TradeConfirmationService tradeConfirmationService, CashflowStore cashflowStore, CashflowVersionManager cashflowVersionManager, CashflowEnricher cashflowEnricher, TXRW txrw) {
+    public TradeService(TradeConfirmationService tradeConfirmationService, CashflowStore cashflowStore, CashflowVersionService cashflowVersionService, CashflowEnrichmentService cashflowEnrichmentService, TXRW txrw) {
         this.tradeConfirmationService = tradeConfirmationService;
         this.cashflowStore = cashflowStore;
-        this.cashflowVersionManager = cashflowVersionManager;
-        this.cashflowEnricher = cashflowEnricher;
+        this.cashflowVersionService = cashflowVersionService;
+        this.cashflowEnrichmentService = cashflowEnrichmentService;
         this.txrw = txrw;
     }
 
     public void process(TradeAvro tradeAvro, InputBy inputBy) {
-        final long tradeId = tradeAvro.getTradeID();
-        final int tradeVersion = tradeAvro.getTradeVersion();
         final String tradeType = tradeAvro.getTradeType();
-        final int numOfTradeLegs = tradeAvro.getTradeLegs().size();
         final Set<Cashflow> savedCashflows;
-        log.info("Received TradeAvroMessage[tradeId: {}, tradeVersion: {}, tradeType: {}] with {} trade legs", tradeId, tradeVersion, tradeType, numOfTradeLegs);
 
         try {
             // Map TradeAvro to one or more Cashflows
@@ -67,7 +61,7 @@ public class TradeService {
             Set<Cashflow> lastProcessedCashflows = new HashSet<>();
             for (CashflowBuilder bdr : cashflowBuilders) {
                 // Check for cases defined by `PreviousCashflowCheckOutcome`
-                PreviousCashflowCheckOutcome outcome = cashflowVersionManager.checkAgainstLastProcessedCashflow(bdr.tradeId(), bdr.tradeVersion(), bdr.tradeLegId(), bdr.tradeLegVersion());
+                PreviousCashflowCheckOutcome outcome = cashflowVersionService.checkAgainstLastProcessedCashflow(bdr.tradeId(), bdr.tradeVersion(), bdr.tradeLegId(), bdr.tradeLegVersion());
                 // Validate and Enrich cashflows with nostroId, ssiId etc
                 validateAndCreateCashflow(outcome, bdr, newCashflows, lastProcessedCashflows);
             }
@@ -102,13 +96,13 @@ public class TradeService {
     private void validateAndCreateCashflow(PreviousCashflowCheckOutcome outcome, CashflowBuilder bdr, Set<Cashflow> newCashflows, Set<Cashflow> lastProcessedCashflows) {
         switch (outcome) {
             case InitialVersion _ -> {
-                cashflowEnricher.validateAndEnrich(bdr);
-                var cf = cashflowVersionManager.createInitialVersionCashflow(bdr);
+                cashflowEnrichmentService.validateAndEnrich(bdr);
+                var cf = cashflowVersionService.createInitialVersionCashflow(bdr);
                 newCashflows.add(cf);
             }
             case SubsequentVersion(var lastProcessedCashflow) -> {
-                cashflowEnricher.validateAndEnrich(bdr);
-                List<Cashflow> cashflows = cashflowVersionManager.createSubsequentVersion(lastProcessedCashflow, bdr);
+                cashflowEnrichmentService.validateAndEnrich(bdr);
+                List<Cashflow> cashflows = cashflowVersionService.createSubsequentVersion(lastProcessedCashflow, bdr);
                 newCashflows.addAll(cashflows);
                 lastProcessedCashflows.add(lastProcessedCashflow);
             }

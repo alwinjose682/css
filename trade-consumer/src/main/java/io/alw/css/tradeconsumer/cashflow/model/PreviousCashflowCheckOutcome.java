@@ -1,4 +1,4 @@
-package io.alw.css.tradeconsumer.cashflow.processor;
+package io.alw.css.tradeconsumer.cashflow.model;
 
 import io.alw.css.domain.cashflow.Cashflow;
 
