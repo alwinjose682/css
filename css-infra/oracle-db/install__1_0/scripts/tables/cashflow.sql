@@ -2,7 +2,7 @@ CREATE TABLE cashflow(
 cashflow_id NUMBER(19) NOT NULL,           							  				-- { cashflowId | nullable = false }
 cashflow_version NUMBER(10) NOT NULL,              							  		-- { cashflowVersion | nullable = false }
 latest VARCHAR2(1) NOT NULL CONSTRAINT cf_latest_chk CHECK(latest IN ('Y','N')),   	-- { latest | STRING }
-revision_type VARCHAR2(3) NOT NULL CONSTRAINT cf_revision_type_chk CHECK(revision_type IN ('NEW','CAN','COR')),   -- { revisionType | STRING }
+revision_type VARCHAR2(3) NOT NULL CONSTRAINT cf_revision_type_chk CHECK(revision_type IN ('NEW','CAN','COR','REV')),   -- { revisionType | STRING }
 trade_id NUMBER(19) NOT NULL,                                              		    -- { tradeId | nullable = false }
 trade_version NUMBER(10) NOT NULL,                                                  -- { tradeVersion | nullable = false}
 trade_leg_id NUMBER(19) NOT NULL,                                              		-- { tradeLegId | nullable = false }

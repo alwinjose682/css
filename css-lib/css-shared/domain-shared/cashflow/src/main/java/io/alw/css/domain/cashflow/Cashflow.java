@@ -19,7 +19,7 @@ public record Cashflow(
         // CSS Cashflow Version Data
         long cashflowId,
         int cashflowVersion,
-        boolean latest, // the field 'latest' is intended to be used only by CSS Services that synchronizes Cashflow processing by acquiring a lock
+        boolean latest, // the field 'latest' is intended to be used only by CSS Services
         RevisionType revisionType,
 
         // Trade Id and Version
@@ -47,6 +47,7 @@ public record Cashflow(
         boolean internal, // interBook, interBranch and interCompany are categorized as internal. Payment should not be generated for interBook CF
         String nostroId,
         String ssiId, // The counterparty's SSI. If an interBook trade and hence no real ssiId, then the dummy ssiId for interBook will be used
+        @NotNull CashflowConfirmationStatus confirmationStatus,
         @NotNull PaymentSuppressionCategory paymentSuppressionCategory,
 
         // Cashflow Entry Audit

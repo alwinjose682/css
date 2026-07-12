@@ -299,4 +299,12 @@ public class CashflowEntity {
     public void setInputDateTime(LocalDateTime inputDateTime) {
         this.inputDateTime = inputDateTime;
     }
+
+    public CashflowConfirmationStatus getConfirmationStatus() {
+        return confirmationStatus;
+    }
+
+    public void setConfirmationStatus(CashflowConfirmationStatus confirmationStatus) {
+        this.confirmationStatus = confirmationStatus;
+    }
 }
