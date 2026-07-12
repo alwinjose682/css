@@ -121,8 +121,10 @@ public class ConfirmationMatchRequestFactory {
 
     private static ConfirmationMatchStatusEntity createConfirmationMatchStatusJpaEntity(Cashflow cashflow) {
         var ent = new ConfirmationMatchStatusEntity();
-        ent.setCashflowId(cashflow.cashflowId());
-        ent.setCashflowVersion(cashflow.cashflowVersion());
+        ent.setTradeId(cashflow.tradeId());
+        ent.setTradeVersion(cashflow.tradeVersion());
+        ent.setTradeLegId(cashflow.tradeLegId());
+        ent.setTradeLegVersion(cashflow.tradeLegVersion());
         ent.setMatchEventId(null);
         ent.setMatchEventVersion(null);
         ent.setNostroId(cashflow.nostroId());

@@ -1,7 +1,9 @@
 CREATE TABLE confirmation_match_status(
 id NUMBER(19) NOT NULL,                                                                         -- { @Id | id | nullable = false }
-cashflow_id NUMBER(19) NOT NULL,           							  				            -- { cashflowId | nullable = false }
-cashflow_version NUMBER(10) NOT NULL,              							  		            -- { cashflowVersion | nullable = false }
+trade_id NUMBER(19) NOT NULL,                                                                   -- { tradeId | nullable = false }
+trade_version NUMBER(10) NOT NULL,                                                              -- { tradeVersion | nullable = false }
+trade_leg_id NUMBER(19) NOT NULL,                                                               -- { tradeLegId | nullable = false }
+trade_leg_version NUMBER(10) NOT NULL,                                                          -- { tradeLegVersion | nullable = false }
 match_event_id NUMBER(19),                                                                      -- { matchEventId | nullable = false }
 match_event_version NUMBER(10),                                                                 -- { matchEventVersion | nullable = false }
 nostro_id VARCHAR2(5) NOT NULL,                                                                 -- { nostroId }
@@ -13,7 +15,6 @@ input_date_time TIMESTAMP(3) NOT NULL,                                          
 );
 
 alter table confirmation_match_status add constraint conf_m_stat_pk PRIMARY KEY(id);
-alter table confirmation_match_status add constraint conf_m_stat_fk FOREIGN KEY(cashflow_id, cashflow_version) references cashflow(cashflow_id, cashflow_version);
-create INDEX conf_m_stat_idx_1 on confirmation_match_status(cashflow_id, cashflow_version);
--- cashflow_id, cashflow_version will NOT be UNIQUE for this table
--- The confirmations could be matched on a different nostroId  or ssiId than the one selected by CSS trade-consumer
+create INDEX conf_m_stat_idx on confirmation_match_status(trade_id, trade_version, trade_leg_id, trade_leg_version);
+-- NOTE_1: trade_id, trade_version, trade_leg_id, trade_leg_version will NOT be UNIQUE for this table
+-- NOTE_2: The confirmations could be matched on a different nostroId  or ssiId than the one selected by CSS trade-consumer

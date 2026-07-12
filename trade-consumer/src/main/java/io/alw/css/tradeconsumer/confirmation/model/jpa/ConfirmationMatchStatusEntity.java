@@ -17,11 +17,17 @@ public class ConfirmationMatchStatusEntity {
     @SequenceGenerator(sequenceName = "conf_match_status_seq", allocationSize = 50, name = "confMatchStatusSeq")
     Long id;
 
-    @Column(name = "CASHFLOW_ID", nullable = false)
-    Long cashflowId;
+    @Column(name = "TRADE_ID", nullable = false)
+    Long tradeId;
 
-    @Column(name = "CASHFLOW_VERSION", nullable = false)
-    Integer cashflowVersion;
+    @Column(name = "TRADE_VERSION", nullable = false)
+    Integer tradeVersion;
+
+    @Column(name = "TRADE_LEG_ID", nullable = false)
+    Long tradeLegId;
+
+    @Column(name = "TRADE_LEG_VERSION", nullable = false)
+    Integer tradeLegVersion;
 
     @Column(name = "MATCH_EVENT_ID")
     Long matchEventId;
@@ -67,13 +73,15 @@ public class ConfirmationMatchStatusEntity {
     public String toString() {
         return "ConfirmationMatchStatusEntity{" +
                 "id=" + id +
-                ", cashflowId=" + cashflowId +
-                ", cashflowVersion=" + cashflowVersion +
+                ", tradeId=" + tradeId +
+                ", tradeVersion=" + tradeVersion +
+                ", tradeLegId=" + tradeLegId +
+                ", tradeLegVersion=" + tradeLegVersion +
                 ", matchEventId=" + matchEventId +
                 ", matchEventVersion=" + matchEventVersion +
                 ", nostroId='" + nostroId + '\'' +
                 ", ssiId='" + ssiId + '\'' +
-                ", sentOrRecd='" + sentOrRecd + '\'' +
+                ", sentOrRecd=" + sentOrRecd +
                 ", matchStatus=" + matchStatus +
                 ", matchDate=" + matchDate +
                 ", inputDateTime=" + inputDateTime +
@@ -88,20 +96,36 @@ public class ConfirmationMatchStatusEntity {
         this.id = id;
     }
 
-    public Long getCashflowId() {
-        return cashflowId;
+    public Long getTradeId() {
+        return tradeId;
     }
 
-    public void setCashflowId(Long cashflowId) {
-        this.cashflowId = cashflowId;
+    public void setTradeId(Long tradeId) {
+        this.tradeId = tradeId;
     }
 
-    public Integer getCashflowVersion() {
-        return cashflowVersion;
+    public Integer getTradeVersion() {
+        return tradeVersion;
     }
 
-    public void setCashflowVersion(Integer cashflowVersion) {
-        this.cashflowVersion = cashflowVersion;
+    public void setTradeVersion(Integer tradeVersion) {
+        this.tradeVersion = tradeVersion;
+    }
+
+    public Long getTradeLegId() {
+        return tradeLegId;
+    }
+
+    public void setTradeLegId(Long tradeLegId) {
+        this.tradeLegId = tradeLegId;
+    }
+
+    public Integer getTradeLegVersion() {
+        return tradeLegVersion;
+    }
+
+    public void setTradeLegVersion(Integer tradeLegVersion) {
+        this.tradeLegVersion = tradeLegVersion;
     }
 
     public Long getMatchEventId() {
