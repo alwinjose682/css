@@ -29,7 +29,8 @@ import static io.alw.css.tradeconsumer.model.constants.ExceptionSubCategoryType.
 public final class TradeMapper {
     private final static Logger log = LoggerFactory.getLogger(TradeMapper.class);
 
-    /// 1. Creates multiple [CashflowBuilder] for each [TradeLegAvro] and
+    /// 1. Creates multiple [CashflowBuilder] for each [TradeLegAvro]
+    /// 2. All cashflows are created with confirmationStatus as NOT_CONFIRMED
     /// 2. Determines [Cashflow#revisionType]
     /// 3. Maps below sections of [io.alw.css.domain.trade.Trade] to CSS [Cashflow]
     /// - Trade and Cashflow Data
@@ -94,7 +95,9 @@ public final class TradeMapper {
                 .entityCode(trdLeg.getEntityCode())
                 .counterpartyCode(trdLeg.getCounterpartyCode())
                 .amount(formatAmount(trdLeg))
-                .currCode(trdLeg.getCurrCode().toUpperCase());
+                .currCode(trdLeg.getCurrCode().toUpperCase())
+                //
+                .confirmationStatus(CashflowConfirmationStatus.NOT_CONFIRMED);
 
         // Set counterBookCode
         String counterBookCode = bdr.transactionType() == TransactionType.INTER_BOOK ? trdLeg.getCounterBookCode() : null;

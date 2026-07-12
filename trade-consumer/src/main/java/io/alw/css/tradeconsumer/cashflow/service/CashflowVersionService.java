@@ -5,10 +5,7 @@ import io.alw.css.dbshared.tx.TXRW;
 import io.alw.css.domain.cashflow.Cashflow;
 import io.alw.css.domain.cashflow.CashflowBuilder;
 import io.alw.css.domain.cashflow.CashflowConstants;
-import io.alw.css.domain.common.RevisionType;
-import io.alw.css.domain.common.TradeEventAction;
-import io.alw.css.domain.common.TradeEventType;
-import io.alw.css.domain.common.TradeType;
+import io.alw.css.domain.common.*;
 import io.alw.css.domain.exception.CategorizedRuntimeException;
 import io.alw.css.domain.exception.ExceptionSubCategory;
 import io.alw.css.domain.trade.TradeLeg;
@@ -117,11 +114,13 @@ public class CashflowVersionService {
         RevisionType revisionType = bdr.revisionType();
         return switch (revisionType) {
             case NEW -> throw CategorizedRuntimeException.TECHNICAL_UNRECOVERABLE("Incorrect RevisionType determination as NEW", new ExceptionSubCategory(INCORRECT_CF_REVISION_TYPE, null));
-            case COR -> createAmendCFAndOffsetForPrevCF(previousCashflow, bdr);
+            case COR -> createAmendmentAndOffsettingReversal(previousCashflow, bdr);
             case CAN -> {
-                Cashflow cancelCashflow = createCancelCF(previousCashflow, bdr);
+                Cashflow cancelCashflow = createCancellation(previousCashflow, bdr);
                 yield List.of(cancelCashflow);
             }
+            case REV ->
+                    throw CategorizedRuntimeException.TECHNICAL_UNRECOVERABLE("The cashflow fetched as the last processed cashflow for this tradeId-TradeLeg is a cashflow with RevisionType: REV", new ExceptionSubCategory(INCORRECT_PREV_CF_REVISION_TYPE, previousCashflow));
         };
     }
 
@@ -146,7 +145,7 @@ public class CashflowVersionService {
         return cashflow.revisionType() == RevisionType.CAN;
     }
 
-    private Cashflow createCancelCF(Cashflow previousCashflow, CashflowBuilder currentCashflowBdr) {
+    private Cashflow createCancellation(Cashflow previousCashflow, CashflowBuilder currentCashflowBdr) {
         if (previousCashflow.tradeId() != currentCashflowBdr.tradeId() || previousCashflow.tradeLegId() != currentCashflowBdr.tradeLegId()) {
             throw CategorizedRuntimeException.TECHNICAL_UNRECOVERABLE("TradeId and/or TradeLegId do not match for the previous cashflow and the current cashflow being processed", new ExceptionSubCategory(TRADE_ID_LEG_ID_MISMATCH, null));
         }
@@ -166,36 +165,29 @@ public class CashflowVersionService {
         return cashflow;
     }
 
-    private List<Cashflow> createAmendCFAndOffsetForPrevCF(Cashflow previousCashflow, CashflowBuilder cashflowBuilder) {
-        Cashflow offsetCashflow = createOffsetCashflow(previousCashflow, cashflowBuilder);
+    private List<Cashflow> createAmendmentAndOffsettingReversal(Cashflow previousCashflow, CashflowBuilder cashflowBuilder) {
+        Cashflow offsetCashflow = createOffsettingReversalCashflow(previousCashflow, cashflowBuilder);
         Cashflow amendCashflow = createAmendCashflow(previousCashflow, cashflowBuilder, offsetCashflow);
         log.debug("Created amendment cashflow and corresponding offset. CashflowID-Ver: {}-{}", amendCashflow.cashflowId(), amendCashflow.cashflowVersion());
         return List.of(offsetCashflow, amendCashflow);
     }
 
-    ///  Creates current cashflow with:
-    /// - `cashflowId` = `prevCashflow`.cashflowId
-    /// - `cashflowVersion` = `offsetCashflow`.cashflowVersion + 1
-    /// - latest = true
+    /// Creates amended cashflow with confirmationStatus as NOT_CONFIRMED
     private Cashflow createAmendCashflow(Cashflow previousCashflow, CashflowBuilder cashflowBuilder, Cashflow offsetCashflow) {
         return cashflowBuilder
                 .cashflowId(previousCashflow.cashflowId())
                 .cashflowVersion(offsetCashflow.cashflowVersion() + 1)
+                .confirmationStatus(CashflowConfirmationStatus.NOT_CONFIRMED)
                 .latest(true)
                 .build();
     }
 
-    /// Creates a CAN cashflow to offset the last processed cashflow.
-    /// Offsetting cashflow has all fields of `prevCashflow` as is except modified values for below fields:
-    /// - revisionType = CAN
-    /// - cashflowVersion = `previousCashflow`.cashflowVersion() + 1
-    /// - amount = -1 * `prevCashflow`.amount (CF does not have bsn direction)
-    /// - latest = false
-    /// - inputDateTime = `currCashflowBuilder`.inputDateTime
-    private Cashflow createOffsetCashflow(Cashflow previousCashflow, CashflowBuilder currCashflowBuilder) {
+    /// Creates a reversal cashflow to offset the last processed cashflow.
+    /// confirmationStatus will remain same as that of the cashflow being reversed
+    private Cashflow createOffsettingReversalCashflow(Cashflow previousCashflow, CashflowBuilder currCashflowBuilder) {
         BigDecimal prevCashflowAmount = previousCashflow.amount();
         return CashflowBuilder.builder(previousCashflow)
-                .revisionType(RevisionType.CAN)
+                .revisionType(RevisionType.REV)
                 .cashflowVersion(previousCashflow.cashflowVersion() + 1)
                 .amount(prevCashflowAmount.negate())
                 .latest(false)
