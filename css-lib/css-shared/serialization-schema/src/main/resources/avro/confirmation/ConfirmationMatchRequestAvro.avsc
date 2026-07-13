@@ -4,6 +4,14 @@
   "namespace": "io.alw.css.serialization.confirmation",
   "fields": [
     {
+      "name": "requestId",
+      "type": "long"
+    },
+    {
+      "name": "contraPairId",
+      "type": "long"
+    },
+    {
       "name": "tradeId",
       "type": "long"
     },

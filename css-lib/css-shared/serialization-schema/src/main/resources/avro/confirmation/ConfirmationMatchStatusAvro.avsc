@@ -15,7 +15,7 @@
       "name": "matchDate",
       "type": {
         "type": "int",
-        "logicalType":"date"
+        "logicalType": "date"
       }
     },
     {
@@ -40,6 +40,10 @@
     {
       "name": "tradeVersion",
       "type": "int"
+    },
+    {
+      "name": "matchRequestId",
+      "type": "long"
     }
   ]
 }

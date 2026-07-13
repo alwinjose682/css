@@ -13,6 +13,7 @@ public record ConfirmationMatchStatus(
         int eventVersion,
         long tradeId,
         int tradeVersion,
+        long matchRequestId,
         Set<TradeLegMatchAttribute> tradeLegMatchAttributes,
         TradeType tradeType,
         MatchStatus matchStatus,

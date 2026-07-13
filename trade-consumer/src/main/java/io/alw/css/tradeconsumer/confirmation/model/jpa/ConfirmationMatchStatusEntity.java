@@ -13,9 +13,10 @@ import java.util.Objects;
 public class ConfirmationMatchStatusEntity {
     @Id
     @Column(name = "ID", nullable = false)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "confMatchStatusSeq")
-    @SequenceGenerator(sequenceName = "conf_match_status_seq", allocationSize = 50, name = "confMatchStatusSeq")
     Long id;
+
+    @Column(name = "CONTRA_PAIR_ID")
+    Long contraPairId;
 
     @Column(name = "TRADE_ID", nullable = false)
     Long tradeId;

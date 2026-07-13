@@ -1,5 +1,6 @@
 CREATE TABLE confirmation_match_status(
 id NUMBER(19) NOT NULL,                                                                         -- { @Id | id | nullable = false }
+contra_pair_id NUMBER(19),
 trade_id NUMBER(19) NOT NULL,                                                                   -- { tradeId | nullable = false }
 trade_version NUMBER(10) NOT NULL,                                                              -- { tradeVersion | nullable = false }
 trade_leg_id NUMBER(19) NOT NULL,                                                               -- { tradeLegId | nullable = false }

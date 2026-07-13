@@ -48,6 +48,7 @@ public record Cashflow(
         String nostroId,
         String ssiId, // The counterparty's SSI. If an interBook trade and hence no real ssiId, then the dummy ssiId for interBook will be used
         @NotNull CashflowConfirmationStatus confirmationStatus,
+        @NotNull long confMatchId,
         @NotNull PaymentSuppressionCategory paymentSuppressionCategory,
 
         // Cashflow Entry Audit
