@@ -9,7 +9,7 @@
     },
     {
       "name": "contraPairId",
-      "type": "long"
+      "type": ["null","long"]
     },
     {
       "name": "tradeId",

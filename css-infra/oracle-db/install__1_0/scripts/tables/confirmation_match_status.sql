@@ -1,6 +1,7 @@
 CREATE TABLE confirmation_match_status(
 id NUMBER(19) NOT NULL,                                                                         -- { @Id | id | nullable = false }
-contra_pair_id NUMBER(19),
+conf_request_id NUMBER(19) NOT NULL,
+contra_pair_req_id NUMBER(19),
 trade_id NUMBER(19) NOT NULL,                                                                   -- { tradeId | nullable = false }
 trade_version NUMBER(10) NOT NULL,                                                              -- { tradeVersion | nullable = false }
 trade_leg_id NUMBER(19) NOT NULL,                                                               -- { tradeLegId | nullable = false }
@@ -16,6 +17,7 @@ input_date_time TIMESTAMP(3) NOT NULL,                                          
 );
 
 alter table confirmation_match_status add constraint conf_m_stat_pk PRIMARY KEY(id);
-create INDEX conf_m_stat_idx on confirmation_match_status(trade_id, trade_version, trade_leg_id, trade_leg_version);
+create INDEX conf_m_stat_idx1 on confirmation_match_status(trade_id, trade_version, trade_leg_id, trade_leg_version);
+create INDEX conf_m_stat_idx2 on confirmation_match_status(request_id);
 -- NOTE_1: trade_id, trade_version, trade_leg_id, trade_leg_version will NOT be UNIQUE for this table
 -- NOTE_2: The confirmations could be matched on a different nostroId  or ssiId than the one selected by CSS trade-consumer

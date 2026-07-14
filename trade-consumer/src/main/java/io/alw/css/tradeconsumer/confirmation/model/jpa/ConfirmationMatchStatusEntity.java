@@ -13,10 +13,15 @@ import java.util.Objects;
 public class ConfirmationMatchStatusEntity {
     @Id
     @Column(name = "ID", nullable = false)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "confMatchStatusSeq")
+    @SequenceGenerator(sequenceName = "conf_match_status_seq", allocationSize = 50, name = "confMatchStatusSeq")
     Long id;
 
-    @Column(name = "CONTRA_PAIR_ID")
-    Long contraPairId;
+    @Column(name = "CONF_REQUEST_ID", nullable = false)
+    Long confRequestId;
+
+    @Column(name = "CONTRA_PAIR_REQ_ID")
+    Long contraPairReqId;
 
     @Column(name = "TRADE_ID", nullable = false)
     Long tradeId;
@@ -172,5 +177,21 @@ public class ConfirmationMatchStatusEntity {
 
     public void setInputDateTime(LocalDateTime inputDateTime) {
         this.inputDateTime = inputDateTime;
+    }
+
+    public Long getConfRequestId() {
+        return confRequestId;
+    }
+
+    public void setConfRequestId(Long confRequestId) {
+        this.confRequestId = confRequestId;
+    }
+
+    public Long getContraPairReqId() {
+        return contraPairReqId;
+    }
+
+    public void setContraPairReqId(Long contraPairReqId) {
+        this.contraPairReqId = contraPairReqId;
     }
 }

@@ -85,8 +85,8 @@ public class CashflowEntity {
     @Enumerated(EnumType.STRING)
     CashflowConfirmationStatus confirmationStatus;
 
-    @Column(name = "CONF_MATCH_ID", nullable = false)
-    Long confMatchId;
+    @Column(name = "CONF_REQ_ID")
+    Long confReqId;
 
     @Column(name = "PAYMENT_SUPPRESSION_CATEGORY")
     @Enumerated(EnumType.STRING)
@@ -311,11 +311,11 @@ public class CashflowEntity {
         this.confirmationStatus = confirmationStatus;
     }
 
-    public Long getConfMatchId() {
-        return confMatchId;
+    public Long getConfReqId() {
+        return confReqId;
     }
 
-    public void setConfMatchId(Long confMatchId) {
-        this.confMatchId = confMatchId;
+    public void setConfReqId(Long confReqId) {
+        this.confReqId = confReqId;
     }
 }
