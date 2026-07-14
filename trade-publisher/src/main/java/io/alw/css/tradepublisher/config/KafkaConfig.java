@@ -1,5 +1,6 @@
 package io.alw.css.tradepublisher.config;
 
+import io.alw.css.serialization.confirmation.ConfirmationMatchEventAvro;
 import io.alw.css.serialization.confirmation.ConfirmationMatchRequestAvro;
 import io.alw.css.serialization.trade.TradeAvro;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
@@ -34,10 +35,10 @@ public class KafkaConfig {
         return new KafkaTemplate<>(producerFactory);
     }
 
-    @Bean("kafkaTemplateConfMatchStatusEvent")
-    public KafkaTemplate<String, ConfirmationMatchStatusAvro> kafkaTemplateConfMatchStatusEvent(KafkaProperties kafkaProperties) {
+    @Bean("kafkaTemplateConfMatchEvent")
+    public KafkaTemplate<String, ConfirmationMatchEventAvro> kafkaTemplateConfMatchEvent(KafkaProperties kafkaProperties) {
         var producerPropMap = kafkaProperties.buildProducerProperties(null);
-        var producerFactory = new DefaultKafkaProducerFactory<String, ConfirmationMatchStatusAvro>(producerPropMap);
+        var producerFactory = new DefaultKafkaProducerFactory<String, ConfirmationMatchEventAvro>(producerPropMap);
         return new KafkaTemplate<>(producerFactory);
     }
 }

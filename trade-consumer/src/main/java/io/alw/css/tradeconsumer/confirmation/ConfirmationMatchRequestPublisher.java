@@ -23,16 +23,16 @@ public final class ConfirmationMatchRequestPublisher {
     public void publish(ConfirmationMatchRequestAvro avro) {
         String outputTopic = kafkaTopicProperties.tradeMatchRequestTopic();
         String key = String.valueOf(avro.getTradeId());
-        log.trace("Sending ConfirmationMatchRequest message: {} to topic: {}", key, outputTopic);
+        log.trace("Sending ConfirmationMatchRequest event: {} to topic: {}", key, outputTopic);
 
         kafkaTemplateConfMatchRequest
                 .send(outputTopic, key, avro)
                 .whenCompleteAsync((result, e) -> {
                     if (e == null) {
                         RecordMetadata recordMetadata = result.getRecordMetadata();
-                        log.info("Published ConfirmationMatchRequest message[{}] to topic: {}, partition: {}, offset: {}", key, outputTopic, recordMetadata.partition(), recordMetadata.offset());
+                        log.info("Published ConfirmationMatchRequest event[{}] to topic: {}, partition: {}, offset: {}", key, outputTopic, recordMetadata.partition(), recordMetadata.offset());
                     } else {
-                        log.error("An error occurred when publishing ConfirmationMatchRequest message[{}] to kafka topic: {}. Message: {}", key, outputTopic, avro);
+                        log.error("An error occurred when publishing ConfirmationMatchRequest event[{}] to kafka topic: {}. Event: {}", key, outputTopic, avro);
                     }
                 }, cssTaskExecutor.executor());
     }

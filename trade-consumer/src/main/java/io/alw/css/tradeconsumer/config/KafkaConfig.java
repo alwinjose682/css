@@ -1,7 +1,7 @@
 package io.alw.css.tradeconsumer.config;
 
+import io.alw.css.serialization.confirmation.ConfirmationMatchEventAvro;
 import io.alw.css.serialization.confirmation.ConfirmationMatchRequestAvro;
-import io.alw.css.serialization.confirmation.ConfirmationMatchStatusAvro;
 import io.alw.css.serialization.trade.TradeAvro;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
@@ -28,12 +28,12 @@ public class KafkaConfig {
         return listenerContainerFactory;
     }
 
-    @Bean("confMatchStatusListenerContainerFactory")
-    public ConcurrentKafkaListenerContainerFactory<String, ConfirmationMatchStatusAvro> confMatchStatusListenerContainerFactory(KafkaProperties kafkaProperties){
+    @Bean("confMatchEventListenerContainerFactory")
+    public ConcurrentKafkaListenerContainerFactory<String, ConfirmationMatchEventAvro> confMatchEventListenerContainerFactory(KafkaProperties kafkaProperties){
         Map<String, Object> properties = kafkaProperties.buildProducerProperties(null);
-        DefaultKafkaConsumerFactory<String, ConfirmationMatchStatusAvro> consumerFactory = new DefaultKafkaConsumerFactory<>(properties);
+        DefaultKafkaConsumerFactory<String, ConfirmationMatchEventAvro> consumerFactory = new DefaultKafkaConsumerFactory<>(properties);
 
-        ConcurrentKafkaListenerContainerFactory<String, ConfirmationMatchStatusAvro> listenerContainerFactory = new ConcurrentKafkaListenerContainerFactory<>();
+        ConcurrentKafkaListenerContainerFactory<String, ConfirmationMatchEventAvro> listenerContainerFactory = new ConcurrentKafkaListenerContainerFactory<>();
         listenerContainerFactory.setConsumerFactory(consumerFactory);
         return listenerContainerFactory;
     }

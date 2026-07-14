@@ -3,7 +3,7 @@ package io.alw.css.tradepublisher.properties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
-@ConfigurationProperties("confirmation.matchstatus.generator")
+@ConfigurationProperties("confirmation.matchevent.generator")
 public class ConfirmationMatchEventGeneratorProperties {
     private final long amendmentFrequencySeconds;
 
