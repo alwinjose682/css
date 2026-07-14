@@ -70,25 +70,6 @@ public class ConfirmationMatchStatusEntity {
         return Objects.hashCode(id);
     }
 
-    @Override
-    public String toString() {
-        return "ConfirmationMatchStatusEntity{" +
-                "id=" + id +
-                ", tradeId=" + tradeId +
-                ", tradeVersion=" + tradeVersion +
-                ", tradeLegId=" + tradeLegId +
-                ", tradeLegVersion=" + tradeLegVersion +
-                ", matchEventId=" + matchEventId +
-                ", matchEventVersion=" + matchEventVersion +
-                ", nostroId='" + nostroId + '\'' +
-                ", ssiId='" + ssiId + '\'' +
-                ", sentOrRecd=" + sentOrRecd +
-                ", matchStatus=" + matchStatus +
-                ", matchDate=" + matchDate +
-                ", inputDateTime=" + inputDateTime +
-                '}';
-    }
-
     public Long getId() {
         return id;
     }

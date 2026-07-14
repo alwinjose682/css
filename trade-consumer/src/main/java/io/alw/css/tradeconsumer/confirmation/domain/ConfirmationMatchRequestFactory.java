@@ -104,13 +104,13 @@ public class ConfirmationMatchRequestFactory {
                 var attribute = createTradeLegMatchttribute(cashflow);
                 tradeLegMatchAttributes.add(attribute);
 
-                // Create ConfirmationMatchStatusJpaEntity
+                // Create ConfirmationMatchEventJpaEntity
                 var matchStatusJpaEntity = createConfirmationMatchStatusJpaEntity(cashflow);
                 confMatchStatusJpaEntities.add(matchStatusJpaEntity);
             }
         }
 
-        // This check also prevents infinite loop
+        // This check prevents infinite loop also
         if (!requiredTradeLegTypes.isEmpty()) {
             var requiredLegTypes = getKeysAsDelimitedString(requiredTradeLegTypes);
             throw CategorizedRuntimeException.TECHNICAL_UNRECOVERABLE("All the required TradeLegTypes are not present for the trade in order to build ConfirmationMatchRequest. The required TradeLegTypes are: " + requiredLegTypes, new ExceptionSubCategory(INVALID_TRADE_LEG_TYPE, allCashflows));
