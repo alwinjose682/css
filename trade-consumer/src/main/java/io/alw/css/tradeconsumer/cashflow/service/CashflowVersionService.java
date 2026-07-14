@@ -11,11 +11,11 @@ import io.alw.css.domain.exception.ExceptionSubCategory;
 import io.alw.css.domain.trade.TradeLeg;
 import io.alw.css.tradeconsumer.cashflow.model.PreviousCashflowCheckOutcome;
 import io.alw.css.tradeconsumer.cashflow.repository.CashflowStore;
+import io.alw.css.tradeconsumer.model.CashflowSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 import static io.alw.css.tradeconsumer.model.constants.ExceptionSubCategoryType.*;
 
@@ -54,20 +54,20 @@ public class CashflowVersionService {
     ///
     /// @return CFProcessedCheckOutcome
 //    @Transactional(readOnly = true)
-    public PreviousCashflowCheckOutcome checkAgainstLastProcessedCashflow(long tradeId, int tradeVersion, long tradeLegId, int tradeLegVersion) {
-//        final Cashflow lastProcessedCashflow = cashflowStore.getLastProcessedCashflow(foCashflowID);
-        final Cashflow lastProcessedCashflow = txro.execute(_ -> cashflowStore.getLastProcessedCashflow(tradeId, tradeLegId));
+    public PreviousCashflowCheckOutcome checkAgainstPreviousVersionCashflow(long tradeId, int tradeVersion, long tradeLegId, int tradeLegVersion) {
+//        final Cashflow previousVersionCashflow = cashflowStore.getPreviousVersionCashflow(foCashflowID);
+        final Cashflow previousVersionCashflow = txro.execute(_ -> cashflowStore.getPreviousVersionCashflow(tradeId, tradeLegId));
 
-        if (lastProcessedCashflow == null) { /* if new cashflow */
+        if (previousVersionCashflow == null) {
             return PreviousCashflowCheckOutcome.INITIAL_VERSION;
-        } else { /* if not a new cashflow */
-            if (isCashflowAlreadyProcessed(tradeId, tradeVersion, tradeLegId, tradeLegVersion, lastProcessedCashflow)) {
+        } else {
+            if (isCashflowAlreadyProcessed(tradeId, tradeVersion, tradeLegId, tradeLegVersion, previousVersionCashflow)) {
                 return PreviousCashflowCheckOutcome.SAME_AS_PREVIOUS_CASHFLOW;
             } else {
-                if (isCashflowCancelled(lastProcessedCashflow)) {
+                if (isCashflowCancelled(previousVersionCashflow)) {
                     return new PreviousCashflowCheckOutcome.PrevCashflowIsCancelled();
                 }
-                return new PreviousCashflowCheckOutcome.SubsequentVersion(lastProcessedCashflow);
+                return new PreviousCashflowCheckOutcome.SubsequentVersion(previousVersionCashflow);
             }
         }
     }
@@ -81,7 +81,7 @@ public class CashflowVersionService {
     /// @implNote This method calls a dao method that does select on a DB sequence. Hence this method must be called in RW transaction
     // TODO: When transaction is readOnly for JpaTransactionManager, does spring cause libs to acquire a RO physical connection or just optimizes JPA dirty checking etc? AskVlad. But, Of course this depends on whether an eager physical connection fetch is made due to spring's settings
 //    @Transactional
-    public Cashflow createInitialVersionCashflow(CashflowBuilder bdr) {
+    public CashflowSet.InitialVersion createInitialVersionCashflow(CashflowBuilder bdr) {
         int tradeVersion = bdr.tradeVersion();
         int tradeLegVersion = bdr.tradeLegVersion();
         RevisionType revisionType = bdr.revisionType();
@@ -100,11 +100,11 @@ public class CashflowVersionService {
                 .latest(true)
                 .build();
 
-        return cashflow;
+        return new CashflowSet.InitialVersion(cashflow);
     }
 
     /// Creates COR+CAN cashflows or one CAN cashflow depending on [CashflowBuilder#revisionType]
-    public List<Cashflow> createSubsequentVersion(Cashflow previousCashflow, CashflowBuilder bdr) {
+    public CashflowSet createSubsequentVersion(Cashflow previousCashflow, CashflowBuilder bdr) {
         int tradeVersion = bdr.tradeVersion();
         int tradeLegVersion = bdr.tradeLegVersion();
         if (tradeVersion <= CashflowConstants.TRADE_FIRST_VERSION && tradeLegVersion <= CashflowConstants.TRADE_FIRST_VERSION) {
@@ -117,18 +117,18 @@ public class CashflowVersionService {
             case COR -> createAmendmentAndOffsettingReversal(previousCashflow, bdr);
             case CAN -> {
                 Cashflow cancelCashflow = createCancellation(previousCashflow, bdr);
-                yield List.of(cancelCashflow);
+                yield new CashflowSet.CancelledVersion(cancelCashflow, previousCashflow);
             }
             case REV ->
                     throw CategorizedRuntimeException.TECHNICAL_UNRECOVERABLE("The cashflow fetched as the last processed cashflow for this tradeId-TradeLeg is a cashflow with RevisionType: REV", new ExceptionSubCategory(INCORRECT_PREV_CF_REVISION_TYPE, previousCashflow));
         };
     }
 
-    private boolean isCashflowAlreadyProcessed(long tradeId, int tradeVersion, long tradeLegId, int tradeLegVersion, Cashflow lastProcessedCashflow) {
-        long lpcfTradeId = lastProcessedCashflow.tradeId();
-        int lpcfTradeVersion = lastProcessedCashflow.tradeVersion();
-        long lpcfTradeLegId = lastProcessedCashflow.tradeLegId();
-        int lpcfTradeLegVersion = lastProcessedCashflow.tradeLegVersion();
+    private boolean isCashflowAlreadyProcessed(long tradeId, int tradeVersion, long tradeLegId, int tradeLegVersion, Cashflow previousVersionCashflow) {
+        long lpcfTradeId = previousVersionCashflow.tradeId();
+        int lpcfTradeVersion = previousVersionCashflow.tradeVersion();
+        long lpcfTradeLegId = previousVersionCashflow.tradeLegId();
+        int lpcfTradeLegVersion = previousVersionCashflow.tradeLegVersion();
 
         if (lpcfTradeId == tradeId && tradeLegId == lpcfTradeLegId) {
             if (lpcfTradeVersion == tradeVersion && tradeLegVersion == lpcfTradeLegVersion) {
@@ -165,11 +165,11 @@ public class CashflowVersionService {
         return cashflow;
     }
 
-    private List<Cashflow> createAmendmentAndOffsettingReversal(Cashflow previousCashflow, CashflowBuilder cashflowBuilder) {
-        Cashflow offsetCashflow = createOffsettingReversalCashflow(previousCashflow, cashflowBuilder);
-        Cashflow amendCashflow = createAmendCashflow(previousCashflow, cashflowBuilder, offsetCashflow);
+    private CashflowSet.SubsequentVersion createAmendmentAndOffsettingReversal(Cashflow previousCashflow, CashflowBuilder cashflowBuilder) {
+        Cashflow revCashflow = createOffsettingReversalCashflow(previousCashflow, cashflowBuilder);
+        Cashflow amendCashflow = createAmendCashflow(previousCashflow, cashflowBuilder, revCashflow);
         log.debug("Created amendment cashflow and corresponding offset. CashflowID-Ver: {}-{}", amendCashflow.cashflowId(), amendCashflow.cashflowVersion());
-        return List.of(offsetCashflow, amendCashflow);
+        return new CashflowSet.SubsequentVersion(amendCashflow, previousCashflow, revCashflow);
     }
 
     /// Creates amended cashflow with confirmationStatus as NOT_CONFIRMED

@@ -13,7 +13,7 @@ public sealed interface PreviousCashflowCheckOutcome {
     record InitialVersion() implements PreviousCashflowCheckOutcome {
     }
 
-    record SubsequentVersion(Cashflow lastProcessedCashflow) implements PreviousCashflowCheckOutcome {
+    record SubsequentVersion(Cashflow previousVersionCashflow) implements PreviousCashflowCheckOutcome {
     }
 
     record PrevCashflowIsCancelled() implements PreviousCashflowCheckOutcome {

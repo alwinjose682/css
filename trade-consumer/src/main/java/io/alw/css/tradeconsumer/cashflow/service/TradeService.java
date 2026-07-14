@@ -16,6 +16,7 @@ import io.alw.css.tradeconsumer.cashflow.model.PreviousCashflowCheckOutcome;
 import io.alw.css.tradeconsumer.cashflow.model.jpa.RejectionEntity;
 import io.alw.css.tradeconsumer.cashflow.repository.CashflowStore;
 import io.alw.css.tradeconsumer.confirmation.service.TradeConfirmationService;
+import io.alw.css.tradeconsumer.model.CashflowSet;
 import io.alw.css.tradeconsumer.model.constants.ExceptionServiceName;
 import io.alw.css.tradeconsumer.model.constants.ExceptionSubCategoryType;
 import org.slf4j.Logger;
@@ -23,9 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -51,25 +50,47 @@ public class TradeService {
     public void process(TradeAvro tradeAvro, InputBy inputBy) {
         final String tradeType = tradeAvro.getTradeType();
         final Set<Cashflow> savedCashflows;
+        final var groupedCashflows = new ArrayList<List<CashflowSet>>();
 
         try {
             // Map TradeAvro to one or more Cashflows
-            var cashflowBuilders = TradeMapper.mapToDomain(tradeAvro, inputBy, inputBy.name());
+            var cashflowBuildersUnGrouped = TradeMapper.mapToDomain(tradeAvro, inputBy, inputBy.name());
             // Map TradeLinks
             var tradeLinkEntities = TradeMapper.mapTradeLinksToEntity(tradeAvro);
 
-            Set<Cashflow> newCashflows = new HashSet<>();
-            Set<Cashflow> lastProcessedCashflows = new HashSet<>();
-            for (CashflowBuilder bdr : cashflowBuilders) {
-                // Check for cases defined by `PreviousCashflowCheckOutcome`
-                PreviousCashflowCheckOutcome outcome = cashflowVersionService.checkAgainstLastProcessedCashflow(bdr.tradeId(), bdr.tradeVersion(), bdr.tradeLegId(), bdr.tradeLegVersion());
-                // Validate and Enrich cashflows with nostroId, ssiId etc
-                validateAndCreateCashflow(outcome, bdr, newCashflows, lastProcessedCashflows);
+            // Group the cashflow builders for confirmation match request
+            List<List<CashflowBuilder>> groupedCashflowBuilders = tradeConfirmationService.groupCashflowsForConfirmationMatchRequest(Collections.unmodifiableList(cashflowBuildersUnGrouped), cashflowBuildersUnGrouped.getFirst().tradeType());
+
+            var newCashflows = new HashSet<Cashflow>();
+            var previousVersionCashflows = new HashSet<Cashflow>();
+            for (List<CashflowBuilder> cashflowBuilders : groupedCashflowBuilders) {
+                final var cashflowGroup = new ArrayList<CashflowSet>();
+
+                // For each group of cashflowBuilders create a confirmation match request id
+                // Note: confMatchReqId is generated eagerly(via DB sequence) prior to cashflow validation and enrichment which could reject the cashflow
+                //       It is acceptable to lose confMatchReqId
+                final long confMatchReqId = applyConfirmationEligibilityFunc();
+
+                // Validate, Enrich and Build cashflows
+                for (CashflowBuilder bdr : cashflowBuilders) {
+                    // Set confMatchReqId for each cashflowBuilder
+                    bdr.confReqId(confMatchReqId);
+                    // Check for cases defined by `PreviousCashflowCheckOutcome`
+                    PreviousCashflowCheckOutcome outcome = cashflowVersionService.checkAgainstPreviousVersionCashflow(bdr.tradeId(), bdr.tradeVersion(), bdr.tradeLegId(), bdr.tradeLegVersion());
+                    // Validate and Enrich cashflow with nostroId, ssiId etc
+                    CashflowSet cashflowSet = validateAndEnrichCashflow(outcome, bdr, newCashflows, previousVersionCashflows);
+                    if (cashflowSet == null) {
+                        log.warn("Result after validation and enrichment of the new cashflow to be processed is null. This will result in confirmation request failure or missing confirmation. TradeId-Ver: {}-{}, TradeLegId-Ver: {}-{}", bdr.tradeId(), bdr.tradeVersion(), bdr.tradeLegId(), bdr.tradeLegVersion());
+                    }
+                    cashflowGroup.add(cashflowSet);
+                }
+
+                groupedCashflows.add(cashflowGroup);
             }
 
             // Persist the cashflows and tradeLinks to database in a single transaction
             Supplier<Set<Cashflow>> persistAction = () -> {
-                var savedCfs = cashflowStore.saveCashflows(newCashflows, lastProcessedCashflows);
+                var savedCfs = cashflowStore.saveCashflows(newCashflows, previousVersionCashflows);
                 if (tradeLinkEntities != null) {
                     cashflowStore.saveTradeLinks(tradeLinkEntities);
                 }
@@ -91,24 +112,36 @@ public class TradeService {
         }
 
         // Sent trade for matching
-        tradeConfirmationService.sendForMatching(savedCashflows);
+        tradeConfirmationService.sendForMatching(Collections.unmodifiableList(groupedCashflows));
     }
 
-    private void validateAndCreateCashflow(PreviousCashflowCheckOutcome outcome, CashflowBuilder bdr, Set<Cashflow> newCashflows, Set<Cashflow> lastProcessedCashflows) {
-        switch (outcome) {
+    private CashflowSet validateAndEnrichCashflow(PreviousCashflowCheckOutcome outcome, CashflowBuilder bdr, Set<Cashflow> newCashflows, Set<Cashflow> previousVersionCashflows) {
+        return switch (outcome) {
             case InitialVersion _ -> {
                 cashflowEnrichmentService.validateAndEnrich(bdr);
-                var cf = cashflowVersionService.createInitialVersionCashflow(bdr);
-                newCashflows.add(cf);
+
+                CashflowSet.InitialVersion initialVersionCashflow = cashflowVersionService.createInitialVersionCashflow(bdr);
+                newCashflows.add(initialVersionCashflow.cashflow());
+
+                yield initialVersionCashflow;
             }
-            case SubsequentVersion(var lastProcessedCashflow) -> {
+            case SubsequentVersion(var previousVersionCashflow) -> {
                 cashflowEnrichmentService.validateAndEnrich(bdr);
-                List<Cashflow> cashflows = cashflowVersionService.createSubsequentVersion(lastProcessedCashflow, bdr);
-                newCashflows.addAll(cashflows);
-                lastProcessedCashflows.add(lastProcessedCashflow);
+
+                CashflowSet cashflowSet = cashflowVersionService.createSubsequentVersion(previousVersionCashflow, bdr);
+                if (cashflowSet instanceof CashflowSet.SubsequentVersion subSeqSet) {
+                    newCashflows.add(subSeqSet.revCashflow());
+                    newCashflows.add(subSeqSet.amendCashflow());
+                } else if (cashflowSet instanceof CashflowSet.CancelledVersion canSet) {
+                    newCashflows.add(canSet.canCashflow());
+                }
+                previousVersionCashflows.add(previousVersionCashflow);
+
+                yield cashflowSet;
             }
             case SameAsPrevCashflow _ -> {
                 log.info("Received duplicate cashflow");
+                yield null;
             }
             case PrevCashflowIsCancelled _ -> {
                 ExceptionType exceptionType = ExceptionType.BUSINESS;
@@ -132,8 +165,16 @@ public class TradeService {
                         .createdDateTime(createdDateTime)
                         .inputBy(inputBy)
                         .build());
+
+                yield null;
             }
-        }
+        };
+    }
+
+    /// Ideally this method should check for confirmation eligibility and if eligible assign confirmation request id
+    /// As of now, all cashflows are considered to be eligible and hence assigned a confirmation request id without any validations
+    private long applyConfirmationEligibilityFunc() {
+        return cashflowStore.getNewConfMatchReqId();
     }
 
     private void rejectCashflow(CashflowRejectionRecord rec) {

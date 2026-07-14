@@ -39,9 +39,14 @@ import javax.sql.DataSource;
 public class AppConfig {
 
     @Bean("cashflowIdSeqIncrementer")
-    public DataFieldMaxValueIncrementer cashflowIdSeqIncrementer(DataSource dataSource){
+    public DataFieldMaxValueIncrementer cashflowIdSeqIncrementer(DataSource dataSource) {
         return new OracleSequenceMaxValueIncrementer(dataSource, "cashflow_seq");
         // NOTE: Spring does not cache result produced by a sequence. But it does for ids generated via other means like table
+    }
+
+    @Bean("confMatchReqIdGenerator")
+    public DataFieldMaxValueIncrementer confMatchReqIdGenerator(DataSource dataSource) {
+        return new OracleSequenceMaxValueIncrementer(dataSource, "conf_match_req_id_seq");
     }
 
     @Bean
@@ -90,8 +95,8 @@ public class AppConfig {
     }
 
     @Bean
-    public CashflowStore cashflowStore(CashflowRepository cashflowRepository, RejectionRepository rejectionRepository, TradeLinkRepository tradeLinkRepository, DataFieldMaxValueIncrementer cashflowIdSeqIncrementer) {
-        return new CashflowStore(cashflowRepository, rejectionRepository, tradeLinkRepository, cashflowIdSeqIncrementer);
+    public CashflowStore cashflowStore(CashflowRepository cashflowRepository, RejectionRepository rejectionRepository, TradeLinkRepository tradeLinkRepository, DataFieldMaxValueIncrementer cashflowIdSeqIncrementer, DataFieldMaxValueIncrementer confMatchReqIdGenerator) {
+        return new CashflowStore(cashflowRepository, rejectionRepository, tradeLinkRepository, cashflowIdSeqIncrementer, confMatchReqIdGenerator);
     }
 
     @Bean

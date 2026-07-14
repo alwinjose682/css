@@ -27,12 +27,14 @@ public final class CashflowStore {
     private final RejectionRepository rejectionRepository;
     private final TradeLinkRepository tradeLinkRepository;
     private final DataFieldMaxValueIncrementer cashflowIdSeqIncrementer;
+    private final DataFieldMaxValueIncrementer confMatchReqIdGenerator;
 
-    public CashflowStore(CashflowRepository cashflowRepository, RejectionRepository rejectionRepository, TradeLinkRepository tradeLinkRepository, DataFieldMaxValueIncrementer cashflowIdSeqIncrementer) {
+    public CashflowStore(CashflowRepository cashflowRepository, RejectionRepository rejectionRepository, TradeLinkRepository tradeLinkRepository, DataFieldMaxValueIncrementer cashflowIdSeqIncrementer, DataFieldMaxValueIncrementer confMatchReqIdGenerator) {
         this.cashflowRepository = cashflowRepository;
         this.rejectionRepository = rejectionRepository;
         this.tradeLinkRepository = tradeLinkRepository;
         this.cashflowIdSeqIncrementer = cashflowIdSeqIncrementer;
+        this.confMatchReqIdGenerator = confMatchReqIdGenerator;
     }
 
     /// ** SUBTLE ISSUE when using Hibernate's EntityManager **:
@@ -56,9 +58,13 @@ public final class CashflowStore {
         return cashflowIdSeqIncrementer.nextLongValue();
     }
 
+    public long getNewConfMatchReqId() {
+        return confMatchReqIdGenerator.nextLongValue();
+    }
+
     /// This method returns null if no result. Does not use Optional
-    public Cashflow getLastProcessedCashflow(long tradeId, long tradeLegId) {
-        CashflowEntity lpcf = cashflowRepository.findLastProcessedCashflow(tradeId, tradeLegId);
+    public Cashflow getPreviousVersionCashflow(long tradeId, long tradeLegId) {
+        CashflowEntity lpcf = cashflowRepository.findPreviousVersionCashflow(tradeId, tradeLegId);
         if (lpcf != null) {
             return CashflowMapper.instance().mapToDomain_excludingAssociations(lpcf);
         } else {
@@ -74,12 +80,12 @@ public final class CashflowStore {
     /// 1. Update each last processed cashflow's 'latest' field to 'N' TODO: change this to a DB procedure to avoid multiple DB round trips
     /// 2. If exactly ONE row is updated in step 1, continues to step 3. If zero or more than 1 rows are updated, throws a [io.alw.css.domain.exception.CategorizedRuntimeException]
     /// 3. inserts the offset cashflow(CAN) and correction cashflow(COR) to DB. (Correction cashflow is created with latest='Y')
-    public Set<Cashflow> saveCashflows(Set<Cashflow> newCashflows, Set<Cashflow> lastProcessedCashflows) {
+    public Set<Cashflow> saveCashflows(Set<Cashflow> newCashflows, Set<Cashflow> previousVersionCashflows) {
         // Step 1: Update last processed cashflow's 'latest' field to 'N'
-        for (Cashflow lpcf : lastProcessedCashflows) {
+        for (Cashflow lpcf : previousVersionCashflows) {
             long lpcfId = lpcf.cashflowId();
             int lpcfVer = lpcf.cashflowVersion();
-            int numOfRowsUpdated = cashflowRepository.updateLastProcessedCashflowToNonLatest(lpcfId, lpcfVer);
+            int numOfRowsUpdated = cashflowRepository.updatePreviousVersionCashflowToNonLatest(lpcfId, lpcfVer);
 
             if (numOfRowsUpdated == 1) {
                 continue;

@@ -17,7 +17,7 @@ public interface CashflowRepository extends JpaRepository<CashflowEntity, Cashfl
             where cf.tradeId=:tradeId and cf.tradeLegId=:tradeLegId
             and cf.tradeLegVersion in (select max(cf1.tradeLegVersion) from CashflowEntity cf1 where cf1.tradeId=cf.tradeId and cf1.tradeLegId=cf.tradeLegId)
             """)
-    CashflowEntity findLastProcessedCashflow(long tradeId, long tradeLegId);
+    CashflowEntity findPreviousVersionCashflow(long tradeId, long tradeLegId);
 
     @Modifying
     @Query(value = """
@@ -25,7 +25,7 @@ public interface CashflowRepository extends JpaRepository<CashflowEntity, Cashfl
             set cf.latest = 'N'
             where cf.cashflowEntityPK.cashflowId = :cashflowId and cf.cashflowEntityPK.cashflowVersion = :cashflowVersion and cf.latest = 'Y'
             """)
-    int updateLastProcessedCashflowToNonLatest(@Param("cashflowId") long cashflowId, @Param("cashflowVersion") int cashflowVersion);
+    int updatePreviousVersionCashflowToNonLatest(@Param("cashflowId") long cashflowId, @Param("cashflowVersion") int cashflowVersion);
 
     //TODO: Correct the query, but the confirmation related tables are not created yet
     @@Query(value = """
