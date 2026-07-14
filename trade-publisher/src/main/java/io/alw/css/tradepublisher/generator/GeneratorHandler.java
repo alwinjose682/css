@@ -1,14 +1,14 @@
 package io.alw.css.tradepublisher.generator;
 
-import io.alw.css.confirmation.ConfirmationMatchStatus;
+import io.alw.css.confirmation.ConfirmationMatchEvent;
 import io.alw.css.domain.common.TradeType;
 import io.alw.css.domain.common.TransactionType;
 import io.alw.css.domain.trade.Trade;
 import io.alw.css.tradepublisher.CssTaskExecutor;
 import io.alw.css.tradepublisher.IdProvider;
-import io.alw.css.tradepublisher.confirmation.ConfirmationMatchStatusPublisher;
-import io.alw.css.tradepublisher.confirmation.template.ConfirmationMatchStatusTemplate;
-import io.alw.css.tradepublisher.properties.ConfirmationMatchStatusGeneratorProperties;
+import io.alw.css.tradepublisher.confirmation.ConfirmationMatchEventPublisher;
+import io.alw.css.tradepublisher.confirmation.template.ConfirmationMatchEventTemplate;
+import io.alw.css.tradepublisher.properties.ConfirmationMatchEventGeneratorProperties;
 import io.alw.css.tradepublisher.properties.TradeGeneratorProperties;
 import io.alw.css.tradepublisher.properties.TradeTemplateProperties;
 import io.alw.css.tradepublisher.trade.TradePublisher;
@@ -41,13 +41,13 @@ public final class GeneratorHandler {
     private final static String GENERATOR_KEY_PART_SEPARATOR = "-";
     private final AtomicBoolean activeHandlerOperation;
     private final Map<String, List<Generator<Trade>>> tradeGeneratorMap;
-    private final Map<String, List<Generator<ConfirmationMatchStatus>>> matchStatusGeneratorMap;
+    private final Map<String, List<Generator<ConfirmationMatchEvent>>> matchStatusGeneratorMap;
 
     private final TradeGeneratorProperties tradeGeneratorProperties;
-    private final ConfirmationMatchStatusGeneratorProperties confirmationMatchStatusGeneratorProperties;
+    private final ConfirmationMatchEventGeneratorProperties confirmationMatchEventGeneratorProperties;
     private final TradeTemplateProperties tradeTemplateProperties;
     private final TradePublisher tradePublisher;
-    private final ConfirmationMatchStatusPublisher confirmationMatchStatusPublisher;
+    private final ConfirmationMatchEventPublisher confirmationMatchEventPublisher;
     private final RefDataService refDataService;
     private final DayTicker dayTicker;
     private final CssTaskExecutor cssTaskExecutor;
@@ -55,12 +55,12 @@ public final class GeneratorHandler {
     // Initial Generator Values - initialized only once
     private GeneratorInitialValues generatorInitialValues;
 
-    public GeneratorHandler(TradeGeneratorProperties tradeGeneratorProperties, ConfirmationMatchStatusGeneratorProperties confirmationMatchStatusGeneratorProperties, TradeTemplateProperties tradeTemplateProperties, TradePublisher tradePublisher, ConfirmationMatchStatusPublisher confirmationMatchStatusPublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
+    public GeneratorHandler(TradeGeneratorProperties tradeGeneratorProperties, ConfirmationMatchEventGeneratorProperties confirmationMatchEventGeneratorProperties, TradeTemplateProperties tradeTemplateProperties, TradePublisher tradePublisher, ConfirmationMatchEventPublisher confirmationMatchEventPublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
         this.tradeGeneratorProperties = tradeGeneratorProperties;
-        this.confirmationMatchStatusGeneratorProperties = confirmationMatchStatusGeneratorProperties;
+        this.confirmationMatchEventGeneratorProperties = confirmationMatchEventGeneratorProperties;
         this.tradeTemplateProperties = tradeTemplateProperties;
         this.tradePublisher = tradePublisher;
-        this.confirmationMatchStatusPublisher = confirmationMatchStatusPublisher;
+        this.confirmationMatchEventPublisher = confirmationMatchEventPublisher;
         this.refDataService = refDataService;
         this.dayTicker = DayTicker.initSingleton(10, 30, 2, cssTaskExecutor);
         this.activeHandlerOperation = new AtomicBoolean(false);
@@ -104,7 +104,7 @@ public final class GeneratorHandler {
     }
 
     /// 1. starts the day ticker. Day ticker is started only once even if this method is invoked multiple times.
-    /// 2. starts all generators of all types(Trade and ConfirmationMatchStatus generator) of each kind.
+    /// 2. starts all generators of all types(Trade and ConfirmationMatchEvent generator) of each kind.
     ///
     /// Atomic boolean is used instead of just making this method synchronized because:
     /// concurrent invocations of this method that are blocked should not attempt to start the generators again.
@@ -133,7 +133,7 @@ public final class GeneratorHandler {
         }
     }
 
-    /// Creates Trade Generators and a single ConfirmationMatchStatus Generator
+    /// Creates Trade Generators and a single ConfirmationMatchEvent Generator
     ///
     /// For each combination of TransactionType, TradeType and Entity:
     /// 1. Create Trade suppliers(using Trade Templates for FX, MM etc)
@@ -176,23 +176,23 @@ public final class GeneratorHandler {
             }
         }
 
-        // Start a single instance of ConfirmationMatchStatus generator
+        // Start a single instance of ConfirmationMatchEvent generator
         String key = GeneratorType.MATCH_STATUS_EVENT.name();
-        long generatorSleepDurationSeconds = confirmationMatchStatusGeneratorProperties.amendmentFrequencySeconds();
+        long generatorSleepDurationSeconds = confirmationMatchEventGeneratorProperties.amendmentFrequencySeconds();
         try {
-            // Create ConfirmationMatchStatus Supplier
-            Supplier<List<ConfirmationMatchStatus>> matchStatusEventSupplier = createConfirmationMatchStatusEventSupplier(rndm);
+            // Create ConfirmationMatchEvent Supplier
+            Supplier<List<ConfirmationMatchEvent>> matchStatusEventSupplier = createConfirmationMatchEventSupplier(rndm);
 
-            // Create ConfirmationMatchStatus Generator
+            // Create ConfirmationMatchEvent Generator
             GeneratorDetail generatorDetail = new GeneratorDetail(key, generatorSleepDurationSeconds);
-            Generator<ConfirmationMatchStatus> generator = createGenerator(generatorDetail, matchStatusEventSupplier, confirmationMatchStatusPublisher, matchStatusGeneratorMap);
-            log.info("Created ConfirmationMatchStatus Generator [key: {}, freq: {}]", generatorDetail.generatorKey(), generatorDetail.generationFrequency());
+            Generator<ConfirmationMatchEvent> generator = createGenerator(generatorDetail, matchStatusEventSupplier, confirmationMatchEventPublisher, matchStatusGeneratorMap);
+            log.info("Created ConfirmationMatchEvent Generator [key: {}, freq: {}]", generatorDetail.generatorKey(), generatorDetail.generationFrequency());
 
-            // Start the ConfirmationMatchStatus Generator
+            // Start the ConfirmationMatchEvent Generator
             cssTaskExecutor.submit(generator);
             startedGenerators.add(generatorDetail);
         } catch (Exception e) {
-            // If failed, stop both the ConfirmationMatchStatus generator and the set of Trade generators
+            // If failed, stop both the ConfirmationMatchEvent generator and the set of Trade generators
             tradeGeneratorMap.entrySet().forEach(this::stop);
             matchStatusGeneratorMap.entrySet().forEach(this::stop);
             dayTicker.stop();
@@ -206,9 +206,9 @@ public final class GeneratorHandler {
         return new GeneratorHandlerOutcome.Success("Successfully started all trade generators", Collections.unmodifiableList(startedGenerators));
     }
 
-    private Supplier<List<ConfirmationMatchStatus>> createConfirmationMatchStatusEventSupplier(RandomGenerator rndm) {
+    private Supplier<List<ConfirmationMatchEvent>> createConfirmationMatchEventSupplier(RandomGenerator rndm) {
         LocalDate initialValueDate = generatorInitialValues.valueDate();
-        return new ConfirmationMatchStatusTemplate(dayTicker, refDataService, confirmationMatchStatusPublisher, initialValueDate, rndm);
+        return new ConfirmationMatchEventTemplate(dayTicker, refDataService, confirmationMatchEventPublisher, initialValueDate, rndm);
     }
 
     private long getGeneratorSleepDurationFor(String generatorKey) {

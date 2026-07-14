@@ -2,12 +2,11 @@ package io.alw.css.tradepublisher.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.alw.css.serialization.confirmation.ConfirmationMatchStatusAvro;
 import io.alw.css.serialization.trade.TradeAvro;
 import io.alw.css.tradepublisher.CssTaskExecutor;
-import io.alw.css.tradepublisher.confirmation.ConfirmationMatchStatusPublisher;
+import io.alw.css.tradepublisher.confirmation.ConfirmationMatchEventPublisher;
 import io.alw.css.tradepublisher.generator.GeneratorHandler;
-import io.alw.css.tradepublisher.properties.ConfirmationMatchStatusGeneratorProperties;
+import io.alw.css.tradepublisher.properties.ConfirmationMatchEventGeneratorProperties;
 import io.alw.css.tradepublisher.properties.KafkaTopicProperties;
 import io.alw.css.tradepublisher.properties.TradeGeneratorProperties;
 import io.alw.css.tradepublisher.properties.TradeTemplateProperties;
@@ -33,8 +32,8 @@ public class AppConfig {
     }
 
     @Bean
-    public GeneratorHandler tradeGeneratorHandler(TradeGeneratorProperties tradeGeneratorProperties, ConfirmationMatchStatusGeneratorProperties confirmationMatchStatusGeneratorProperties, TradeTemplateProperties tradeTemplateProperties, TradePublisher tradePublisher, ConfirmationMatchStatusPublisher confirmationMatchStatusPublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
-        return new GeneratorHandler(tradeGeneratorProperties, confirmationMatchStatusGeneratorProperties, tradeTemplateProperties, tradePublisher, confirmationMatchStatusPublisher, refDataService, cssTaskExecutor);
+    public GeneratorHandler tradeGeneratorHandler(TradeGeneratorProperties tradeGeneratorProperties, ConfirmationMatchEventGeneratorProperties confirmationMatchEventGeneratorProperties, TradeTemplateProperties tradeTemplateProperties, TradePublisher tradePublisher, ConfirmationMatchEventPublisher confirmationMatchEventPublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
+        return new GeneratorHandler(tradeGeneratorProperties, confirmationMatchEventGeneratorProperties, tradeTemplateProperties, tradePublisher, confirmationMatchEventPublisher, refDataService, cssTaskExecutor);
     }
 
     @Bean
@@ -43,7 +42,7 @@ public class AppConfig {
     }
 
     @Bean
-    public ConfirmationMatchStatusPublisher matchStatusEventPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, ConfirmationMatchStatusAvro> kafkaTemplateConfMatchStatusEvent, CssTaskExecutor cssTaskExecutor) {
-        return new ConfirmationMatchStatusPublisher(kafkaTopicProperties, kafkaTemplateConfMatchStatusEvent, cssTaskExecutor);
+    public ConfirmationMatchEventPublisher matchStatusEventPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, ConfirmationMatchStatusAvro> kafkaTemplateConfMatchStatusEvent, CssTaskExecutor cssTaskExecutor) {
+        return new ConfirmationMatchEventPublisher(kafkaTopicProperties, kafkaTemplateConfMatchStatusEvent, cssTaskExecutor);
     }
 }

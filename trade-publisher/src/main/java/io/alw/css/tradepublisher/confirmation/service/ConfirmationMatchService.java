@@ -3,7 +3,7 @@ package io.alw.css.tradepublisher.confirmation.service;
 import io.alw.css.confirmation.ConfirmationMatchRequest;
 import io.alw.css.serialization.confirmation.ConfirmationMatchRequestAvro;
 import io.alw.css.tradepublisher.confirmation.mapper.ConfirmationMatchRequestMapper;
-import io.alw.css.tradepublisher.confirmation.template.ConfirmationMatchStatusTemplate;
+import io.alw.css.tradepublisher.confirmation.template.ConfirmationMatchEventTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -11,10 +11,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class ConfirmationMatchService {
     private static final Logger log = LoggerFactory.getLogger(ConfirmationMatchService.class);
-    private final ConfirmationMatchStatusTemplate confirmationMatchStatusTemplate;
+    private final ConfirmationMatchEventTemplate confirmationMatchEventTemplate;
 
-    public ConfirmationMatchService(ConfirmationMatchStatusTemplate confirmationMatchStatusTemplate) {
-        this.confirmationMatchStatusTemplate = confirmationMatchStatusTemplate;
+    public ConfirmationMatchService(ConfirmationMatchEventTemplate confirmationMatchEventTemplate) {
+        this.confirmationMatchEventTemplate = confirmationMatchEventTemplate;
     }
 
     public void processMatchRequest(ConfirmationMatchRequestAvro matchRequestAvro) {
@@ -23,6 +23,6 @@ public class ConfirmationMatchService {
         log.info("Received ConfirmationMatchRequestAvro[tradeId: {}, tradeVersion: {}] for confirmation message generation and matching", tradeId, tradeVersion);
 
         ConfirmationMatchRequest req = ConfirmationMatchRequestMapper.instance().avroToDomain(matchRequestAvro);
-        confirmationMatchStatusTemplate.consume(req);
+        confirmationMatchEventTemplate.consume(req);
     }
 }

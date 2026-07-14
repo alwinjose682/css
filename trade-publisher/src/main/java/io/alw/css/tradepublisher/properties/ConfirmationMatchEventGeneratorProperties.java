@@ -4,11 +4,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
 @ConfigurationProperties("confirmation.matchstatus.generator")
-public class ConfirmationMatchStatusGeneratorProperties {
+public class ConfirmationMatchEventGeneratorProperties {
     private final long amendmentFrequencySeconds;
 
     @ConstructorBinding
-    public ConfirmationMatchStatusGeneratorProperties(long amendmentFrequencySeconds) {
+    public ConfirmationMatchEventGeneratorProperties(long amendmentFrequencySeconds) {
         this.amendmentFrequencySeconds = amendmentFrequencySeconds;
     }
 

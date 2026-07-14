@@ -1,9 +1,8 @@
 package io.alw.css.tradepublisher.confirmation;
 
-import io.alw.css.confirmation.ConfirmationMatchStatus;
-import io.alw.css.serialization.confirmation.ConfirmationMatchStatusAvro;
+import io.alw.css.confirmation.ConfirmationMatchEvent;
 import io.alw.css.tradepublisher.CssTaskExecutor;
-import io.alw.css.tradepublisher.confirmation.mapper.ConfirmationMatchStatusMapper;
+import io.alw.css.tradepublisher.confirmation.mapper.ConfirmationMatchEventMapper;
 import io.alw.css.tradepublisher.properties.KafkaTopicProperties;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
@@ -13,26 +12,26 @@ import org.springframework.kafka.core.KafkaTemplate;
 import java.util.List;
 import java.util.function.Consumer;
 
-public final class ConfirmationMatchStatusPublisher implements Consumer<List<ConfirmationMatchStatus>> {
-    private static final Logger log = LoggerFactory.getLogger(ConfirmationMatchStatusPublisher.class);
+public final class ConfirmationMatchEventPublisher implements Consumer<List<ConfirmationMatchEvent>> {
+    private static final Logger log = LoggerFactory.getLogger(ConfirmationMatchEventPublisher.class);
     private final KafkaTopicProperties kafkaTopicProperties;
     private final KafkaTemplate<String, ConfirmationMatchStatusAvro> kafkaTemplateConfMatchStatusEvent;
     private final CssTaskExecutor cssTaskExecutor;
 
-    public ConfirmationMatchStatusPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, ConfirmationMatchStatusAvro> kafkaTemplateConfMatchStatusEvent, CssTaskExecutor cssTaskExecutor) {
+    public ConfirmationMatchEventPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, ConfirmationMatchStatusAvro> kafkaTemplateConfMatchStatusEvent, CssTaskExecutor cssTaskExecutor) {
         this.kafkaTopicProperties = kafkaTopicProperties;
         this.kafkaTemplateConfMatchStatusEvent = kafkaTemplateConfMatchStatusEvent;
         this.cssTaskExecutor = cssTaskExecutor;
     }
 
     @Override
-    public void accept(List<ConfirmationMatchStatus> events) {
+    public void accept(List<ConfirmationMatchEvent> events) {
         events.forEach(this::publish);
     }
 
-    public void publish(ConfirmationMatchStatus event) {
+    public void publish(ConfirmationMatchEvent event) {
         String outputTopic = kafkaTopicProperties.confirmationMatchStatusTopic();
-        ConfirmationMatchStatusAvro avroMsg = ConfirmationMatchStatusMapper.instance().domainToAvro(event);
+        ConfirmationMatchStatusAvro avroMsg = ConfirmationMatchEventMapper.instance().domainToAvro(event);
         String key = String.valueOf(avroMsg.getTradeId());
         log.trace("Sending ConfirmationMatchStatusEvent {} to topic: {}", key, outputTopic);
 

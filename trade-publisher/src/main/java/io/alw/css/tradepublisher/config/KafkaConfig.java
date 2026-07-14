@@ -1,7 +1,6 @@
 package io.alw.css.tradepublisher.config;
 
 import io.alw.css.serialization.confirmation.ConfirmationMatchRequestAvro;
-import io.alw.css.serialization.confirmation.ConfirmationMatchStatusAvro;
 import io.alw.css.serialization.trade.TradeAvro;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;

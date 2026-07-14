@@ -12,6 +12,6 @@ public record GeneratorInitialValues(
         @Positive long matchStatusEventId
 ) {
     public static GeneratorInitialValues defaultValues() {
-        return new GeneratorInitialValues(LocalDate.now(), IdProvider.defaultInitialTradeId, IdProvider.defaultConfMatchStatusEventId);
+        return new GeneratorInitialValues(LocalDate.now(), IdProvider.defaultInitialTradeId, IdProvider.defaultConfMatchEventId);
     }
 }
