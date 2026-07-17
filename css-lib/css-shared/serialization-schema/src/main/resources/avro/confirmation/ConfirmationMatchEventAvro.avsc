@@ -44,6 +44,10 @@
     {
       "name": "matchRequestId",
       "type": "long"
+    },
+    {
+      "name": "contraPairReqId",
+      "type": "long"
     }
   ]
 }
