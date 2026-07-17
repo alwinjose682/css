@@ -30,7 +30,7 @@ public final class TradeMapper {
     private final static Logger log = LoggerFactory.getLogger(TradeMapper.class);
 
     /// 1. Creates multiple [CashflowBuilder] for each [TradeLegAvro]
-    /// 2. All cashflows are created with confirmationStatus as NOT_CONFIRMED
+    /// 2. All cashflows are created with [CashflowConfirmationStatus#PENDING]
     /// 2. Determines [Cashflow#revisionType]
     /// 3. Maps below sections of [io.alw.css.domain.trade.Trade] to CSS [Cashflow]
     /// - Trade and Cashflow Data
@@ -97,7 +97,7 @@ public final class TradeMapper {
                 .amount(formatAmount(trdLeg))
                 .currCode(trdLeg.getCurrCode().toUpperCase())
                 //
-                .confirmationStatus(CashflowConfirmationStatus.NOT_CONFIRMED);
+                .confirmationStatus(CashflowConfirmationStatus.PENDING);
 
         // Set counterBookCode
         String counterBookCode = bdr.transactionType() == TransactionType.INTER_BOOK ? trdLeg.getCounterBookCode() : null;

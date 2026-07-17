@@ -172,12 +172,12 @@ public class CashflowVersionService {
         return new CashflowSet.SubsequentVersion(amendCashflow, previousCashflow, revCashflow);
     }
 
-    /// Creates amended cashflow with confirmationStatus as NOT_CONFIRMED
+    /// Creates amended cashflow with [CashflowConfirmationStatus#PENDING]
     private Cashflow createAmendCashflow(Cashflow previousCashflow, CashflowBuilder cashflowBuilder, Cashflow offsetCashflow) {
         return cashflowBuilder
                 .cashflowId(previousCashflow.cashflowId())
                 .cashflowVersion(offsetCashflow.cashflowVersion() + 1)
-                .confirmationStatus(CashflowConfirmationStatus.NOT_CONFIRMED)
+                .confirmationStatus(CashflowConfirmationStatus.PENDING)
                 .latest(true)
                 .build();
     }

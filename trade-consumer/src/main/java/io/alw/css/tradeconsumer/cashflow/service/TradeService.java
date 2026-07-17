@@ -58,7 +58,7 @@ public class TradeService {
             // Map TradeLinks
             var tradeLinkEntities = TradeMapper.mapTradeLinksToEntity(tradeAvro);
 
-            // Group the cashflow builders for confirmation match request
+            // Group the cashflow builders for confirmation match request. Each group will be assigned a confMatchReqId
             List<List<CashflowBuilder>> groupedCashflowBuilders = tradeConfirmationService.groupCashflowsForConfirmationMatchRequest(Collections.unmodifiableList(cashflowBuildersUnGrouped), cashflowBuildersUnGrouped.getFirst().tradeType());
 
             var newCashflows = new HashSet<Cashflow>();
