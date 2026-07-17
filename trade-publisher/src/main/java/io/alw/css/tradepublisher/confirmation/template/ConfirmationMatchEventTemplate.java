@@ -24,7 +24,7 @@ public final class ConfirmationMatchEventTemplate implements Supplier<List<Confi
     private final DayTicker dayTicker;
     private final RefDataService refDataService;
     private final ItemStoreHelper<ConfirmationMatchRequest> matchRequestStoreHelper;
-    private final ItemStoreHelper<ConfirmationMatchEvent> matchStatusStoreHelper;
+    private final ItemStoreHelper<ConfirmationMatchEvent> matchEventStoreHelper;
     private final ConfirmationMatchEventPublisher eventPublisher;
     private final LocalDate initialValueDate;
     private final RandomGenerator rndm;
@@ -35,7 +35,7 @@ public final class ConfirmationMatchEventTemplate implements Supplier<List<Confi
         this.dayTicker = dayTicker;
         this.refDataService = refDataService;
         this.matchRequestStoreHelper = new ItemStoreHelper<>(dayTicker, new InMemoryItemStore<>(), rndm);
-        this.matchStatusStoreHelper = new ItemStoreHelper<>(dayTicker, new InMemoryItemStore<>(), rndm);
+        this.matchEventStoreHelper = new ItemStoreHelper<>(dayTicker, new InMemoryItemStore<>(), rndm);
         this.eventPublisher = eventPublisher;
         this.initialValueDate = initialValueDate;
         this.rndm = rndm;
@@ -46,35 +46,35 @@ public final class ConfirmationMatchEventTemplate implements Supplier<List<Confi
     /// The events generated immediately are publisher to CSS.
     /// The match requests and event amendments queued for a future date are obtained by [io.alw.css.tradepublisher.generator.Generator] at pre-configured intervals and then published to CSS
     public void consume(ConfirmationMatchRequest matchRequest) {
-        if (isMatchStatusGeneratableForFutureDate(matchRequest)) {
+        if (isMatchEventGeneratableForFutureDate(matchRequest)) {
             matchRequestStoreHelper.storeForFutureRndmRetrievalDay(matchRequest, ItemStoreHelper.Purpose.ITEM_SPECIFIC_EVENT);
         } else {
             updateTemplateDay();
-            ConfirmationMatchEvent matchStatusEvent = generateMatchStatus(matchRequest);
-            saveForFutureAmendment(matchStatusEvent);
-            eventPublisher.accept(List.of(matchStatusEvent));
+            ConfirmationMatchEvent matchEvent = generateMatchEvent(matchRequest);
+            saveForFutureAmendment(matchEvent);
+            eventPublisher.accept(List.of(matchEvent));
         }
     }
 
     @Override
     public List<ConfirmationMatchEvent> get() {
-        List<ConfirmationMatchEvent> matchStatusEvents = new ArrayList<>();
+        List<ConfirmationMatchEvent> matchEvents = new ArrayList<>();
 
         // Update template day
         updateTemplateDay();
         // Get saved match requests for current day
         List<ConfirmationMatchRequest> matchRequests = matchRequestStoreHelper.retrieve(ItemStoreHelper.Purpose.ITEM_SPECIFIC_EVENT, currentDayForTemplate());
-        matchRequests.forEach(req -> matchStatusEvents.add(generateMatchStatus(req)));
+        matchRequests.forEach(req -> matchEvents.add(generateMatchEvent(req)));
         // Get saved match events for amendment for current day
-        List<ConfirmationMatchEvent> eventsForAmendment = matchStatusStoreHelper.retrieve(ItemStoreHelper.Purpose.AMEND, currentDayForTemplate());
-        eventsForAmendment.stream().map(evt -> matchStatusEvents.add(generateAmendedMatchStatus(evt)));
+        List<ConfirmationMatchEvent> eventsForAmendment = matchEventStoreHelper.retrieve(ItemStoreHelper.Purpose.AMEND, currentDayForTemplate());
+        eventsForAmendment.stream().map(evt -> matchEvents.add(generateAmendedMatchEvent(evt)));
         // Store the newly generated events for future amendment
-        matchStatusEvents.forEach(this::saveForFutureAmendment);
+        matchEvents.forEach(this::saveForFutureAmendment);
         // Return all the generated events
-        return matchStatusEvents;
+        return matchEvents;
     }
 
-    private ConfirmationMatchEvent generateAmendedMatchStatus(ConfirmationMatchEvent evt) {
+    private ConfirmationMatchEvent generateAmendedMatchEvent(ConfirmationMatchEvent evt) {
         MatchStatus matchStatus = getRndmMatchStatusForAmendMatchRequest();
         Set<TradeLegMatchAttribute> tradeLegMatchAttributes = getTradeLegMatchAttributes(evt.tradeLegMatchAttributes(), matchStatus);
 
@@ -83,6 +83,8 @@ public final class ConfirmationMatchEventTemplate implements Supplier<List<Confi
                 evt.eventVersion() + 1,
                 evt.tradeId(),
                 evt.tradeVersion(),
+                evt.matchRequestId(),
+                evt.contraPairReqId(),
                 tradeLegMatchAttributes,
                 evt.tradeType(),
                 matchStatus,
@@ -90,7 +92,7 @@ public final class ConfirmationMatchEventTemplate implements Supplier<List<Confi
         );
     }
 
-    private ConfirmationMatchEvent generateMatchStatus(ConfirmationMatchRequest matchRequest) {
+    private ConfirmationMatchEvent generateMatchEvent(ConfirmationMatchRequest matchRequest) {
         long eventId = IdProvider.singleton().nextConfMatchEventId();
         MatchStatus matchStatus = getRndmMatchStatusForInitialMatchRequest();
         Set<TradeLegMatchAttribute> tradeLegMatchAttributes = getTradeLegMatchAttributes(matchRequest.tradeLegMatchAttributes(), matchStatus);
@@ -100,6 +102,8 @@ public final class ConfirmationMatchEventTemplate implements Supplier<List<Confi
                 VERSION_ONE,
                 matchRequest.tradeId(),
                 matchRequest.tradeVersion(),
+                matchRequest.requestId(),
+                matchRequest.contraPairId(),
                 tradeLegMatchAttributes,
                 matchRequest.tradeType(),
                 matchStatus,
@@ -149,7 +153,7 @@ public final class ConfirmationMatchEventTemplate implements Supplier<List<Confi
         }
     }
 
-    private boolean isMatchStatusGeneratableForFutureDate(ConfirmationMatchRequest req) {
+    private boolean isMatchEventGeneratableForFutureDate(ConfirmationMatchRequest req) {
         return req
                 .tradeLegMatchAttributes()
                 .stream().anyMatch(attr -> attr
@@ -170,7 +174,7 @@ public final class ConfirmationMatchEventTemplate implements Supplier<List<Confi
         boolean canSave = rndm.nextInt(1, 50) > 30
                 && matchEvent.tradeLegMatchAttributes().stream().anyMatch(attr -> attr.valueDate().isAfter(currentDateForTemplate()));
         if (canSave) {
-            matchStatusStoreHelper.storeForFutureRndmRetrievalDay(matchEvent, ItemStoreHelper.Purpose.AMEND);
+            matchEventStoreHelper.storeForFutureRndmRetrievalDay(matchEvent, ItemStoreHelper.Purpose.AMEND);
         }
     }
 
