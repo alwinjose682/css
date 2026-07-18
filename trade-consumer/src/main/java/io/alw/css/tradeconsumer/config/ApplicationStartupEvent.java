@@ -67,22 +67,22 @@ public class ApplicationStartupEvent implements ApplicationListener<ApplicationR
         if (res.getStatusCode().is2xxSuccessful()) {
             var outcome = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(res.getBody()); // Converting the response to json again to write a readable friendly string
 
-            log.info("Started ALL Trade Generators in upstream/fo-simulator, {}", outcome);
+            log.info("Started ALL Trade and Confirmation Generators in upstream/trade-publisher, {}", outcome);
         } else {
-            log.warn("Failed to start Trade Generators in upstream/fo-simulator. Check the upstream simulator logs for details. REST Response: {}", res.getStatusCode());
+            log.warn("Failed to start Trade and/or Confirmation Generators in upstream/trade-publisher. Check the upstream simulator logs for details. REST Response: {}", res.getStatusCode());
         }
     }
 
     private GeneratorInitialValues getTradeGenerationInitialValues() {
         GeneratorIds maxIds = cashflowRepository.findMaxTradeId();
-        if (maxIds == null || maxIds.tradeId() == null) {
+        if (maxIds == null || maxIds.tradeId() == null || maxIds.matchEventId() == null) {
             var initValues = new GeneratorInitialValues(LocalDate.now(), 1054321L, 58255L);
-            log.info("Staring Trade Generators with initial values: {}", initValues);
+            log.info("Staring Trade and Confirmation Generators with default initial values: {}", initValues);
             return initValues;
         }
 
-        var initValues = new GeneratorInitialValues(LocalDate.now(), 1L + maxIds.tradeId(), maxIds.matchStatusEventId());
-        log.info("Staring Trade Generators with initial values greater than the values of last processed cashflow: {}", initValues);
+        var initValues = new GeneratorInitialValues(LocalDate.now(), 1L + maxIds.tradeId(), maxIds.matchEventId());
+        log.info("Staring Trade and Confirmation Generators with initial values greater than the values of last processed cashflow and last generated confirmation event: {}", initValues);
         return initValues;
     }
 }

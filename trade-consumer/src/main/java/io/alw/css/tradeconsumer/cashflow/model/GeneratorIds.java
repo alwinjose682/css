@@ -2,6 +2,6 @@ package io.alw.css.tradeconsumer.cashflow.model;
 
 public record GeneratorIds(
         Long tradeId,
-        Long matchStatusEventId
+        Long matchEventId
 ) {
 }
