@@ -32,8 +32,8 @@ public final class ExtendedInMemoryStore<T extends LongId> extends InMemoryStore
 
     /// Removes this single item identified by [LongId#id()] from the primary storage. Also remove the entry for the item from the secondary store
     /// The entry for the item in the secondary store is with mapping: item#id to the primaryStorage that contains the item
-    public void removeById(long id, int storeIdx) {
-        getSecondaryStore(storeIdx) // get the secondary store
+    public boolean removeById(long id, int storeIdx) {
+        return getSecondaryStore(storeIdx) // get the secondary store
                 .get(id) // get the primaryStorage where the item with 'id' is stored
                 .remove(id); // remove the specific item from the primaryStorage(for this class the primaryStorage is backed by a HashSet)
     }

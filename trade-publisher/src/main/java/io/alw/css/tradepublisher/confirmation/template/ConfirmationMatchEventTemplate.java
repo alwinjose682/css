@@ -7,7 +7,8 @@ import io.alw.css.confirmation.TradeLegMatchAttribute;
 import io.alw.css.tradepublisher.IdProvider;
 import io.alw.css.tradepublisher.confirmation.ConfirmationMatchEventPublisher;
 import io.alw.css.tradepublisher.generator.DayTicker;
-import io.alw.css.tradepublisher.store.InMemoryStore;
+import io.alw.css.tradepublisher.store.ExtendedInMemoryStore;
+import io.alw.css.tradepublisher.store.ExtendedStoreHelper;
 import io.alw.css.tradepublisher.store.StoreHelper;
 import io.alw.css.tradepublisher.trade.service.RefDataService;
 
@@ -24,8 +25,8 @@ public final class ConfirmationMatchEventTemplate implements Supplier<List<Confi
 
     private final DayTicker dayTicker;
     private final RefDataService refDataService;
-    private final StoreHelper<ConfirmationMatchRequest> matchRequestStoreHelper;
-    private final StoreHelper<ConfirmationMatchEvent> matchEventStoreHelper;
+    private final ExtendedStoreHelper<ConfirmationMatchRequest> matchRequestStoreHelper;
+    private final ExtendedStoreHelper<ConfirmationMatchEvent> matchEventStoreHelper;
     private final ConfirmationMatchEventPublisher eventPublisher;
     private final LocalDate initialValueDate;
     private final RandomGenerator rndm;
@@ -35,8 +36,8 @@ public final class ConfirmationMatchEventTemplate implements Supplier<List<Confi
     public ConfirmationMatchEventTemplate(DayTicker dayTicker, RefDataService refDataService, ConfirmationMatchEventPublisher eventPublisher, LocalDate initialValueDate, RandomGenerator rndm) {
         this.dayTicker = dayTicker;
         this.refDataService = refDataService;
-        this.matchRequestStoreHelper = new StoreHelper<>(dayTicker, new InMemoryStore<>(), rndm);
-        this.matchEventStoreHelper = new StoreHelper<>(dayTicker, new InMemoryStore<>(), rndm);
+        this.matchRequestStoreHelper = new ExtendedStoreHelper<>(dayTicker, new ExtendedInMemoryStore<>(), rndm);
+        this.matchEventStoreHelper = new ExtendedStoreHelper<>(dayTicker, new ExtendedInMemoryStore<>(), rndm);
         this.eventPublisher = eventPublisher;
         this.initialValueDate = initialValueDate;
         this.rndm = rndm;
@@ -47,6 +48,19 @@ public final class ConfirmationMatchEventTemplate implements Supplier<List<Confi
     /// The events generated immediately are publisher to CSS.
     /// The match requests and event amendments queued for a future date are obtained by [io.alw.css.tradepublisher.generator.Generator] at pre-configured intervals and then published to CSS
     public void consume(ConfirmationMatchRequest matchRequest) {
+        if (isMatchRequestAnAmendment(matchRequest)) {
+            Long contraPairId = matchRequest.contraPairId();
+
+            // Remove the previous matchRequest and matchEvent identified by contraPairId from both the stores.
+            // The previous matchRequest should not be actioned upon as an amended matchRequest is received
+            // contraPairId of this matchRequest corresponds to the matchRequestId of the matchRequest that was previously processed which might be present in the stores
+            // Note: The previous matchRequest may be present in only one of the store or it may not be present even in both the stores.
+            // It is safe to remove without checking if it exists or not.
+            // The same applies to matchEvent
+            matchRequestStoreHelper.removeById(contraPairId, StoreHelper.Purpose.ITEM_SPECIFIC_EVENT);
+            matchEventStoreHelper.removeById(contraPairId, StoreHelper.Purpose.AMEND);
+        }
+
         if (isMatchEventGeneratableForFutureDate(matchRequest)) {
             matchRequestStoreHelper.storeForFutureRndmRetrievalDay(matchRequest, StoreHelper.Purpose.ITEM_SPECIFIC_EVENT);
         } else {
@@ -55,6 +69,10 @@ public final class ConfirmationMatchEventTemplate implements Supplier<List<Confi
             saveForFutureAmendment(matchEvent);
             eventPublisher.accept(List.of(matchEvent));
         }
+    }
+
+    private boolean isMatchRequestAnAmendment(ConfirmationMatchRequest matchRequest) {
+        return matchRequest.contraPairId() != null;
     }
 
     @Override
