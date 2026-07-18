@@ -6,7 +6,7 @@ import java.util.Set;
 
 public record ConfirmationMatchRequest(
         long requestId,
-        long contraPairId,
+        Long contraPairId,
         long tradeId,
         int tradeVersion,
         Set<TradeLegMatchAttribute> tradeLegMatchAttributes,
