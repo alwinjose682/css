@@ -23,20 +23,36 @@ public class TradeConfirmationServiceDelegate {
 
     static List<List<CashflowBuilder>> groupForMmTerm(List<CashflowBuilder> cashflowsBdrs) {
         Map<TradeLegType, String> primaryTradeLegTypes = new EnumMap<>(TradeLegType.class);
-        primaryTradeLegTypes.put(TradeLegType.MM_PRINCIPAL, "v");
-        primaryTradeLegTypes.put(TradeLegType.MM_MATURITY, "v");
+
+        // Determine the TradeLegTypes to add in the primaryTradeLegTypes collection,
+        // because individual TradeLegs may also be generated according to the payment schedule(Ex: interest leg of MM trade, see TradePublisher's MmTemplate class)
+        boolean hasPrincipalLeg = cashflowsBdrs.stream().anyMatch(cb -> cb.tradeLegType() == TradeLegType.MM_PRINCIPAL);
+        if (hasPrincipalLeg) {
+            primaryTradeLegTypes.put(TradeLegType.MM_PRINCIPAL, "v");
+            primaryTradeLegTypes.put(TradeLegType.MM_MATURITY, "v");
+        } else {
+            primaryTradeLegTypes.put(TradeLegType.MM_INTEREST, "v");
+        }
 
         return groupGenericMm(cashflowsBdrs, primaryTradeLegTypes);
     }
 
     static List<List<CashflowBuilder>> groupForMmCall(List<CashflowBuilder> cashflowsBdrs) {
-        boolean hasMaturityLeg = cashflowsBdrs.stream().anyMatch(cb -> cb.tradeLegType() == TradeLegType.MM_MATURITY);
         Map<TradeLegType, String> primaryTradeLegTypes = new EnumMap<>(TradeLegType.class);
-        if (hasMaturityLeg) {
-            primaryTradeLegTypes.put(TradeLegType.MM_PRINCIPAL, "v");
-            primaryTradeLegTypes.put(TradeLegType.MM_MATURITY, "v");
+
+        // Determine the TradeLegTypes to add in the primaryTradeLegTypes collection,
+        // because individual TradeLegs may also be generated according to the payment schedule(Ex: interest leg of MM trade, see TradePublisher's MmTemplate class)
+        boolean hasPrincipalLeg = cashflowsBdrs.stream().anyMatch(cb -> cb.tradeLegType() == TradeLegType.MM_PRINCIPAL);
+        if (hasPrincipalLeg) {
+            boolean hasMaturityLeg = cashflowsBdrs.stream().anyMatch(cb -> cb.tradeLegType() == TradeLegType.MM_MATURITY);
+            if (hasMaturityLeg) {
+                primaryTradeLegTypes.put(TradeLegType.MM_PRINCIPAL, "v");
+                primaryTradeLegTypes.put(TradeLegType.MM_MATURITY, "v");
+            } else {
+                primaryTradeLegTypes.put(TradeLegType.MM_PRINCIPAL, "v");
+            }
         } else {
-            primaryTradeLegTypes.put(TradeLegType.MM_PRINCIPAL, "v");
+            primaryTradeLegTypes.put(TradeLegType.MM_INTEREST, "v");
         }
 
         return groupGenericMm(cashflowsBdrs, primaryTradeLegTypes);
@@ -47,6 +63,8 @@ public class TradeConfirmationServiceDelegate {
         List<List<CashflowBuilder>> groupedCashflows = new ArrayList<>();
 
         // For Principal and Maturity legs
+        // OR
+        // For adhoc interest legs generated based on the payment schedule(see TradePublisher's MmTemplate class)
         List<CashflowBuilder> groupedPrimary = groupCashflowsForConfirmationMatchRequest(cashflowsBdrs, primaryTradeLegTypes, remainingCashflows);
         groupedCashflows.add(groupedPrimary);
 
