@@ -4,9 +4,9 @@ import io.alw.css.domain.common.*;
 import io.alw.css.domain.trade.TradeLegBuilder;
 import io.alw.css.tradepublisher.generator.DayTicker;
 import io.alw.css.tradepublisher.properties.TradeTemplateProperties;
-import io.alw.css.tradepublisher.store.InMemoryItemStore;
-import io.alw.css.tradepublisher.store.ItemStore;
-import io.alw.css.tradepublisher.store.ItemStoreHelper;
+import io.alw.css.tradepublisher.store.InMemoryStore;
+import io.alw.css.tradepublisher.store.Store;
+import io.alw.css.tradepublisher.store.StoreHelper;
 import io.alw.css.tradepublisher.trade.model.Entity;
 import io.alw.css.tradepublisher.trade.model.TradeEventActionPair;
 import io.alw.css.tradepublisher.trade.service.RefDataService;
@@ -28,14 +28,14 @@ import static io.alw.css.domain.trade.TradeLegType.FX_SIDE2;
 import static io.alw.css.tradepublisher.trade.template.model.AmendableFieldType.*;
 
 public final class FxTemplate extends TradeAmendmentTemplate<FxTrade, FxTemplate> {
-    private final ItemStoreHelper<FxTrade> trdStoreHelper;
+    private final StoreHelper<FxTrade> trdStoreHelper;
     private static final Supplier<Set<AmendableFieldType>> cyclicAmendableTradeMessageFieldTypeProvider = new CyclicAmendableTradeMessageFieldProvider(getListOfAmendableTradeMessageFieldTypes());
 
     public FxTemplate(Entity entity, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, TradeTemplateProperties tradeTemplateProperties) {
         super(entity, TradeType.FX, transactionType, rndm, initialValueDate, refDataService, dayTicker, tradeTemplateProperties);
 
-        ItemStore<FxTrade> trdStore = new InMemoryItemStore<>();
-        this.trdStoreHelper = new ItemStoreHelper<>(dayTicker, trdStore, rndm);
+        Store<FxTrade> trdStore = new InMemoryStore<>();
+        this.trdStoreHelper = new StoreHelper<>(dayTicker, trdStore, rndm);
     }
 
     @Override
@@ -187,7 +187,7 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade, FxTemplate
     }
 
     @Override
-    protected ItemStoreHelper<FxTrade> trdStoreHelper() {
+    protected StoreHelper<FxTrade> trdStoreHelper() {
         return trdStoreHelper;
     }
 

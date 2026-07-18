@@ -5,7 +5,7 @@ import io.alw.css.domain.trade.*;
 import io.alw.css.tradepublisher.IdProvider;
 import io.alw.css.tradepublisher.generator.DayTicker;
 import io.alw.css.tradepublisher.properties.TradeTemplateProperties;
-import io.alw.css.tradepublisher.store.ItemStoreHelper;
+import io.alw.css.tradepublisher.store.StoreHelper;
 import io.alw.css.tradepublisher.trade.model.Entity;
 import io.alw.css.tradepublisher.trade.model.TradeEventActionPair;
 import io.alw.css.tradepublisher.trade.service.RefDataService;
@@ -43,7 +43,7 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
     /// All the trade legs selected for amendment must belong only to the trdCtx being passed via this method
     protected abstract void buildTradeAmendmentContext(Consumer<TradeAmendmentContext> trdAmendmentBuilderFunc, T trdCtxForAmendment);
 
-    protected abstract ItemStoreHelper<T> trdStoreHelper();
+    protected abstract StoreHelper<T> trdStoreHelper();
 
     /// Both primary and secondary criteria will be applied to select a tradeContext for amendment.
     /// This applies both for the selecting a tradeContext for first time and each time after amendment
@@ -81,7 +81,7 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
 
     protected TT withTradeAmendmentDirectives() {
         // 1. Get trades that need to be amended
-        final List<T> extTrds = trdStoreHelper().retrieve(ItemStoreHelper.Purpose.AMEND, trdTemplateHelper.currentDayForTrdTemplate());
+        final Collection<T> extTrds = trdStoreHelper().retrieve(StoreHelper.Purpose.AMEND, trdTemplateHelper.currentDayForTrdTemplate());
         // 2. Create trade amendment directive
         for (T extTrd : extTrds) {
             // Trade amendment builder function
@@ -356,7 +356,7 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
 
     protected void saveForFutureAmendment(T extTrd) {
         if (amendmentCandidateSelectionCriteria().test(extTrd)) {
-            trdStoreHelper().storeForFutureRndmRetrievalDay(extTrd, ItemStoreHelper.Purpose.AMEND);
+            trdStoreHelper().storeForFutureRndmRetrievalDay(extTrd, StoreHelper.Purpose.AMEND);
         }
     }
 }

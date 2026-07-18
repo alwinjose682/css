@@ -6,7 +6,7 @@ import io.alw.css.domain.common.TransactionType;
 import io.alw.css.domain.trade.*;
 import io.alw.css.tradepublisher.generator.DayTicker;
 import io.alw.css.tradepublisher.properties.TradeTemplateProperties;
-import io.alw.css.tradepublisher.store.ItemStoreHelper;
+import io.alw.css.tradepublisher.store.StoreHelper;
 import io.alw.css.tradepublisher.trade.model.Entity;
 import io.alw.css.tradepublisher.trade.service.RefDataService;
 import io.alw.css.tradepublisher.trade.template.domain.TradeLegGeneratableExtendedTrade;
@@ -66,7 +66,7 @@ public abstract sealed class TradeLegGeneratingTemplate<T extends TradeLegGenera
 
     protected TT withTradeLegGenerationDirectives() {
         // Get trades for which new TradeLegs need to be created
-        final List<T> extTrds = trdStoreHelper().retrieve(ItemStoreHelper.Purpose.ITEM_SPECIFIC_EVENT, trdTemplateHelper.currentDayForTrdTemplate());
+        final Collection<T> extTrds = trdStoreHelper().retrieve(StoreHelper.Purpose.ITEM_SPECIFIC_EVENT, trdTemplateHelper.currentDayForTrdTemplate());
         if (extTrds.isEmpty()) {
             return self();
         }
@@ -120,7 +120,7 @@ public abstract sealed class TradeLegGeneratingTemplate<T extends TradeLegGenera
         Optional<TradeLegGenerationSchedule> minSched = schedules.stream().min(Comparator.comparingLong(TradeLegGenerationSchedule::scheduleDay));
         minSched.ifPresent(sched -> {
             if (newTradeLegCreationCriteriaPrimary.test(extTrd)) {
-                trdStoreHelper().storeForFutureRetrievalDay(extTrd, ItemStoreHelper.Purpose.ITEM_SPECIFIC_EVENT, sched.scheduleDay());
+                trdStoreHelper().storeForFutureRetrievalDay(extTrd, StoreHelper.Purpose.ITEM_SPECIFIC_EVENT, sched.scheduleDay());
             }
         });
     }

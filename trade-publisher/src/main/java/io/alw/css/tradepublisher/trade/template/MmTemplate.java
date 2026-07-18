@@ -10,9 +10,9 @@ import io.alw.css.domain.trade.TradeLegBuilder;
 import io.alw.css.domain.trade.TradeLegType;
 import io.alw.css.tradepublisher.generator.DayTicker;
 import io.alw.css.tradepublisher.properties.TradeTemplateProperties;
-import io.alw.css.tradepublisher.store.InMemoryItemStore;
-import io.alw.css.tradepublisher.store.ItemStore;
-import io.alw.css.tradepublisher.store.ItemStoreHelper;
+import io.alw.css.tradepublisher.store.InMemoryStore;
+import io.alw.css.tradepublisher.store.Store;
+import io.alw.css.tradepublisher.store.StoreHelper;
 import io.alw.css.tradepublisher.trade.model.Entity;
 import io.alw.css.tradepublisher.trade.model.TradeEventActionPair;
 import io.alw.css.tradepublisher.trade.service.RefDataService;
@@ -44,13 +44,13 @@ import static io.alw.css.tradepublisher.trade.template.domain.InterestBasis.Thir
 import static io.alw.css.tradepublisher.trade.template.domain.InterestPayoutFrequency.*;
 
 public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemplate> {
-    private final ItemStoreHelper<MmTrade> trdStoreHelper;
+    private final StoreHelper<MmTrade> trdStoreHelper;
 
     public MmTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, TradeTemplateProperties trdTemplateProps) {
         super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, trdTemplateProps);
 
-        ItemStore<MmTrade> trdStore = new InMemoryItemStore<>();
-        this.trdStoreHelper = new ItemStoreHelper<>(dayTicker, trdStore, rndm);
+        Store<MmTrade> trdStore = new InMemoryStore<>();
+        this.trdStoreHelper = new StoreHelper<>(dayTicker, trdStore, rndm);
     }
 
     /// Build new template for MM trade. A new MM trade can have 1 to 3 trade legs depending on whether it is a TERM or CALL and depending on the interest tradeLeg
@@ -508,7 +508,7 @@ public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemp
     }
 
     @Override
-    protected ItemStoreHelper<MmTrade> trdStoreHelper() {
+    protected StoreHelper<MmTrade> trdStoreHelper() {
         return trdStoreHelper;
     }
 
