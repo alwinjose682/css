@@ -31,7 +31,7 @@ public sealed class StoreHelper<T> permits ConfirmationMatchStore {
     }
 
     /// Removes the message data from the store and returns it
-    public Collection<T> retrieve(Purpose retrievalPurpose, long retrievalDay) {
+    public Collection<T> remove(Purpose retrievalPurpose, long retrievalDay) {
         for (; lastRetrievalDay <= retrievalDay; ++lastRetrievalDay) {
             Collection<T> msgs = store.remove(lastRetrievalDay, retrievalPurpose.storeIdx);
             if (msgs != null) {

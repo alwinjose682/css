@@ -81,7 +81,7 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
 
     protected TT withTradeAmendmentDirectives() {
         // 1. Get trades that need to be amended
-        final Collection<T> extTrds = trdStoreHelper().retrieve(StoreHelper.Purpose.AMEND, trdTemplateHelper.currentDayForTrdTemplate());
+        final Collection<T> extTrds = trdStoreHelper().remove(StoreHelper.Purpose.AMEND, trdTemplateHelper.currentDayForTrdTemplate());
         // 2. Create trade amendment directive
         for (T extTrd : extTrds) {
             // Trade amendment builder function

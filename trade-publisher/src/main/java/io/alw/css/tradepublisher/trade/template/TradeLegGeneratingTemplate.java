@@ -66,7 +66,7 @@ public abstract sealed class TradeLegGeneratingTemplate<T extends TradeLegGenera
 
     protected TT withTradeLegGenerationDirectives() {
         // Get trades for which new TradeLegs need to be created
-        final Collection<T> extTrds = trdStoreHelper().retrieve(StoreHelper.Purpose.ITEM_SPECIFIC_EVENT, trdTemplateHelper.currentDayForTrdTemplate());
+        final Collection<T> extTrds = trdStoreHelper().remove(StoreHelper.Purpose.ITEM_SPECIFIC_EVENT, trdTemplateHelper.currentDayForTrdTemplate());
         if (extTrds.isEmpty()) {
             return self();
         }

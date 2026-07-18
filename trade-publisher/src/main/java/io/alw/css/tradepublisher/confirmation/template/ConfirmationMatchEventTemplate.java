@@ -64,10 +64,10 @@ public final class ConfirmationMatchEventTemplate implements Supplier<List<Confi
         // Update template day
         updateTemplateDay();
         // Get saved match requests for current day
-        Collection<ConfirmationMatchRequest> matchRequests = matchRequestStoreHelper.retrieve(StoreHelper.Purpose.ITEM_SPECIFIC_EVENT, currentDayForTemplate());
+        Collection<ConfirmationMatchRequest> matchRequests = matchRequestStoreHelper.remove(StoreHelper.Purpose.ITEM_SPECIFIC_EVENT, currentDayForTemplate());
         matchRequests.forEach(req -> matchEvents.add(generateMatchEvent(req)));
         // Get saved match events for amendment for current day
-        Collection<ConfirmationMatchEvent> eventsForAmendment = matchEventStoreHelper.retrieve(StoreHelper.Purpose.AMEND, currentDayForTemplate());
+        Collection<ConfirmationMatchEvent> eventsForAmendment = matchEventStoreHelper.remove(StoreHelper.Purpose.AMEND, currentDayForTemplate());
         eventsForAmendment.stream().map(evt -> matchEvents.add(generateAmendedMatchEvent(evt)));
         // Store the newly generated events for future amendment
         matchEvents.forEach(this::saveForFutureAmendment);
