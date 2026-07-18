@@ -10,9 +10,15 @@ prompt ->->->  css_common_seq
 prompt ->->->  conf_match_status_seq
 @scripts/sequences/conf_match_status_seq
 
+prompt ->->->  conf_match_req_id_seq
+@scripts/sequences/conf_match_req_id_seq
+
 prompt ->->->  *** CREATING TABLES ***
 prompt ->->->  cashflow
 @scripts/tables/cashflow
+
+prompt ->->->  confirmation_match_status
+@scripts/tables/confirmation_match_status
 
 prompt ->->->  rejection
 @scripts/tables/rejection
