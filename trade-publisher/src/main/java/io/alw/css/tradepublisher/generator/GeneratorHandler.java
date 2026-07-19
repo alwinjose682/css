@@ -54,6 +54,7 @@ public final class GeneratorHandler {
 
     // Initial Generator Values - initialized only once
     private GeneratorInitialValues generatorInitialValues;
+    private ConfirmationMatchEventTemplate confirmationMatchEventTemplate;
 
     public GeneratorHandler(TradeGeneratorProperties tradeGeneratorProperties, ConfirmationMatchEventGeneratorProperties confirmationMatchEventGeneratorProperties, TradeTemplateProperties tradeTemplateProperties, TradePublisher tradePublisher, ConfirmationMatchEventPublisher confirmationMatchEventPublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
         this.tradeGeneratorProperties = tradeGeneratorProperties;
@@ -180,12 +181,13 @@ public final class GeneratorHandler {
         String key = GeneratorType.MATCH_STATUS_EVENT.name();
         long generatorSleepDurationSeconds = confirmationMatchEventGeneratorProperties.amendmentFrequencySeconds();
         try {
-            // Create ConfirmationMatchEvent Supplier
-            Supplier<List<ConfirmationMatchEvent>> matchStatusEventSupplier = createConfirmationMatchEventSupplier(rndm);
+            // Create ConfirmationMatchEvent Supplier and save the reference so that the KafkaConsumer can also access the template
+            ConfirmationMatchEventTemplate confirmationMatchEventTemplate = createConfirmationMatchEventTemplate(rndm);
+            this.confirmationMatchEventTemplate = confirmationMatchEventTemplate;
 
             // Create ConfirmationMatchEvent Generator
             GeneratorDetail generatorDetail = new GeneratorDetail(key, generatorSleepDurationSeconds);
-            Generator<ConfirmationMatchEvent> generator = createGenerator(generatorDetail, matchStatusEventSupplier, confirmationMatchEventPublisher, matchStatusGeneratorMap);
+            Generator<ConfirmationMatchEvent> generator = createGenerator(generatorDetail, confirmationMatchEventTemplate, confirmationMatchEventPublisher, matchStatusGeneratorMap);
             log.info("Created ConfirmationMatchEvent Generator [key: {}, freq: {}]", generatorDetail.generatorKey(), generatorDetail.generationFrequency());
 
             // Start the ConfirmationMatchEvent Generator
@@ -206,7 +208,7 @@ public final class GeneratorHandler {
         return new GeneratorHandlerOutcome.Success("Successfully started all trade generators", Collections.unmodifiableList(startedGenerators));
     }
 
-    private Supplier<List<ConfirmationMatchEvent>> createConfirmationMatchEventSupplier(RandomGenerator rndm) {
+    private ConfirmationMatchEventTemplate createConfirmationMatchEventTemplate(RandomGenerator rndm) {
         LocalDate initialValueDate = generatorInitialValues.valueDate();
         return new ConfirmationMatchEventTemplate(dayTicker, refDataService, confirmationMatchEventPublisher, initialValueDate, rndm);
     }
@@ -322,5 +324,9 @@ public final class GeneratorHandler {
 
     private String getTradeGeneratorKey(TransactionType transactionType, TradeType tradeType, Entity entity) {
         return GeneratorType.TRADE.name() + GENERATOR_KEY_PART_SEPARATOR + transactionType + GENERATOR_KEY_PART_SEPARATOR + tradeType + GENERATOR_KEY_PART_SEPARATOR + entity.entityCode();
+    }
+
+    public ConfirmationMatchEventTemplate confirmationMatchEventTemplate() {
+        return confirmationMatchEventTemplate;
     }
 }
