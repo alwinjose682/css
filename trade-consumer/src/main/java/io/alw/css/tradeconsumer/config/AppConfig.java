@@ -15,6 +15,8 @@ import io.alw.css.tradeconsumer.cashflow.service.CashflowEnrichmentService;
 import io.alw.css.tradeconsumer.cashflow.service.CashflowVersionService;
 import io.alw.css.tradeconsumer.confirmation.ConfirmationMatchRequestPublisher;
 import io.alw.css.tradeconsumer.confirmation.model.properties.KafkaTopicProperties;
+import io.alw.css.tradeconsumer.confirmation.repository.ConfirmationMatchStatusRepository;
+import io.alw.css.tradeconsumer.confirmation.repository.ConfirmationMatchStatusStore;
 import io.alw.css.tradeconsumer.service.CacheService;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -23,6 +25,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.incrementer.DataFieldMaxValueIncrementer;
 import org.springframework.jdbc.support.incrementer.OracleSequenceMaxValueIncrementer;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -30,13 +33,19 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.web.client.RestTemplate;
 
 import javax.sql.DataSource;
+import java.util.random.RandomGenerator;
 
 @Configuration
 @EnableConfigurationProperties
-@EnableJpaRepositories(basePackages = "io.alw.css.tradeconsumer.repository")
-@EntityScan(basePackages = "io.alw.css.tradeconsumer.cashflow.jpa")
+@EnableJpaRepositories(basePackages = {"io.alw.css.tradeconsumer.cashflow.repository","io.alw.css.tradeconsumer.confirmation.repository"})
+@EntityScan(basePackages = {"io.alw.css.tradeconsumer.cashflow.model.jpa","io.alw.css.tradeconsumer.confirmation.model.jpa"})
 // no @EnableTransactionManagement. Declarative tx is not used. Programmatic tx is used instead
 public class AppConfig {
+
+    @Bean
+    public NamedParameterJdbcTemplate namedParameterJdbcTemplate(DataSource dataSource) {
+        return new NamedParameterJdbcTemplate(dataSource);
+    }
 
     @Bean("cashflowIdSeqIncrementer")
     public DataFieldMaxValueIncrementer cashflowIdSeqIncrementer(DataSource dataSource) {
@@ -107,5 +116,15 @@ public class AppConfig {
     @Bean
     public ConfirmationMatchRequestPublisher tradeMatchRequestPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, ConfirmationMatchRequestAvro> kafkaTemplateConfMatchRequest, CssTaskExecutor cssTaskExecutor) {
         return new ConfirmationMatchRequestPublisher(kafkaTopicProperties, kafkaTemplateConfMatchRequest, cssTaskExecutor);
+    }
+
+    @Bean
+    public ConfirmationMatchStatusStore confirmationMatchStatusStore(NamedParameterJdbcTemplate namedParameterJdbcTemplate, ConfirmationMatchStatusRepository confirmationMatchStatusRepository, RejectionRepository rejectionRepository) {
+        return new ConfirmationMatchStatusStore(namedParameterJdbcTemplate, confirmationMatchStatusRepository, rejectionRepository);
+    }
+
+    @Bean
+    public RandomGenerator rndm() {
+        return RandomGenerator.getDefault();
     }
 }

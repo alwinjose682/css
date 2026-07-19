@@ -205,7 +205,7 @@ class CashflowEnrichmentServiceTest {
                 .nostroId("ncl")
                 .ssiId("a1izu")
                 .paymentSuppressionCategory(PaymentSuppressionCategory.NONE)
-                .inputBy(InputBy.CSS_SYS)
+                .inputBy(InputBy.CSS_TRD)
                 .inputByUserId(null)
                 .inputDateTime(LocalDateTime.now())
                 .build()

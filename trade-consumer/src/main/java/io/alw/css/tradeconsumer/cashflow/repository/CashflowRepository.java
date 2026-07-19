@@ -29,7 +29,7 @@ public interface CashflowRepository extends JpaRepository<CashflowEntity, Cashfl
 
     @Query(value = """
             SELECT new io.alw.css.tradeconsumer.cashflow.model.GeneratorIds(
-            (select MAX(cf.tradeId) FROM CashflowEntity cf) as tradeId
+            (select MAX(cf.tradeId) FROM CashflowEntity cf) as tradeId,
             (select MAX(cms.matchEventId) FROM ConfirmationMatchStatusEntity cms) as matchEventId
             )
             """)

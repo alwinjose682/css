@@ -1,6 +1,6 @@
 package io.alw.css.tradeconsumer.confirmation.repository;
 
-interface SqlConstants {
+public interface SqlConstants {
     String UPDATE_CONFIRMATION_STATUS__MERGE_INTO = """
             MERGE INTO cashflow X USING(
                 select A.*, M.action from (

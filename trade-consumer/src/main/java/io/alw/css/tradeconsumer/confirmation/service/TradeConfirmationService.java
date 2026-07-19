@@ -4,9 +4,7 @@ import io.alw.css.confirmation.ConfirmationMatchEvent;
 import io.alw.css.dbshared.tx.TXRW;
 import io.alw.css.domain.cashflow.Cashflow;
 import io.alw.css.domain.cashflow.CashflowBuilder;
-import io.alw.css.domain.common.InputBy;
-import io.alw.css.domain.common.TradeType;
-import io.alw.css.domain.common.YesNo;
+import io.alw.css.domain.common.*;
 import io.alw.css.domain.exception.CategorizedRuntimeException;
 import io.alw.css.domain.exception.ExceptionSubCategory;
 import io.alw.css.serialization.confirmation.ConfirmationMatchEventAvro;
@@ -14,37 +12,82 @@ import io.alw.css.tradeconsumer.cashflow.model.jpa.RejectionEntity;
 import io.alw.css.tradeconsumer.confirmation.ConfirmationMatchRequestPublisher;
 import io.alw.css.tradeconsumer.confirmation.mapper.ConfirmationMatchEventMapper;
 import io.alw.css.tradeconsumer.confirmation.model.ConfirmationMatchRequestFactoryOutcome;
+import io.alw.css.tradeconsumer.confirmation.model.jpa.ConfirmationMatchStatusEntity;
 import io.alw.css.tradeconsumer.confirmation.repository.ConfirmationMatchStatusStore;
+import io.alw.css.tradeconsumer.confirmation.repository.SqlConstants;
 import io.alw.css.tradeconsumer.model.CashflowSet;
 import io.alw.css.tradeconsumer.model.constants.ExceptionServiceName;
-import io.alw.css.tradeconsumer.model.constants.ExceptionSubCategoryType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.random.RandomGenerator;
 
-import static io.alw.css.tradeconsumer.model.constants.ExceptionSubCategoryType.EMPTY_CASHFLOW_LIST;
+import static io.alw.css.tradeconsumer.model.constants.ExceptionSubCategoryType.*;
 
 @Service
 public class TradeConfirmationService {
     private static final Logger log = LoggerFactory.getLogger(TradeConfirmationService.class);
     private final ConfirmationMatchRequestPublisher confirmationMatchRequestPublisher;
     private final ConfirmationMatchStatusStore confirmationMatchStatusStore;
+    private final RandomGenerator rndm;
     private final TXRW txrw;
 
-    public TradeConfirmationService(ConfirmationMatchRequestPublisher confirmationMatchRequestPublisher, ConfirmationMatchStatusStore confirmationMatchStatusStore, TXRW txrw) {
+    public TradeConfirmationService(ConfirmationMatchRequestPublisher confirmationMatchRequestPublisher, ConfirmationMatchStatusStore confirmationMatchStatusStore, RandomGenerator rndm, TXRW txrw) {
         this.confirmationMatchRequestPublisher = confirmationMatchRequestPublisher;
         this.confirmationMatchStatusStore = confirmationMatchStatusStore;
+        this.rndm = rndm;
         this.txrw = txrw;
     }
 
-    public void process(ConfirmationMatchEventAvro avro) {
+    public void process(ConfirmationMatchEventAvro avro, InputBy inputBy, String inputByUserId) {
+        // Map avro to domain
         ConfirmationMatchEvent confMatchEvent = ConfirmationMatchEventMapper.instance().avroToDomain(avro);
-        // TODO
+
+        long tradeId = confMatchEvent.tradeId();
+        int tradeVersion = confMatchEvent.tradeVersion();
+        TradeType tradeType = confMatchEvent.tradeType();
+
+        // Save confirmation match status
+        List<ConfirmationMatchStatusEntity> entities = buildConfirmationMatchStatusEntities(confMatchEvent);
+        try {
+            txrw.executeWithoutResult(() -> confirmationMatchStatusStore.saveConfirmationMatchStatus(entities), Exception.class);
+        } catch (Exception e) {
+            log.error("Exception occurred when saving ConfirmationMatchEvent in database. TradeId-Ver: {}-{}, TradeType: {}", tradeId, tradeVersion, tradeType);
+            var ex = CategorizedRuntimeException.TECHNICAL_RECOVERABLE("Exception occurred when saving ConfirmationMatchEvent in database",
+                    new ExceptionSubCategory(CONF_STATUS_ENTRY_FAILURE, null));
+
+            saveRejection(tradeId, tradeVersion, ex);
+            throw ex;
+        }
+
+        // Corresponding to MatchStatus, confirm or un_confirm each cashflow
+        // Determine cashflow confirmation status
+        var confirmationStatus = switch (confMatchEvent.matchStatus()) {
+            case MATCH, MANUAL_MATCH, MANUAL_FORCE_MATCH -> CashflowConfirmationStatus.CONFIRMED;
+            case ALLEGED_MATCH, BREAK_MATCH, MANUAL_BREAK_MATCH -> CashflowConfirmationStatus.PENDING;
+        };
+
+        // Randomly select a sql statement to confirm or un-confirm cashflow
+        // This is purely to check the performance from java layer
+        final String cashflowConfirmationSql = rndm.nextBoolean()
+                ? SqlConstants.UPDATE_CONFIRMATION_STATUS__MERGE_INTO
+                : SqlConstants.UPDATE_CONFIRMATION_STATUS__ANONYMOUS_PROCEDURE;
+
+        // Confirm or un-confirm all the cashflows atomically depending on the cashflow confirmation status
+        try {
+            txrw.executeWithoutResult(() -> confirmationMatchStatusStore.updateCashflowWithConfirmationStatus(cashflowConfirmationSql, confMatchEvent, confirmationStatus, inputBy, inputByUserId));
+        } catch (Exception e) {
+            log.error("Exception occurred when confirming/un-confirming cashflows corresponding to the ConfirmationMatchEvent. TradeId-Ver: {}-{}, TradeType: {}", tradeId, tradeVersion, tradeType);
+            var ex = CategorizedRuntimeException.TECHNICAL_UNRECOVERABLE("Exception occurred when confirming/un-confirming cashflows corresponding to the ConfirmationMatchEvent",
+                    new ExceptionSubCategory(CASHFLOW_CONF_FAILURE, confMatchEvent));
+
+            saveRejection(tradeId, tradeVersion, ex);
+            throw ex;
+        }
     }
 
     /// Returns an un modifiable list of cashflowBuilders grouped together corresponding to each confirmation match request
@@ -81,17 +124,27 @@ public class TradeConfirmationService {
         List<ConfirmationMatchRequestFactoryOutcome> outcomes = TradeConfirmationServiceDelegate.buildConfirmationMatchRequests(groupedCashflows, tradeId, tradeVersion, tradeType);
 
         // Save database audit
-        txrw.executeWithoutResult(() -> saveConfMatchRequestAudit(outcomes), Exception.class);
+        try {
+            txrw.executeWithoutResult(() -> saveConfMatchRequestAudit(outcomes), Exception.class);
+        } catch (Exception e) {
+            log.error("Exception occurred when saving ConfirmationMatchRequest audit entry in database. TradeId-Ver: {}-{}, TradeType: {}", tradeId, tradeVersion, tradeType);
+            var ex = CategorizedRuntimeException.TECHNICAL_RECOVERABLE("Exception occurred when saving ConfirmationMatchRequest audit entry in database",
+                    new ExceptionSubCategory(CONF_STATUS_ENTRY_FAILURE, null));
+
+            saveRejection(outcomes, ex);
+            throw ex;
+        }
 
         // Publish for matching
         try {
             outcomes.forEach(o -> confirmationMatchRequestPublisher.publish(o.confMatchRequest()));
         } catch (Exception e) {
             log.error("Exception occurred when publishing ConfirmationMatchRequest to kafka topic. TradeId-Ver: {}-{}, TradeType: {}", tradeId, tradeVersion, tradeType);
-            saveRejection(outcomes,
-                    CategorizedRuntimeException.TECHNICAL_RECOVERABLE("Exception occurred when publishing ConfirmationMatchRequest to kafka topic",
-                            new ExceptionSubCategory(ExceptionSubCategoryType.CONF_REQ_PUB_FAILURE, null))
-            );
+            var ex = CategorizedRuntimeException.TECHNICAL_RECOVERABLE("Exception occurred when publishing ConfirmationMatchRequest to kafka topic",
+                    new ExceptionSubCategory(CONF_REQ_PUB_FAILURE, null));
+
+            saveRejection(outcomes, ex);
+            throw ex;
         }
     }
 
@@ -101,41 +154,62 @@ public class TradeConfirmationService {
         }
     }
 
+    private List<ConfirmationMatchStatusEntity> buildConfirmationMatchStatusEntities(ConfirmationMatchEvent confMatchEvent) {
+        return confMatchEvent
+                .tradeLegMatchAttributes().stream()
+                .map(tl -> {
+                    var ent = new ConfirmationMatchStatusEntity();
+                    ent.setConfRequestId(confMatchEvent.matchRequestId());
+                    ent.setContraPairReqId(confMatchEvent.contraPairReqId());
+                    ent.setTradeId(confMatchEvent.tradeId());
+                    ent.setTradeVersion(confMatchEvent.tradeVersion());
+                    ent.setTradeLegId(tl.tradeLegId());
+                    ent.setTradeLegVersion(tl.tradeLegVersion());
+                    ent.setMatchEventId(confMatchEvent.eventId());
+                    ent.setMatchEventVersion(confMatchEvent.eventVersion());
+                    ent.setNostroId(tl.nostroId());
+                    ent.setSsiId(tl.ssiId());
+                    ent.setSentOrRecd(SentOrRecd.RECD);
+                    ent.setMatchStatus(confMatchEvent.matchStatus());
+                    ent.setMatchDate(confMatchEvent.matchDate());
+                    ent.setInputDateTime(LocalDateTime.now());
+
+                    return ent;
+                })
+                .toList();
+    }
+
     private void saveRejection(List<ConfirmationMatchRequestFactoryOutcome> outcomes, CategorizedRuntimeException cre) {
         Runnable action = () -> {
             for (ConfirmationMatchRequestFactoryOutcome outcome : outcomes) {
                 var req = outcome.confMatchRequest();
                 long tradeId = req.getTradeId();
                 int tradeVersion = req.getTradeVersion();
-                for (var attr : req.getTradeLegMatchAttributes()) {
-                    long tradeLegId = attr.getTradeLegId();
-                    int tradeLegVersion = attr.getTradeLegVersion();
-                    LocalDate valueDate = attr.getValueDate();
 
-                    var ent = new RejectionEntity()
-                            .setTradeId(tradeId)
-                            .setTradeVersion(tradeVersion)
-                            .setTradeLegId(tradeLegId)
-                            .setTradeLegVersion(tradeLegVersion)
-                            .setValueDate(valueDate)
-                            //
-                            .setService(ExceptionServiceName.CONFIRMATION.value())
-                            .setExceptionType(cre.type().name())
-                            .setExceptionCategory(cre.category().name())
-                            .setExceptionSubCategory(cre.subCategory().type())
-                            .setMsg(cre.getMessage())
-                            .setReplayable(cre.replayable() ? YesNo.Y : YesNo.N)
-                            .setNumOfRetries(cre.numOfRetries())
-                            .setCreatedDateTime(cre.createdTime())
-                            .setInputBy(InputBy.CSS_SYS)
-                            .setUpdatedDateTime(LocalDateTime.now());
-
-                    confirmationMatchStatusStore.saveRejection(ent);
-                }
+                saveRejection(tradeId, tradeVersion, cre);
             }
         };
 
         // execute db transaction
         txrw.executeWithoutResult(action, Exception.class);
+    }
+
+    private void saveRejection(long tradeId, int tradeVersion, CategorizedRuntimeException cre) {
+        var ent = new RejectionEntity()
+                .setTradeId(tradeId)
+                .setTradeVersion(tradeVersion)
+                //
+                .setService(ExceptionServiceName.CONFIRMATION.value())
+                .setExceptionType(cre.type().name())
+                .setExceptionCategory(cre.category().name())
+                .setExceptionSubCategory(cre.subCategory().type())
+                .setMsg(cre.getMessage())
+                .setReplayable(cre.replayable() ? YesNo.Y : YesNo.N)
+                .setNumOfRetries(cre.numOfRetries())
+                .setCreatedDateTime(cre.createdTime())
+                .setInputBy(InputBy.CSS_CONF)
+                .setUpdatedDateTime(LocalDateTime.now());
+
+        confirmationMatchStatusStore.saveRejection(ent);
     }
 }

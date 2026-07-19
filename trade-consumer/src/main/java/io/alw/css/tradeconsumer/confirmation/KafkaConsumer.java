@@ -1,5 +1,6 @@
 package io.alw.css.tradeconsumer.confirmation;
 
+import io.alw.css.domain.common.InputBy;
 import io.alw.css.serialization.confirmation.ConfirmationMatchEventAvro;
 import io.alw.css.tradeconsumer.confirmation.service.TradeConfirmationService;
 import org.slf4j.Logger;
@@ -26,6 +27,6 @@ public class KafkaConsumer {
         int numOfTradeLegs = avro.getTradeLegMatchAttributes().size();
         log.info("Received ConfirmationMatchEvent[tradeId: {}, tradeVersion: {}, tradeType: {}] with {} trade legs", tradeId, tradeVersion, tradeType, numOfTradeLegs);
 
-        tradeConfirmationService.process(avro);
+        tradeConfirmationService.process(avro, InputBy.CSS_CONF, InputBy.CSS_CONF.name());
     }
 }

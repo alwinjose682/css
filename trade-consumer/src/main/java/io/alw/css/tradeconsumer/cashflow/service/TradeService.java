@@ -151,7 +151,7 @@ public class TradeService {
                 boolean replayable = false;
                 int numOfRetries = 0;
                 LocalDateTime createdDateTime = LocalDateTime.now();
-                InputBy inputBy = InputBy.CSS_SYS;
+                InputBy inputBy = InputBy.CSS_TRD;
 
                 log.info("Last cashflow is cancelled. No further amendment is permitted. TradeLegID-Ver: {}-{}", bdr.tradeLegId(), bdr.tradeLegVersion());
                 rejectCashflow(CashflowRejectionRecordBuilder.builder()

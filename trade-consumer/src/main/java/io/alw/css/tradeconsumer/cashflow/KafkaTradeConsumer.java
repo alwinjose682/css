@@ -27,6 +27,6 @@ public class KafkaTradeConsumer {
         final int numOfTradeLegs = tradeAvro.getTradeLegs().size();
         log.info("Received TradeAvroMessage[tradeId: {}, tradeVersion: {}, tradeType: {}] with {} trade legs", tradeId, tradeVersion, tradeType, numOfTradeLegs);
 
-        tradeService.process(tradeAvro, InputBy.CSS_SYS);
+        tradeService.process(tradeAvro, InputBy.CSS_TRD);
     }
 }
