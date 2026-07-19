@@ -28,10 +28,10 @@ public interface CashflowRepository extends JpaRepository<CashflowEntity, Cashfl
     int updatePreviousVersionCashflowToNonLatest(@Param("cashflowId") long cashflowId, @Param("cashflowVersion") int cashflowVersion);
 
     @Query(value = """
-            SELECT new io.alw.css.tradeconsumer.cashflow.model.GeneratorIds(
-            (select MAX(cf.tradeId) FROM CashflowEntity cf) as tradeId,
-            (select MAX(cms.matchEventId) FROM ConfirmationMatchStatusEntity cms) as matchEventId
-            )
-            """)
+                select A.*, B.* from
+                (select MAX(cf.tradeId) as tradeId FROM CashflowEntity cf) A
+                CROSS JOIN
+                (select MAX(cms.matchEventId) as matchEventId FROM ConfirmationMatchStatusEntity cms) B
+            """, nativeQuery = true)
     GeneratorIds findMaxTradeId();
 }
