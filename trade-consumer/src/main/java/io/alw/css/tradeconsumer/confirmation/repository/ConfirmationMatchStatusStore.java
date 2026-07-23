@@ -29,10 +29,7 @@ public class ConfirmationMatchStatusStore {
 
 
     public void saveConfirmationMatchStatus(List<ConfirmationMatchStatusEntity> entities) {
-        for (ConfirmationMatchStatusEntity ent : entities) {
-            log.trace("Saving ConfirmationMatchStatus to DB. Sent_or_Recd:{}, TradeId-Ver: {}-{}, TradeLegId-Ver: {}-{}, MatchEventId-Ver: {}-{}", ent.getSentOrRecd(), ent.getTradeId(), ent.getTradeVersion(), ent.getTradeLegId(), ent.getTradeLegVersion(), ent.getMatchEventId(), ent.getMatchEventVersion());
-            confirmationMatchStatusRepository.save(ent);
-        }
+            confirmationMatchStatusRepository.saveAll(entities);
     }
 
     public void saveRejection(RejectionEntity ent) {

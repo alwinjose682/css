@@ -60,7 +60,7 @@ public class TradeConfirmationService {
             var ex = CategorizedRuntimeException.TECHNICAL_RECOVERABLE("Exception occurred when saving ConfirmationMatchEvent in database",
                     new ExceptionSubCategory(CONF_STATUS_ENTRY_FAILURE, null));
 
-            saveRejection(tradeId, tradeVersion, ex);
+            saveRejection(tradeId, tradeVersion, tradeType.name(), ex);
             throw ex;
         }
 
@@ -85,7 +85,7 @@ public class TradeConfirmationService {
             var ex = CategorizedRuntimeException.TECHNICAL_UNRECOVERABLE("Exception occurred when confirming/un-confirming cashflows corresponding to the ConfirmationMatchEvent",
                     new ExceptionSubCategory(CASHFLOW_CONF_FAILURE, confMatchEvent));
 
-            saveRejection(tradeId, tradeVersion, ex);
+            saveRejection(tradeId, tradeVersion, tradeType.name(), ex);
             throw ex;
         }
     }
@@ -103,6 +103,7 @@ public class TradeConfirmationService {
             case PAYMENT, FX_NDF, BOND, REPO, MM, OPTION -> throw new RuntimeException("No implementation yet for generating ConfirmationMatchRequest for TradeType: " + tradeType);
         };
 
+        log.trace("Grouped cashflows for confirmation generation and matching. Number of groupings: {}", groupedCashflowBuilders.size());
         return Collections.unmodifiableList(groupedCashflowBuilders);
     }
 
@@ -120,8 +121,11 @@ public class TradeConfirmationService {
         int tradeVersion = referenceCashflow.tradeVersion();
         TradeType tradeType = referenceCashflow.tradeType();
 
+        log.info("Sending trade for confirmation generation and matching. Number of confirmation requests: {}", groupedCashflows.size());
+
         // Create ConfirmationMatchRequests
         List<ConfirmationMatchRequestFactoryOutcome> outcomes = TradeConfirmationServiceDelegate.buildConfirmationMatchRequests(groupedCashflows, tradeId, tradeVersion, tradeType);
+        log.debug("Created confirmation match requests. Number of of requests: {}", outcomes.size());
 
         // Save database audit
         try {
@@ -149,9 +153,11 @@ public class TradeConfirmationService {
     }
 
     private void saveConfMatchRequestAudit(List<ConfirmationMatchRequestFactoryOutcome> outcomes) {
-        for (ConfirmationMatchRequestFactoryOutcome outcome : outcomes) {
-            confirmationMatchStatusStore.saveConfirmationMatchStatus(outcome.confMatchStatusJpaEntities());
-        }
+        List<ConfirmationMatchStatusEntity> jpaEntities = outcomes.stream()
+                .map(ConfirmationMatchRequestFactoryOutcome::confMatchStatusJpaEntities)
+                .flatMap(List::stream)
+                .toList();
+        confirmationMatchStatusStore.saveConfirmationMatchStatus(jpaEntities);
     }
 
     private List<ConfirmationMatchStatusEntity> buildConfirmationMatchStatusEntities(ConfirmationMatchEvent confMatchEvent) {
@@ -185,8 +191,9 @@ public class TradeConfirmationService {
                 var req = outcome.confMatchRequest();
                 long tradeId = req.getTradeId();
                 int tradeVersion = req.getTradeVersion();
+                String tradeType = req.getTradeType();
 
-                saveRejection(tradeId, tradeVersion, cre);
+                saveRejection(tradeId, tradeVersion, tradeType, cre);
             }
         };
 
@@ -194,10 +201,11 @@ public class TradeConfirmationService {
         txrw.executeWithoutResult(action, Exception.class);
     }
 
-    private void saveRejection(long tradeId, int tradeVersion, CategorizedRuntimeException cre) {
+    private void saveRejection(long tradeId, int tradeVersion, String tradeType, CategorizedRuntimeException cre) {
         var ent = new RejectionEntity()
                 .setTradeId(tradeId)
                 .setTradeVersion(tradeVersion)
+                .setTradeType(tradeType)
                 //
                 .setService(ExceptionServiceName.CONFIRMATION.value())
                 .setExceptionType(cre.type().name())

@@ -21,7 +21,7 @@ public final class ConfirmationMatchRequestPublisher {
     }
 
     public void publish(ConfirmationMatchRequestAvro avro) {
-        String outputTopic = kafkaTopicProperties.tradeMatchRequestTopic();
+        String outputTopic = kafkaTopicProperties.confirmationMatchRequestTopic();
         String key = String.valueOf(avro.getTradeId());
         log.trace("Sending ConfirmationMatchRequest event: {} to topic: {}", key, outputTopic);
 

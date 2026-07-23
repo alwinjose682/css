@@ -5,17 +5,17 @@ import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
 @ConfigurationProperties("app.kafka.topic")
 public class KafkaTopicProperties {
-    private final String tradeMatchRequest;
+    private final String confirmationMatchRequest;
     private final String confirmationMatchEvent;
 
     @ConstructorBinding
-    public KafkaTopicProperties(String tradeMatchRequest, String confirmationMatchEvent) {
-        this.tradeMatchRequest = tradeMatchRequest;
+    public KafkaTopicProperties(String confirmationMatchRequest, String confirmationMatchEvent) {
+        this.confirmationMatchRequest = confirmationMatchRequest;
         this.confirmationMatchEvent = confirmationMatchEvent;
     }
 
-    public String tradeMatchRequestTopic() {
-        return tradeMatchRequest;
+    public String confirmationMatchRequestTopic() {
+        return confirmationMatchRequest;
     }
 
     public String confirmationMatchEventTopic() {
