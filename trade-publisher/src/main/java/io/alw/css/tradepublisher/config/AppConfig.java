@@ -16,7 +16,6 @@ import io.alw.css.tradepublisher.trade.TradePublisher;
 import io.alw.css.tradepublisher.trade.service.RefDataService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.util.function.Supplier;
@@ -52,7 +51,6 @@ public class AppConfig {
     }
 
     @Bean
-    @Lazy
     public Supplier<ConfirmationMatchEventTemplate> confirmationMatchEventTemplate(GeneratorHandler generatorHandler) {
         return generatorHandler::confirmationMatchEventTemplate;
     }
