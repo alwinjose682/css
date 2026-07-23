@@ -29,9 +29,9 @@ public interface CashflowRepository extends JpaRepository<CashflowEntity, Cashfl
 
     @Query(value = """
                 select A.*, B.* from
-                (select MAX(cf.tradeId) as tradeId FROM CashflowEntity cf) A
+                (select MAX(cf.trade_id) as tradeId FROM cashflow cf) A
                 CROSS JOIN
-                (select MAX(cms.matchEventId) as matchEventId FROM ConfirmationMatchStatusEntity cms) B
+                (select MAX(cms.match_event_id) as matchEventId FROM confirmation_match_status cms) B
             """, nativeQuery = true)
     GeneratorIds findMaxTradeId();
 }
