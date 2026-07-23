@@ -18,7 +18,7 @@ public class KafkaConsumer {
         this.tradeConfirmationService = tradeConfirmationService;
     }
 
-    @KafkaListener(topics = "${app.kafka.topic.confirmation-match-event}", groupId = "${spring.kafka.consumer.group-id}", containerFactory = "confMatchEventListenerContainerFactory")
+    @KafkaListener(topics = "${app.kafka.topic.confirmation-match-event}", groupId = "${kafka.consumer.confmatch.group-id}", containerFactory = "confListenerFactory")
     public void accept(Message<ConfirmationMatchEventAvro> message) {
         var avro = message.getPayload();
         long tradeId = avro.getTradeId();

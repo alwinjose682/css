@@ -18,7 +18,7 @@ public class KafkaTradeConsumer {
         this.tradeService = tradeService;
     }
 
-    @KafkaListener(topics = "${app.kafka.topic.trade-cash-generation-event}", groupId = "${spring.kafka.consumer.group-id}", containerFactory = "tradeCashGenerationListenerContainerFactory")
+    @KafkaListener(topics = "${app.kafka.topic.trade-cash-generation-event}", groupId = "${kafka.consumer.tradecash.group-id}", containerFactory = "tradeListenerFactory")
     public void accept(Message<TradeAvro> message) {
         var tradeAvro = message.getPayload();
         final long tradeId = tradeAvro.getTradeID();
