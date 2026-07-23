@@ -81,7 +81,7 @@ public class ApplicationStartupEvent implements ApplicationListener<ApplicationR
             return initValues;
         }
 
-        var initValues = new GeneratorInitialValues(LocalDate.now(), 1L + maxIds.tradeId(), maxIds.matchEventId());
+        var initValues = new GeneratorInitialValues(LocalDate.now(), 1L + maxIds.tradeId().longValue(), maxIds.matchEventId().longValue());
         log.info("Staring Trade and Confirmation Generators with initial values greater than the values of last processed cashflow and last generated confirmation event: {}", initValues);
         return initValues;
     }

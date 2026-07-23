@@ -1,7 +1,9 @@
 package io.alw.css.tradeconsumer.cashflow.model;
 
+import java.math.BigDecimal;
+
 public record GeneratorIds(
-        Long tradeId,
-        Long matchEventId
+        BigDecimal tradeId,
+        BigDecimal matchEventId
 ) {
 }
