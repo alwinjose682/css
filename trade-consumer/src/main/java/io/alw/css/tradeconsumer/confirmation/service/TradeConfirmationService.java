@@ -79,7 +79,12 @@ public class TradeConfirmationService {
 
         // Confirm or un-confirm all the cashflows atomically depending on the cashflow confirmation status
         try {
-            txrw.executeWithoutResult(() -> confirmationMatchStatusStore.updateCashflowWithConfirmationStatus(cashflowConfirmationSql, confMatchEvent, confirmationStatus, inputBy, inputByUserId));
+            int numOfCashflowsUpdated = txrw.execute(
+                    () -> confirmationMatchStatusStore.updateCashflowWithConfirmationStatus(cashflowConfirmationSql, confMatchEvent, confirmationStatus, inputBy, inputByUserId),
+                    Exception.class);
+
+            log.info("Successfully updated {} cashflow confirmation status to {}. TradeType: {}, ConfirmationMatchRequestId: {}, ConfirmationMatchEventId-Ver: {}-{}",
+                    numOfCashflowsUpdated, confirmationStatus.name(), confMatchEvent.tradeType().name(), confMatchEvent.matchRequestId(), confMatchEvent.eventId(), confMatchEvent.eventVersion());
         } catch (Exception e) {
             log.error("Exception occurred when confirming/un-confirming cashflows corresponding to the ConfirmationMatchEvent. TradeId-Ver: {}-{}, TradeType: {}", tradeId, tradeVersion, tradeType);
             var ex = CategorizedRuntimeException.TECHNICAL_UNRECOVERABLE("Exception occurred when confirming/un-confirming cashflows corresponding to the ConfirmationMatchEvent",

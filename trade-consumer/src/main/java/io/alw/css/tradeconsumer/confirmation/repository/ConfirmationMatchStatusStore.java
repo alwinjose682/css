@@ -36,7 +36,7 @@ public class ConfirmationMatchStatusStore {
         rejectionRepository.save(ent);
     }
 
-    public void updateCashflowWithConfirmationStatus(String sql, ConfirmationMatchEvent confMatchEvent, CashflowConfirmationStatus confirmationStatus, InputBy inputBy, String inputByUserId) {
+    public int updateCashflowWithConfirmationStatus(String sql, ConfirmationMatchEvent confMatchEvent, CashflowConfirmationStatus confirmationStatus, InputBy inputBy, String inputByUserId) {
         long tradeId = confMatchEvent.tradeId();
         int tradeVersion = confMatchEvent.tradeVersion();
         long confReqId = confMatchEvent.matchRequestId();
@@ -64,7 +64,9 @@ public class ConfirmationMatchStatusStore {
             }
         }
         if (errCnt > 0) {
-            throw new RuntimeException("Error updating cashflows with confirmation status. Num of updates with error: " + errCnt);
+            throw new RuntimeException("Error updating cashflows with new confirmation status. Num of updates with error: " + errCnt);
         }
+
+        return numOfRowsUpdated.length;
     }
 }
