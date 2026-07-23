@@ -47,7 +47,7 @@
     },
     {
       "name": "contraPairReqId",
-      "type": "long"
+      "type": ["null","long"]
     }
   ]
 }
