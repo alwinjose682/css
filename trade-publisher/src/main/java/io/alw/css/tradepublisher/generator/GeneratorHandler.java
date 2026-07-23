@@ -43,16 +43,19 @@ public final class GeneratorHandler {
     private final Map<String, List<Generator<Trade>>> tradeGeneratorMap;
     private final Map<String, List<Generator<ConfirmationMatchEvent>>> matchStatusGeneratorMap;
 
+    // Spring beans
     private final TradeGeneratorProperties tradeGeneratorProperties;
     private final ConfirmationMatchEventGeneratorProperties confirmationMatchEventGeneratorProperties;
     private final TradeTemplateProperties tradeTemplateProperties;
     private final TradePublisher tradePublisher;
     private final ConfirmationMatchEventPublisher confirmationMatchEventPublisher;
     private final RefDataService refDataService;
-    private final DayTicker dayTicker;
     private final CssTaskExecutor cssTaskExecutor;
+    // Other Constants
+    private final DayTicker dayTicker;
+    private final RandomGenerator rndm;
 
-    // Initial Generator Values - initialized only once
+    // Initial Generator Values - initialized only once(Lazy Constants)
     private GeneratorInitialValues generatorInitialValues;
     private ConfirmationMatchEventTemplate confirmationMatchEventTemplate;
 
@@ -68,6 +71,7 @@ public final class GeneratorHandler {
         this.tradeGeneratorMap = new ConcurrentHashMap<>();
         this.matchStatusGeneratorMap = new ConcurrentHashMap<>();
         this.cssTaskExecutor = cssTaskExecutor;
+        this.rndm = RandomGenerator.getDefault();
     }
 
     private boolean beginHandlerOperation() {
@@ -78,9 +82,9 @@ public final class GeneratorHandler {
         return activeHandlerOperation.compareAndSet(true, false);
     }
 
-    public GeneratorHandlerOutcome startAllGenerators(GeneratorInitialValues generatorInitialValues) {
+    public GeneratorHandlerOutcome startAllTradeGenerators(GeneratorInitialValues generatorInitialValues) {
         setGeneratorInitialValues(generatorInitialValues);
-        return startAllGenerators();
+        return startAllTradeGenerators();
     }
 
     /// Sets trade generation initial values IF they are not set already.
@@ -113,8 +117,8 @@ public final class GeneratorHandler {
     ///
     /// New type of generator or just a new instance of a generator can be started explicitly using other methods.
     ///
-    /// @see GeneratorHandler#startGenerators()
-    public GeneratorHandlerOutcome startAllGenerators() {
+    /// @see GeneratorHandler#startTradeGenerators()
+    public GeneratorHandlerOutcome startAllTradeGenerators() {
         setGeneratorInitialValues(generatorInitialValues);
 
         try {
@@ -127,7 +131,7 @@ public final class GeneratorHandler {
             // If day ticker is already started, calling start method has no effect
             dayTicker.start();
 
-            return startGenerators();
+            return startTradeGenerators();
         } finally {
             // End handler operation
             endHandlerOperation(); //TODO: What to do if not ok
@@ -140,10 +144,9 @@ public final class GeneratorHandler {
     /// 1. Create Trade suppliers(using Trade Templates for FX, MM etc)
     /// 2. Create Generators which invoke the Trade Supplier to generate Trades like FX, MM etc
     /// 3. Start the Generators on new Virtual Threads
-    private GeneratorHandlerOutcome startGenerators() {
+    private GeneratorHandlerOutcome startTradeGenerators() {
         List<GeneratorDetail> startedGenerators = new ArrayList<>();
         List<TradeType> listOfSupportedTradeTypes = List.of(FX, MM_TERM, MM_CALL);
-        final RandomGenerator rndm = RandomGenerator.getDefault();
 
         // Start Trade generators for all combinations of TransactionType, TradeType and Entity
         for (TransactionType transactionType : TransactionType.values()) {
@@ -155,7 +158,7 @@ public final class GeneratorHandler {
                         final long generatorSleepDurationSeconds = getGeneratorSleepDurationFor(key);
 
                         // Create Trade Supplier
-                        Supplier<List<Trade>> trdSupplier = createTradeSupplier(transactionType, tradeType, entity, rndm);
+                        Supplier<List<Trade>> trdSupplier = createTradeSupplier(transactionType, tradeType, entity);
 
                         // Create Trade Generator
                         GeneratorDetail generatorDetail = new GeneratorDetail(key, generatorSleepDurationSeconds);
@@ -178,12 +181,13 @@ public final class GeneratorHandler {
         }
 
         // Start a single instance of ConfirmationMatchEvent generator
-        String key = GeneratorType.MATCH_STATUS_EVENT.name();
+        String key = GeneratorType.CONF_MATCH_EVENT.name();
         long generatorSleepDurationSeconds = confirmationMatchEventGeneratorProperties.amendmentFrequencySeconds();
         try {
             // Create ConfirmationMatchEvent Supplier and save the reference so that the KafkaConsumer can also access the template
-            ConfirmationMatchEventTemplate confirmationMatchEventTemplate = createConfirmationMatchEventTemplate(rndm);
-            this.confirmationMatchEventTemplate = confirmationMatchEventTemplate;
+            if (this.confirmationMatchEventTemplate == null) {
+                this.confirmationMatchEventTemplate = createConfirmationMatchEventTemplate();
+            }
 
             // Create ConfirmationMatchEvent Generator
             GeneratorDetail generatorDetail = new GeneratorDetail(key, generatorSleepDurationSeconds);
@@ -208,7 +212,7 @@ public final class GeneratorHandler {
         return new GeneratorHandlerOutcome.Success("Successfully started all trade generators", Collections.unmodifiableList(startedGenerators));
     }
 
-    private ConfirmationMatchEventTemplate createConfirmationMatchEventTemplate(RandomGenerator rndm) {
+    private ConfirmationMatchEventTemplate createConfirmationMatchEventTemplate() {
         LocalDate initialValueDate = generatorInitialValues.valueDate();
         return new ConfirmationMatchEventTemplate(dayTicker, refDataService, confirmationMatchEventPublisher, initialValueDate, rndm);
     }
@@ -259,7 +263,7 @@ public final class GeneratorHandler {
         return newGenerator;
     }
 
-    private Supplier<List<Trade>> createTradeSupplier(TransactionType transactionType, TradeType tradeType, Entity entity, RandomGenerator rndm) {
+    private Supplier<List<Trade>> createTradeSupplier(TransactionType transactionType, TradeType tradeType, Entity entity) {
         LocalDate initialValueDate = generatorInitialValues.valueDate();
 
         return switch (tradeType) {

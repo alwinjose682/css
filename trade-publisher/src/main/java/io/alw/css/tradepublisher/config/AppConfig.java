@@ -6,7 +6,6 @@ import io.alw.css.serialization.confirmation.ConfirmationMatchEventAvro;
 import io.alw.css.serialization.trade.TradeAvro;
 import io.alw.css.tradepublisher.CssTaskExecutor;
 import io.alw.css.tradepublisher.confirmation.ConfirmationMatchEventPublisher;
-import io.alw.css.tradepublisher.confirmation.template.ConfirmationMatchEventTemplate;
 import io.alw.css.tradepublisher.generator.GeneratorHandler;
 import io.alw.css.tradepublisher.properties.ConfirmationMatchEventGeneratorProperties;
 import io.alw.css.tradepublisher.properties.KafkaTopicProperties;
@@ -18,7 +17,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.KafkaTemplate;
 
-import java.util.function.Supplier;
 
 @Configuration
 public class AppConfig {
@@ -36,7 +34,7 @@ public class AppConfig {
     }
 
     @Bean
-    public GeneratorHandler tradeGeneratorHandler(TradeGeneratorProperties tradeGeneratorProperties, ConfirmationMatchEventGeneratorProperties confirmationMatchEventGeneratorProperties, TradeTemplateProperties tradeTemplateProperties, TradePublisher tradePublisher, ConfirmationMatchEventPublisher confirmationMatchEventPublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
+    public GeneratorHandler generatorHandler(TradeGeneratorProperties tradeGeneratorProperties, ConfirmationMatchEventGeneratorProperties confirmationMatchEventGeneratorProperties, TradeTemplateProperties tradeTemplateProperties, TradePublisher tradePublisher, ConfirmationMatchEventPublisher confirmationMatchEventPublisher, RefDataService refDataService, CssTaskExecutor cssTaskExecutor) {
         return new GeneratorHandler(tradeGeneratorProperties, confirmationMatchEventGeneratorProperties, tradeTemplateProperties, tradePublisher, confirmationMatchEventPublisher, refDataService, cssTaskExecutor);
     }
 
@@ -48,10 +46,5 @@ public class AppConfig {
     @Bean
     public ConfirmationMatchEventPublisher confirmationMatchEventPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, ConfirmationMatchEventAvro> kafkaTemplateConfMatchEvent, CssTaskExecutor cssTaskExecutor) {
         return new ConfirmationMatchEventPublisher(kafkaTopicProperties, kafkaTemplateConfMatchEvent, cssTaskExecutor);
-    }
-
-    @Bean
-    public Supplier<ConfirmationMatchEventTemplate> confirmationMatchEventTemplate(GeneratorHandler generatorHandler) {
-        return generatorHandler::confirmationMatchEventTemplate;
     }
 }
