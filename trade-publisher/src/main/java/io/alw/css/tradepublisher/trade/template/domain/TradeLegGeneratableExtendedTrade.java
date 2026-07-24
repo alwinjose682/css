@@ -19,7 +19,9 @@ public sealed interface TradeLegGeneratableExtendedTrade extends ExtendedTrade p
         long lastTradeLegGenerationDay = lastTradeLegGenerationDay();
         while (lastTradeLegGenerationDay <= day) {
             Set<TradeLegGenerationSchedule> schedules = tradeLegGenerationSchedules().get(lastTradeLegGenerationDay++);
-            allSchedules.addAll(schedules);
+            if (schedules != null && !schedules.isEmpty()) {
+                allSchedules.addAll(schedules);
+            }
         }
         setLastTradeLegGenerationDay(lastTradeLegGenerationDay);
 
