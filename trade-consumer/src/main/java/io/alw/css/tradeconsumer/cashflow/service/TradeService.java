@@ -80,7 +80,8 @@ public class TradeService {
                     // Validate and Enrich cashflow with nostroId, ssiId etc
                     CashflowSet cashflowSet = validateAndEnrichCashflow(outcome, bdr, newCashflows, previousVersionCashflows);
                     if (cashflowSet == null) {
-                        log.warn("Result after validation and enrichment of the new cashflow to be processed is null. This will result in confirmation request failure or missing confirmation. TradeLegId-Ver: {}-{}", bdr.tradeLegId(), bdr.tradeLegVersion());
+                        log.warn("Result after validation and enrichment of the new cashflow to be processed is null. This may result in confirmation request failure or missing confirmation. TradeLegId-Ver: {}-{}", bdr.tradeLegId(), bdr.tradeLegVersion());
+                        continue;
                     }
                     cashflowGroup.add(cashflowSet);
                 }
