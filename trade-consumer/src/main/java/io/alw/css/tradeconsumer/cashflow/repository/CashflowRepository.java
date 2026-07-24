@@ -15,7 +15,7 @@ public interface CashflowRepository extends JpaRepository<CashflowEntity, Cashfl
     @Query(value = """
             select cf from CashflowEntity cf
             where cf.tradeId=:tradeId and cf.tradeLegId=:tradeLegId
-            and cf.tradeLegVersion in (select max(cf1.tradeLegVersion) from CashflowEntity cf1 where cf1.tradeId=cf.tradeId and cf1.tradeLegId=cf.tradeLegId)
+            and cf.cashflowVersion in (select max(cf1.cashflowVersion) from CashflowEntity cf1 where cf1.cashflowId=cf.cashflowId)
             """)
     CashflowEntity findPreviousVersionCashflow(long tradeId, long tradeLegId);
 
