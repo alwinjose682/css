@@ -83,8 +83,8 @@ public class TradeConfirmationService {
                     () -> confirmationMatchStatusStore.updateCashflowWithConfirmationStatus(cashflowConfirmationSql, confMatchEvent, confirmationStatus, inputBy, inputByUserId),
                     Exception.class);
 
-            log.info("Successfully updated {} cashflow confirmation status to {}. TradeType: {}, ConfirmationMatchRequestId: {}, ConfirmationMatchEventId-Ver: {}-{}",
-                    numOfCashflowsUpdated, confirmationStatus.name(), confMatchEvent.tradeType().name(), confMatchEvent.matchRequestId(), confMatchEvent.eventId(), confMatchEvent.eventVersion());
+            log.info("Successfully updated cashflow confirmation status to {}. Number of cashflows: {} TradeType: {}, ConfirmationMatchRequestId: {}, ConfirmationMatchEventId-Ver: {}-{}",
+                    confirmationStatus.name(), numOfCashflowsUpdated, confMatchEvent.tradeType().name(), confMatchEvent.matchRequestId(), confMatchEvent.eventId(), confMatchEvent.eventVersion());
         } catch (Exception e) {
             log.error("Exception occurred when confirming/un-confirming cashflows corresponding to the ConfirmationMatchEvent. TradeId-Ver: {}-{}, TradeType: {}", tradeId, tradeVersion, tradeType);
             var ex = CategorizedRuntimeException.TECHNICAL_UNRECOVERABLE("Exception occurred when confirming/un-confirming cashflows corresponding to the ConfirmationMatchEvent",
@@ -108,7 +108,7 @@ public class TradeConfirmationService {
             case PAYMENT, FX_NDF, BOND, REPO, MM, OPTION -> throw new RuntimeException("No implementation yet for generating ConfirmationMatchRequest for TradeType: " + tradeType);
         };
 
-        log.trace("Grouped cashflows for confirmation generation and matching. Number of groupings: {}", groupedCashflowBuilders.size());
+        log.debug("Grouped cashflows for confirmation generation and matching. Number of groupings: {}", groupedCashflowBuilders.size());
         return Collections.unmodifiableList(groupedCashflowBuilders);
     }
 

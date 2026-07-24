@@ -51,7 +51,7 @@ public final class TradeMapper {
             bdrs.add(bdr);
         }
 
-        log.debug("Mapped Trade values to [{}] Cashflows. TradeId-Ver: {}-{}", bdrs.size(), trd.getTradeID(), trd.getTradeVersion());
+        log.debug("Mapped Trade values to [{}] Cashflows", bdrs.size());
         return bdrs;
     }
 
@@ -66,11 +66,11 @@ public final class TradeMapper {
         TradeType tradeType = bdr.tradeType();
         boolean isInitialCashflowVersion = CashflowUtil.isInitialVersion(bdr.tradeVersion(), bdr.tradeLegVersion());
 
-        log.trace("Firing RevisionType resolver rule. tradeType: {}, tradeEventType: {}, tradeEventAction: {}, isInitialCashflowVer: {}", tradeType, tradeEventType, tradeEventAction, isInitialCashflowVersion);
+        log.trace("Firing RevisionType resolver rule. tradeEventType: {}, tradeEventAction: {}, isInitialCashflowVer: {}", tradeEventType, tradeEventAction, isInitialCashflowVersion);
         RevisionType revisionType = RevisionTypeResolver.resolve(isInitialCashflowVersion, tradeType, tradeEventType, tradeEventAction);
         bdr.revisionType(revisionType);
 
-        log.info("Computed revisionType[{}] for TradeId-Ver: {}-{}, TradeLegId-Ver: {}-{}", revisionType, trd.getTradeID(), trd.getTradeVersion(), trdLeg.getTradeLegId(), trdLeg.getTradeLegVersion());
+        log.info("Computed revisionType: {} for TradeLegId-Ver: {}-{}", revisionType, trdLeg.getTradeLegId(), trdLeg.getTradeLegVersion());
     }
 
     private static CashflowBuilder mapTradeLeg(TradeAvro trd, TradeLegAvro trdLeg, InputBy inputBy, String inputByUserId) {

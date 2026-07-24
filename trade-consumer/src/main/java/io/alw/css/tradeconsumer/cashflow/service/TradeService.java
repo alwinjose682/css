@@ -80,7 +80,7 @@ public class TradeService {
                     // Validate and Enrich cashflow with nostroId, ssiId etc
                     CashflowSet cashflowSet = validateAndEnrichCashflow(outcome, bdr, newCashflows, previousVersionCashflows);
                     if (cashflowSet == null) {
-                        log.warn("Result after validation and enrichment of the new cashflow to be processed is null. This will result in confirmation request failure or missing confirmation. TradeId-Ver: {}-{}, TradeLegId-Ver: {}-{}", bdr.tradeId(), bdr.tradeVersion(), bdr.tradeLegId(), bdr.tradeLegVersion());
+                        log.warn("Result after validation and enrichment of the new cashflow to be processed is null. This will result in confirmation request failure or missing confirmation. TradeLegId-Ver: {}-{}", bdr.tradeLegId(), bdr.tradeLegVersion());
                     }
                     cashflowGroup.add(cashflowSet);
                 }
@@ -100,13 +100,13 @@ public class TradeService {
             savedCashflows = txrw.execute(persistAction, Exception.class);
 
             var savedCfIds = savedCashflows.stream().map(cf -> cf.cashflowId() + "-" + cf.cashflowVersion()).collect(Collectors.joining(", "));
-            log.info("Successfully processed cashflow for ALL trade legs. TradeType: {}, CashflowIds: {{}}", tradeType, savedCfIds);
+            log.info("Successfully processed cashflow for ALL trade legs. CashflowIds: {{}}", savedCfIds);
         } catch (CategorizedRuntimeException e) {
-            log.error("Failed to process trade. TradeType: {}. Msg: {}", tradeType, e.getMessage(), e);
+            log.error("Failed to process trade. Msg: {}", e.getMessage(), e);
             rejectCashflow(tradeAvro, e, inputBy);
             return;
         } catch (Exception e) {
-            log.error("Failed to process trade. TradeType: {}. Msg: {}", tradeType, e.getMessage(), e);
+            log.error("Failed to process trade. Msg: {}", e.getMessage(), e);
             rejectCashflow(tradeAvro, CategorizedRuntimeException.UNKNOWN(e.getMessage(), tradeAvro), inputBy);
             return;
         }
@@ -208,7 +208,7 @@ public class TradeService {
         try {
             txrw.executeWithoutResult(() -> cashflowStore.saveRejection(cfr), Exception.class);
         } catch (Exception e) {
-            log.error("Failed to save cashflow rejection to database. TradeId-Ver: {}-{}", bdr.tradeId(), bdr.tradeVersion(), e);
+            log.error("Failed to save cashflow rejection to database", e);
             throw new RuntimeException(e);
         }
     }
@@ -234,7 +234,7 @@ public class TradeService {
         try {
             txrw.executeWithoutResult(() -> cashflowStore.saveRejection(cfr), Exception.class);
         } catch (Exception e) {
-            log.error("Failed to save cashflow rejection to database. TradeId-Ver: {}-{}", tradeAvro.getTradeID(), tradeAvro.getTradeVersion(), e);
+            log.error("Failed to save cashflow rejection to database", e);
             throw new RuntimeException(e);
         }
     }
