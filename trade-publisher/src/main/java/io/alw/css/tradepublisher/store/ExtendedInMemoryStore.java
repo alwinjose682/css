@@ -1,13 +1,13 @@
 package io.alw.css.tradepublisher.store;
 
 import io.alw.css.confirmation.LongId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 
 public final class ExtendedInMemoryStore<T extends LongId> extends InMemoryStore<T> {
+    private static final Logger log = LoggerFactory.getLogger(ExtendedInMemoryStore.class);
     private final Map<Long, Collection<T>> store1;
     private final Map<Long, Collection<T>> store2;
 
@@ -21,10 +21,17 @@ public final class ExtendedInMemoryStore<T extends LongId> extends InMemoryStore
     @Override
     public Collection<T> remove(long retrievalDay, int storeIdx) {
         Collection<T> primaryStorage = super.remove(retrievalDay, storeIdx);
-        Map<Long, Collection<T>> secondaryStorage = getSecondaryStore(storeIdx);
+        if (primaryStorage == null) {
+            return new ArrayList<>();
+        }
 
         // Remove the references to the primaryStorage present in secondaryStorage
-        primaryStorage.forEach(i -> secondaryStorage.remove(i.id()));
+        Map<Long, Collection<T>> secondaryStorage = getSecondaryStore(storeIdx);
+        if (secondaryStorage != null) {
+            primaryStorage.forEach(i -> secondaryStorage.remove(i.id()));
+        } else {
+            log.warn("secondaryStorage is null when primaryStorage is NOT null. This should not happen");
+        }
 
         // Return the removed items
         return primaryStorage;
@@ -33,9 +40,9 @@ public final class ExtendedInMemoryStore<T extends LongId> extends InMemoryStore
     /// Removes this single item identified by [LongId#id()] from the primary storage. Also remove the entry for the item from the secondary store
     /// The entry for the item in the secondary store is with mapping: item#id to the primaryStorage that contains the item
     public boolean removeById(long id, int storeIdx) {
-        return getSecondaryStore(storeIdx) // get the secondary store
-                .get(id) // get the primaryStorage where the item with 'id' is stored
-                .remove(id); // remove the specific item from the primaryStorage(for this class the primaryStorage is backed by a HashSet)
+        Collection<T> primaryStorage = getSecondaryStore(storeIdx) // get the secondary store
+                .get(id);// get the primaryStorage where the item with 'id' is stored
+        return primaryStorage != null && primaryStorage.remove(id); // remove the specific item from the primaryStorage(for this class the primaryStorage is backed by a HashSet)
     }
 
     @Override
