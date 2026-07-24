@@ -120,7 +120,7 @@ public class CashflowVersionService {
                 yield new CashflowSet.CancelledVersion(cancelCashflow, previousCashflow);
             }
             case REV ->
-                    throw CategorizedRuntimeException.TECHNICAL_UNRECOVERABLE("The cashflow fetched as the last processed cashflow for this tradeId-TradeLeg is a cashflow with RevisionType: REV", new ExceptionSubCategory(INCORRECT_PREV_CF_REVISION_TYPE, previousCashflow));
+                    throw CategorizedRuntimeException.TECHNICAL_UNRECOVERABLE("The cashflow fetched as the last processed cashflow for this TradeLeg is a cashflow with RevisionType: REV", new ExceptionSubCategory(INCORRECT_PREV_CF_REVISION_TYPE, previousCashflow));
         };
     }
 
