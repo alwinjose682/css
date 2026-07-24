@@ -19,7 +19,6 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.util.CollectionUtils;
 
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -37,12 +36,11 @@ public class KafkaConfig {
 
     @Bean("tradeListenerFactory")
     public ConcurrentKafkaListenerContainerFactory<String, TradeAvro> tradeCashGenerationListenerContainerFactory(ConcurrentKafkaListenerContainerFactoryConfigurer configurer) {
-        Map<String, Object> properties = kafkaProperties.buildConsumerProperties(null);
-        System.out.println("----------------------------------- TradeAvro");
-        properties.entrySet().stream().sorted(Comparator.comparing(Map.Entry::getKey)).forEach(e -> System.out.println("Key: " + e.getKey() + ", Val: " + e.getValue()));
-
+        KafkaMdcInterceptor<String, TradeAvro> mdcInterceptor = trd -> trd.getTradeID() + "-" + trd.getTradeVersion() + ", " + trd.getTradeType();
         DefaultKafkaConsumerFactory<String, TradeAvro> consumerFactory = new DefaultKafkaConsumerFactory<>(buildKafkaProperties("tradecash", null));
         ConcurrentKafkaListenerContainerFactory<String, TradeAvro> listenerContainerFactory = new ConcurrentKafkaListenerContainerFactory<>();
+        listenerContainerFactory.setRecordInterceptor(mdcInterceptor);
+
         configurer.configure(
                 (ConcurrentKafkaListenerContainerFactory<Object, Object>) ((Object) listenerContainerFactory),
                 (DefaultKafkaConsumerFactory<Object, Object>) ((Object) consumerFactory)
@@ -53,12 +51,11 @@ public class KafkaConfig {
 
     @Bean("confListenerFactory")
     public ConcurrentKafkaListenerContainerFactory<String, ConfirmationMatchEventAvro> confMatchEventListenerContainerFactory(ConcurrentKafkaListenerContainerFactoryConfigurer configurer) {
-        Map<String, Object> properties = kafkaProperties.buildConsumerProperties(null);
-        System.out.println("----------------------------------- ConfirmationMatchEventAvro");
-        properties.entrySet().stream().sorted(Comparator.comparing(Map.Entry::getKey)).forEach(e -> System.out.println("Key: " + e.getKey() + ", Val: " + e.getValue()));
-
+        KafkaMdcInterceptor<String, ConfirmationMatchEventAvro> mdcInterceptor = conf -> conf.getTradeId() + "-" + conf.getTradeVersion() + ", " + conf.getTradeType();
         DefaultKafkaConsumerFactory<String, ConfirmationMatchEventAvro> consumerFactory = new DefaultKafkaConsumerFactory<>(buildKafkaProperties("confmatch", null));
         ConcurrentKafkaListenerContainerFactory<String, ConfirmationMatchEventAvro> listenerContainerFactory = new ConcurrentKafkaListenerContainerFactory<>();
+        listenerContainerFactory.setRecordInterceptor(mdcInterceptor);
+
         configurer.configure(
                 (ConcurrentKafkaListenerContainerFactory<Object, Object>) ((Object) listenerContainerFactory),
                 (DefaultKafkaConsumerFactory<Object, Object>) ((Object) consumerFactory)
