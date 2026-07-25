@@ -1,7 +1,7 @@
-package io.alw.css.tradeconsumer.confirmation.repository;
+package io.alw.css.tradeconsumer.confirmation.repository.sqlconstants;
 
-public interface SqlConstants {
-    String UPDATE_CONFIRMATION_STATUS__MERGE_INTO = """
+public final class SqlConstants {
+    private static final String UPDATE_CONFIRMATION_STATUS__MERGE_INTO_SQL = """
             MERGE INTO cashflow X USING(
                 select A.*, M.action from (
                     select cf.rowid as row_id, cf.*
@@ -42,7 +42,7 @@ public interface SqlConstants {
             )
             """;
 
-    String UPDATE_CONFIRMATION_STATUS__ANONYMOUS_PROCEDURE = """
+    private static final String UPDATE_CONFIRMATION_STATUS__ANONYMOUS_PROCEDURE_SQL = """
             DECLARE
               v_cashflow_row cashflow%ROWTYPE;
               v_update_count NUMBER;
@@ -83,4 +83,7 @@ public interface SqlConstants {
             
             END;
             """;
+
+    public final static SqlAndMetadata UPDATE_CONFIRMATION_STATUS__MERGE_INTO = new SqlAndMetadata(2, UPDATE_CONFIRMATION_STATUS__MERGE_INTO_SQL);
+    public final static SqlAndMetadata UPDATE_CONFIRMATION_STATUS__ANONYMOUS_PROCEDURE = new SqlAndMetadata(1, UPDATE_CONFIRMATION_STATUS__ANONYMOUS_PROCEDURE_SQL);
 }

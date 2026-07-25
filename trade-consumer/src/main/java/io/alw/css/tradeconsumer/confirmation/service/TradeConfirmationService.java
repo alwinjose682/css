@@ -14,7 +14,7 @@ import io.alw.css.tradeconsumer.confirmation.mapper.ConfirmationMatchEventMapper
 import io.alw.css.tradeconsumer.confirmation.model.ConfirmationMatchRequestFactoryOutcome;
 import io.alw.css.tradeconsumer.confirmation.model.jpa.ConfirmationMatchStatusEntity;
 import io.alw.css.tradeconsumer.confirmation.repository.ConfirmationMatchStatusStore;
-import io.alw.css.tradeconsumer.confirmation.repository.SqlConstants;
+import io.alw.css.tradeconsumer.confirmation.repository.sqlconstants.SqlConstants;
 import io.alw.css.tradeconsumer.model.CashflowSet;
 import io.alw.css.tradeconsumer.model.constants.ExceptionServiceName;
 import org.slf4j.Logger;
@@ -56,7 +56,7 @@ public class TradeConfirmationService {
         try {
             txrw.executeWithoutResult(() -> confirmationMatchStatusStore.saveConfirmationMatchStatus(entities), Exception.class);
         } catch (Exception e) {
-            log.error("Exception occurred when saving ConfirmationMatchEvent in database. TradeId-Ver: {}-{}, TradeType: {}", tradeId, tradeVersion, tradeType);
+            log.error("Exception occurred when saving ConfirmationMatchEvent in database. TradeId-Ver: {}-{}, TradeType: {}. Exception: {}", tradeId, tradeVersion, tradeType, e.getMessage());
             var ex = CategorizedRuntimeException.TECHNICAL_RECOVERABLE("Exception occurred when saving ConfirmationMatchEvent in database",
                     new ExceptionSubCategory(CONF_STATUS_ENTRY_FAILURE, null));
 
@@ -73,7 +73,7 @@ public class TradeConfirmationService {
 
         // Randomly select a sql statement to confirm or un-confirm cashflow
         // This is purely to check the performance from java layer
-        final String cashflowConfirmationSql = rndm.nextBoolean()
+        final var cashflowConfirmationSql = rndm.nextBoolean()
                 ? SqlConstants.UPDATE_CONFIRMATION_STATUS__MERGE_INTO
                 : SqlConstants.UPDATE_CONFIRMATION_STATUS__ANONYMOUS_PROCEDURE;
 
@@ -86,7 +86,7 @@ public class TradeConfirmationService {
             log.info("Successfully updated cashflow confirmation status to {}. Number of cashflows: {} TradeType: {}, ConfirmationMatchRequestId: {}, ConfirmationMatchEventId-Ver: {}-{}",
                     confirmationStatus.name(), numOfCashflowsUpdated, confMatchEvent.tradeType().name(), confMatchEvent.matchRequestId(), confMatchEvent.eventId(), confMatchEvent.eventVersion());
         } catch (Exception e) {
-            log.error("Exception occurred when confirming/un-confirming cashflows corresponding to the ConfirmationMatchEvent. TradeId-Ver: {}-{}, TradeType: {}", tradeId, tradeVersion, tradeType);
+            log.error("Exception occurred when confirming/un-confirming cashflows corresponding to the ConfirmationMatchEvent. TradeId-Ver: {}-{}, TradeType: {}. Exception: {}", tradeId, tradeVersion, tradeType, e.getMessage());
             var ex = CategorizedRuntimeException.TECHNICAL_UNRECOVERABLE("Exception occurred when confirming/un-confirming cashflows corresponding to the ConfirmationMatchEvent",
                     new ExceptionSubCategory(CASHFLOW_CONF_FAILURE, confMatchEvent));
 
@@ -136,7 +136,7 @@ public class TradeConfirmationService {
         try {
             txrw.executeWithoutResult(() -> saveConfMatchRequestAudit(outcomes), Exception.class);
         } catch (Exception e) {
-            log.error("Exception occurred when saving ConfirmationMatchRequest audit entry in database. TradeId-Ver: {}-{}, TradeType: {}", tradeId, tradeVersion, tradeType);
+            log.error("Exception occurred when saving ConfirmationMatchRequest audit entry in database. TradeId-Ver: {}-{}, TradeType: {}. Exception: {}", tradeId, tradeVersion, tradeType, e.getMessage());
             var ex = CategorizedRuntimeException.TECHNICAL_RECOVERABLE("Exception occurred when saving ConfirmationMatchRequest audit entry in database",
                     new ExceptionSubCategory(CONF_STATUS_ENTRY_FAILURE, null));
 
@@ -148,7 +148,7 @@ public class TradeConfirmationService {
         try {
             outcomes.forEach(o -> confirmationMatchRequestPublisher.publish(o.confMatchRequest()));
         } catch (Exception e) {
-            log.error("Exception occurred when publishing ConfirmationMatchRequest to kafka topic. TradeId-Ver: {}-{}, TradeType: {}", tradeId, tradeVersion, tradeType);
+            log.error("Exception occurred when publishing ConfirmationMatchRequest to kafka topic. TradeId-Ver: {}-{}, TradeType: {}. Exception: {}", tradeId, tradeVersion, tradeType, e.getMessage());
             var ex = CategorizedRuntimeException.TECHNICAL_RECOVERABLE("Exception occurred when publishing ConfirmationMatchRequest to kafka topic",
                     new ExceptionSubCategory(CONF_REQ_PUB_FAILURE, null));
 
