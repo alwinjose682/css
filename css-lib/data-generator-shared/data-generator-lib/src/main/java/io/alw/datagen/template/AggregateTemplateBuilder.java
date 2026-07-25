@@ -3,14 +3,11 @@ package io.alw.datagen.template;
 import io.alw.datagen.DataGeneratable;
 
 import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.stream.Collectors;
 
 public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U extends DataGeneratable, TB, UB> extends TemplateBuilder<T, AggregateTemplateBuilderResult<T>> {
-    private final Deque<ChildBuildDirective<U, UB>> childTemplateDirectives;
+    private final Deque<ChildBuildDirective<U, UB, ?>> childTemplateDirectives;
     private final Deque<ParentBuildDirective<T, U, TB, UB>> relatedDirectives;
 
     protected AggregateTemplateBuilder(T parent) {
@@ -43,7 +40,7 @@ public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U exte
         return this;
     }
 
-    public AggregateTemplateBuilder<T, U, TB, UB> withChildTemplateDirective(ChildBuildDirective<U, UB> directive) {
+    public AggregateTemplateBuilder<T, U, TB, UB> withChildTemplateDirective(ChildBuildDirective<U, UB, ?> directive) {
         childTemplateDirectives.addFirst(directive);
         return this;
     }
@@ -76,14 +73,17 @@ public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U exte
         // 2. Build the child templates that need to be grouped together with parent/root template
         final Set<U> childItems = new HashSet<>();
         while (!childTemplateDirectives.isEmpty()) {
-            ChildBuildDirective<U, UB> childDirective = childTemplateDirectives.removeLast();
+            ChildBuildDirective<U, UB, ?> childDirective = childTemplateDirectives.removeLast();
             // Build the child directive
             switch (childDirective) {
-                case ChildBuildDirective.ChildBuildDirectiveType1<U, UB> dir -> {
+                case ChildBuildDirective.ChildBuildDirectiveType1<U, UB, ?> dir -> {
                     childItems.add(buildChildTemplate(dir, false));
                 }
-                case ChildBuildDirective.ChildBuildDirectiveType2<U, UB> dir -> {
+                case ChildBuildDirective.ChildBuildDirectiveType2<U, UB, ?> dir -> {
                     dir.runnable().run();
+                }
+                case ChildBuildDirective.ChildBuildDirectiveType3<U, UB, ?> dir -> {
+                    childItems.add(buildChildTemplate(dir, false));
                 }
             }
         }
@@ -141,12 +141,13 @@ public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U exte
         return buildResult;
     }
 
-    private Set<U> buildChildTemplate(List<ChildBuildDirective<U, UB>> childDirectives, boolean relatedChildItem) {
+    private Set<U> buildChildTemplate(List<ChildBuildDirective<U, UB, ?>> childDirectives, boolean relatedChildItem) {
         Set<U> childItems = new HashSet<>();
-        for (ChildBuildDirective<U, UB> childDir : childDirectives) {
+        for (ChildBuildDirective<U, UB, ?> childDir : childDirectives) {
             switch (childDir) {
-                case ChildBuildDirective.ChildBuildDirectiveType1<U, UB> dir -> childItems.add(buildChildTemplate(dir, relatedChildItem));
-                case ChildBuildDirective.ChildBuildDirectiveType2<U, UB> dir -> dir.runnable().run();
+                case ChildBuildDirective.ChildBuildDirectiveType1<U, UB, ?> dir -> childItems.add(buildChildTemplate(dir, relatedChildItem));
+                case ChildBuildDirective.ChildBuildDirectiveType2<U, UB, ?> dir -> dir.runnable().run();
+                case ChildBuildDirective.ChildBuildDirectiveType3<U, UB, ?> dir -> childItems.add(buildChildTemplate(dir, relatedChildItem));
             }
         }
 
@@ -162,7 +163,7 @@ public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U exte
     /// If the item is just a runnable, just execute the runnable. There is no build result in this case.
     ///
     /// NOTE: The buildItem cannot be both a runnable and buildable item. It is ensured so
-    private U buildChildTemplate(ChildBuildDirective.ChildBuildDirectiveType1<U, UB> childDirective, boolean relatedChildItem) {
+    private U buildChildTemplate(ChildBuildDirective.ChildBuildDirectiveType1<U, UB, ?> childDirective, boolean relatedChildItem) {
         // Build child item
         UB builder = childDirective.buildStep().get();
         U result = relatedChildItem ? buildRelatedChildTemplate(builder) : buildChildTemplate(builder);
@@ -171,6 +172,22 @@ public abstract class AggregateTemplateBuilder<T extends DataGeneratable, U exte
         Consumer<U> callback = childDirective.callback();
         if (callback != null) {
             callback.accept(result);
+        }
+
+        return result;
+    }
+
+    private <P> U buildChildTemplate(ChildBuildDirective.ChildBuildDirectiveType3<U, UB, P> childDirective, boolean relatedChildItem) {
+        // Build child item
+        P buildStepParam = childDirective.buildStepParamSupplier().get();
+        Function<P, UB> buildStep = childDirective.buildStep();
+        UB builder = buildStep.apply(buildStepParam);
+        U result = relatedChildItem ? buildRelatedChildTemplate(builder) : buildChildTemplate(builder);
+
+        // Execute callback if any
+        BiConsumer<P, U> callback = childDirective.callback();
+        if (callback != null) {
+            callback.accept(buildStepParam, result);
         }
 
         return result;

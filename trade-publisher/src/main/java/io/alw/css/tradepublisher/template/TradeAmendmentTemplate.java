@@ -117,7 +117,7 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
         }
 
         // TradeLeg level amendment
-        List<ChildBuildDirective<TradeLeg, TradeLegBuilder>> trdLegBuildItems = buildTradeLegAmendment(trdAmndCtx, extTrd);
+        List<ChildBuildDirective<TradeLeg, TradeLegBuilder, ?>> trdLegBuildItems = buildTradeLegAmendment(trdAmndCtx, extTrd);
         // Trade and TradeLegs association function
         BiFunction<Trade, Set<TradeLeg>, Trade> tradeAndTradeLegAssociationFunc = Trade::clearAndAddTradeLegs;
         // Final action
@@ -172,7 +172,7 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
                     .tradeEventAction(newTrdEventAndAction.action())
                     ;
         };
-        final Supplier<List<ChildBuildDirective<TradeLeg, TradeLegBuilder>>> newTrdLegBdrFunc = () -> {
+        final Supplier<List<ChildBuildDirective<TradeLeg, TradeLegBuilder, ?>>> newTrdLegBdrFunc = () -> {
             // 4. Reset nextTradeLegId provider so that rebooked trade will have TradeLegs with ids starting from 1
             extTrd.resetTradeLegIdProvider();
 
@@ -208,8 +208,8 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
         return amndTrdBdr;
     }
 
-    private List<ChildBuildDirective<TradeLeg, TradeLegBuilder>> buildTradeLegAmendment(TradeAmendmentContext trdAmndCtx, T extTrd) {
-        var buildItems = new ArrayList<ChildBuildDirective<TradeLeg, TradeLegBuilder>>();
+    private List<ChildBuildDirective<TradeLeg, TradeLegBuilder, ?>> buildTradeLegAmendment(TradeAmendmentContext trdAmndCtx, T extTrd) {
+        var buildItems = new ArrayList<ChildBuildDirective<TradeLeg, TradeLegBuilder, ?>>();
 
         var trdLegAmndCtxs = trdAmndCtx.tradeLegAmendmentContexts();
         for (TradeLegAmendmentContext trdLegAmndCtx : trdLegAmndCtxs) {
@@ -230,8 +230,8 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
         return buildItems;
     }
 
-    private List<ChildBuildDirective<TradeLeg, TradeLegBuilder>> buildTradeLegAmendment(TradeAmendmentContext trdAmndCtx, TradeLegAmendmentContextLazy trdLegAmndCtxLazy, T extTrd) {
-        var buildItems = new ArrayList<ChildBuildDirective<TradeLeg, TradeLegBuilder>>();
+    private List<ChildBuildDirective<TradeLeg, TradeLegBuilder, ?>> buildTradeLegAmendment(TradeAmendmentContext trdAmndCtx, TradeLegAmendmentContextLazy trdLegAmndCtxLazy, T extTrd) {
+        var buildItems = new ArrayList<ChildBuildDirective<TradeLeg, TradeLegBuilder, ?>>();
 
         Set<AmendableField> concreteAmendableFields = new HashSet<>();
         for (AmendableField amendableField : trdLegAmndCtxLazy.amendableFields()) {

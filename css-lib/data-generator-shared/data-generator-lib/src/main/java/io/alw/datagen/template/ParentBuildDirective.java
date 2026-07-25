@@ -17,7 +17,7 @@ public sealed interface ParentBuildDirective<T extends DataGeneratable, U extend
 
     record ParentBuildDirectiveType1<T extends DataGeneratable, U extends DataGeneratable, TB, UB>(
             Supplier<TB> parentBuilderFunc,
-            List<ChildBuildDirective<U, UB>> childDirectives,
+            List<ChildBuildDirective<U, UB, ?>> childDirectives,
             BiFunction<T, Set<U>, T> parentAndChildAssociationFunc,
             Runnable finalExecutableAction) implements ParentBuildDirective<T, U, TB, UB> {
     }
@@ -31,7 +31,7 @@ public sealed interface ParentBuildDirective<T extends DataGeneratable, U extend
 
     record ParentBuildDirectiveType3<T extends DataGeneratable, U extends DataGeneratable, TB, UB>(
             Supplier<TB> parentBuilderFunc,
-            Supplier<List<ChildBuildDirective<U, UB>>> childDirectivesSupplier,
+            Supplier<List<ChildBuildDirective<U, UB, ?>>> childDirectivesSupplier,
             BiFunction<T, Set<U>, T> parentAndChildAssociationFunc,
             Consumer<T> callback,
             Runnable finalExecutableAction) implements ParentBuildDirective<T, U, TB, UB> {
