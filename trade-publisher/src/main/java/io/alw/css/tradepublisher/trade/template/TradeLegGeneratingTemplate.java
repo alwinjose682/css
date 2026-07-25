@@ -35,7 +35,7 @@ public abstract sealed class TradeLegGeneratingTemplate<T extends TradeLegGenera
     protected abstract TradeLegGenerationSchedule buildNextTradeLegGenerationScheduleFor(TradeLegType tradeLegType, T extTrd);
 
     /// Generates TradeLegs based on TradeLeg generation schedule. This method is NOT for creating initial set of TradeLegs of a brand new Trade or for creating amended TradeLegs
-    protected abstract ChildBuildDirective<TradeLeg, TradeLegBuilder> generateTradeLegsFromSchedule(T extTrd, TradeLegGenerationSchedule schedule);
+    protected abstract ChildBuildDirective<TradeLeg, TradeLegBuilder, ?> generateTradeLegsFromSchedule(T extTrd, TradeLegGenerationSchedule schedule);
 
     private final Predicate<T> newTradeLegCreationCriteriaPrimary = trd -> trd.tradeEventType() != TradeEventType.CANCEL;
 
@@ -72,7 +72,7 @@ public abstract sealed class TradeLegGeneratingTemplate<T extends TradeLegGenera
         }
 
         for (T extTrd : extTrds) {
-            List<ChildBuildDirective<TradeLeg, TradeLegBuilder>> tradeLegDirectives = new ArrayList<>();
+            List<ChildBuildDirective<TradeLeg, TradeLegBuilder, ?>> tradeLegDirectives = new ArrayList<>();
             List<TradeLegGenerationSchedule> newSchedules = new ArrayList<>();
 
             // Get all schedules to generate new TradeLegs

@@ -30,9 +30,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.random.RandomGenerator;
 
 import static io.alw.css.domain.common.PayOrReceive.PAY;
@@ -91,7 +89,7 @@ public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemp
     }
 
     @Override
-    protected ChildBuildDirective<TradeLeg, TradeLegBuilder> generateTradeLegsFromSchedule(MmTrade extTrd, TradeLegGenerationSchedule schedule) {
+    protected ChildBuildDirective<TradeLeg, TradeLegBuilder, ?> generateTradeLegsFromSchedule(MmTrade extTrd, TradeLegGenerationSchedule schedule) {
         return switch (schedule.tradeLegType()) {
             case MM_INTEREST -> {
                 var interestLegIds = new Id(extTrd.nextTradeLegId(), VERSION_ONE);
@@ -318,15 +316,16 @@ public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemp
         });
     }
 
-    private ChildBuildDirective<TradeLeg, TradeLegBuilder> createInterestTradeLegBuildDirective(MmTrade extTrd, Id interestLegId, TradeEventActionPair trdEventAndAction) {
+    private ChildBuildDirective<TradeLeg, TradeLegBuilder, ?> createInterestTradeLegBuildDirective(MmTrade extTrd, Id interestLegId, TradeEventActionPair trdEventAndAction) {
         var principalLeg = extTrd.principalLeg();
         var maturityLeg = extTrd.maturityLeg(); // NOTE: the 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
         // Create InterestTradeLeg object
-        InterestTradeLeg newIntrTrdLegObj = createInterestTradeLegAndAssociateWithMmTrade(extTrd, principalLeg, maturityLeg);
+        Supplier<InterestTradeLeg> buildStepParamSupplier = () -> createInterestTradeLegAndAssociateWithMmTrade(extTrd, principalLeg, maturityLeg);
         // Create interest TradeLeg directive
-        Consumer<TradeLeg> callback = newIntrTrdLegObj::setInterestLeg;
-        Supplier<TradeLegBuilder> buildStep = () -> createInterestLegBuilder(extTrd, interestLegId, trdEventAndAction, newIntrTrdLegObj);
-        return new ChildBuildDirective.ChildBuildDirectiveType1<>(callback, buildStep);
+        Function<InterestTradeLeg, TradeLegBuilder> buildStep = interestTradeLeg -> createInterestLegBuilder(extTrd, interestLegId, trdEventAndAction, interestTradeLeg);
+        BiConsumer<InterestTradeLeg, TradeLeg> callback = InterestTradeLeg::setInterestLeg;
+
+        return new ChildBuildDirective.ChildBuildDirectiveType3<>(buildStepParamSupplier, buildStep, callback);
     }
 
     /// NOTE: The 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
