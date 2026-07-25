@@ -173,77 +173,13 @@ public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemp
         var principalLeg = trd.principalLeg();
         var maturityLeg = trd.maturityLeg(); // NOTE: MaturityLeg could be null for MM CALL trades
 
+        // Get all fields, that require amendment, with their amended value
         Set<AmendableFieldType> amendableFieldTypes = cyclicAmendableTradeMessageFieldTypeProvider.get();
         var amendableFields = new AmendableFieldsCollection();
-        // NOTE: To determine new amount for InterestLeg, the amended amount and amended valueDate of both *principalLeg* and *maturityLeg* are needed, although they may not be computed yet during execution
-        // One of the `AmendableTradeMessageFieldSupplier` type is used to lazily obtain the amendable fields after the amended principalLeg and maturityLeg are built.
-        var intLegAmndFieldSupplier = new AmendableFieldSupplier.SupplierWithMessageSelector(trd, extTrd -> ((MmTrade) extTrd).interestLegs().stream().filter(itl -> itl.interestLeg().valueDate().isAfter(trdTemplateHelper.currentDateForTrdTemplate())).toList());
         for (var ft : amendableFieldTypes) {
             switch (ft.amendmentTarget()) {
-                case TRADE -> {
-                    switch (ft) {
-                        case COUNTERPARTY_CODE, VALUE_DATE, AMOUNT ->
-                                throw new RuntimeException("CounterpartyCode, ValueDate and Amount amendments are not possible on Trade level. Instead, it must be done on TradeLeg level");
-                    }
-                }
-                case TRADE_LEG -> {
-                    switch (ft) {
-                        case COUNTERPARTY_CODE -> {
-                            var cpCode = MmAmendmentFieldValue.PrimarySubject.forCounterpartyCode(principalLeg, trdTemplateHelper);
-                            amendableFields
-                                    .addForTradeLeg(MM_PRINCIPAL, cpCode)
-                                    .addForTradeLeg(MM_INTEREST, intLegAmndFieldSupplier.add(_ -> cpCode));
-                            if (maturityLeg != null) {
-                                amendableFields.addForTradeLeg(MM_MATURITY, cpCode);
-                            }
-                        }
-                        case AMOUNT -> {
-                            var amount = MmAmendmentFieldValue.PrimarySubject.forAmount(rndm);
-                            intLegAmndFieldSupplier.add(tl -> new AmendableField.Amount(determineInterestLegAmount(trd, principalLeg, maturityLeg, (InterestTradeLeg) tl)));
-                            amendableFields
-                                    .addForTradeLeg(MM_PRINCIPAL, amount)
-                                    .addForTradeLeg(MM_INTEREST, intLegAmndFieldSupplier);
-                            if (maturityLeg != null) {
-                                amendableFields.addForTradeLeg(MM_MATURITY, amount); // The Pay/Receive direction remains the same
-                            }
-                        }
-                        case VALUE_DATE -> {
-                            if (primaryAmendmentSubjectTradeLegType == MM_PRINCIPAL) {
-                                // No adjustments needed for MM_INTEREST with respect to valueDate change of principalLeg
-
-                                // Get new valueDate for principalLeg and add to the collection
-                                var principalLegNewVd = MmAmendmentFieldValue.PrimarySubject.PrincipalLeg.forValueDate(principalLeg, trdTemplateHelper, trd);
-                                amendableFields.addForTradeLeg(MM_PRINCIPAL, principalLegNewVd);
-
-                                // Conditionally apply new valueDate for maturityLeg
-                                if (maturityLeg != null) {
-                                    // Condition
-                                    Predicate<TradeDetail> matLegVdAmendmentCondition = ml ->
-                                            ml != null
-                                                    && principalLeg.valueDate().until(((TradeLeg) ml).valueDate(), ChronoUnit.DAYS) < 10;
-
-                                    // Create conditional valueDate supplier for maturityLeg and add to the collection
-                                    var matLegVdConditionalSupplier = new AmendableFieldSupplier
-                                            .ConditionalSupplier(maturityLeg, matLegVdAmendmentCondition)
-                                            .add(givenMatTrdLeg -> {
-                                                // Determine new valueDate for maturityLeg
-                                                var principalLegOldVd = principalLeg.valueDate();
-                                                long daysDiff = principalLegOldVd.until(principalLegNewVd.date(), ChronoUnit.DAYS);
-                                                LocalDate newMatValueDate = ((TradeLeg) givenMatTrdLeg).valueDate().plusDays(daysDiff);
-                                                return new AmendableField.ValueDate(newMatValueDate);
-                                            });
-
-                                    amendableFields.addForTradeLeg(MM_MATURITY, matLegVdConditionalSupplier);
-                                }
-                            } else if (primaryAmendmentSubjectTradeLegType == MM_MATURITY && maturityLeg != null) {
-                                // Determine new valueDate for maturityLeg and add to the collection
-                                LocalDate newValueDate = determineMaturityLegValueDate(maturityLeg);
-                                amendableFields.addForTradeLeg(MM_MATURITY, new AmendableField.ValueDate(newValueDate));
-                                // NOTE: No adjustments to any other trade legs are required when valueDate of maturityLeg is amended
-                            }
-                        }
-                    }
-                }
+                case TRADE -> buildAmendmentContextForCommonAmendEventsTrade(ft);
+                case TRADE_LEG -> buildAmendmentContextForCommonAmendEventsTradeLeg(primaryAmendmentSubjectTradeLegType, trd, ft, amendableFields);
             }
         }
 
@@ -283,6 +219,79 @@ public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemp
         amndCtx.addNextTradeLegAmndCtx(interestAmndCtx);
 
         return amndCtx;
+    }
+
+    private void buildAmendmentContextForCommonAmendEventsTrade(AmendableFieldType ft) {
+        switch (ft) {
+            case COUNTERPARTY_CODE, VALUE_DATE, AMOUNT ->
+                    throw new RuntimeException("CounterpartyCode, ValueDate and Amount amendments are not possible on Trade level. Instead, it must be done on TradeLeg level");
+        }
+    }
+
+    private void buildAmendmentContextForCommonAmendEventsTradeLeg(TradeLegType primaryAmendmentSubjectTradeLegType, MmTrade trd, AmendableFieldType amendableFieldType, AmendableFieldsCollection amendableFields) {
+        var principalLeg = trd.principalLeg();
+        var maturityLeg = trd.maturityLeg(); // NOTE: MaturityLeg could be null for MM CALL trades
+
+        // NOTE: To determine new amount for InterestLeg, the amended amount and amended valueDate of both *principalLeg* and *maturityLeg* are needed, although they may not be computed yet during execution
+        // One of the `AmendableTradeMessageFieldSupplier` type is used to lazily obtain the amendable fields after the amended principalLeg and maturityLeg are built.
+        var intLegAmndFieldSupplier = new AmendableFieldSupplier.SupplierWithMessageSelector(trd, extTrd -> ((MmTrade) extTrd).interestLegs().stream().filter(itl -> itl.interestLeg().valueDate().isAfter(trdTemplateHelper.currentDateForTrdTemplate())).toList());
+
+        switch (amendableFieldType) {
+            case COUNTERPARTY_CODE -> {
+                var cpCode = MmAmendmentFieldValue.PrimarySubject.forCounterpartyCode(principalLeg, trdTemplateHelper);
+                amendableFields
+                        .addForTradeLeg(MM_PRINCIPAL, cpCode)
+                        .addForTradeLeg(MM_INTEREST, intLegAmndFieldSupplier.add(_ -> cpCode));
+                if (maturityLeg != null) {
+                    amendableFields.addForTradeLeg(MM_MATURITY, cpCode);
+                }
+            }
+            case AMOUNT -> {
+                var amount = MmAmendmentFieldValue.PrimarySubject.forAmount(rndm);
+                intLegAmndFieldSupplier.add(tl -> new AmendableField.Amount(determineInterestLegAmount(trd, principalLeg, maturityLeg, (InterestTradeLeg) tl)));
+                amendableFields
+                        .addForTradeLeg(MM_PRINCIPAL, amount)
+                        .addForTradeLeg(MM_INTEREST, intLegAmndFieldSupplier);
+                if (maturityLeg != null) {
+                    amendableFields.addForTradeLeg(MM_MATURITY, amount); // The Pay/Receive direction remains the same
+                }
+            }
+            case VALUE_DATE -> {
+                if (primaryAmendmentSubjectTradeLegType == MM_PRINCIPAL) {
+                    // No adjustments needed for MM_INTEREST with respect to valueDate change of principalLeg
+
+                    // Get new valueDate for principalLeg and add to the collection
+                    var principalLegNewVd = MmAmendmentFieldValue.PrimarySubject.PrincipalLeg.forValueDate(principalLeg, trdTemplateHelper, trd);
+                    amendableFields.addForTradeLeg(MM_PRINCIPAL, principalLegNewVd);
+
+                    // Conditionally apply new valueDate for maturityLeg
+                    if (maturityLeg != null) {
+                        // Condition
+                        Predicate<TradeDetail> matLegVdAmendmentCondition = ml ->
+                                ml != null
+                                        && principalLeg.valueDate().until(((TradeLeg) ml).valueDate(), ChronoUnit.DAYS) < 10;
+
+                        // Create conditional valueDate supplier for maturityLeg and add to the collection
+                        var matLegVdConditionalSupplier = new AmendableFieldSupplier
+                                .ConditionalSupplier(maturityLeg, matLegVdAmendmentCondition)
+                                .add(givenMatTrdLeg -> {
+                                    // Determine new valueDate for maturityLeg
+                                    var principalLegOldVd = principalLeg.valueDate();
+                                    long daysDiff = principalLegOldVd.until(principalLegNewVd.date(), ChronoUnit.DAYS);
+                                    LocalDate newMatValueDate = ((TradeLeg) givenMatTrdLeg).valueDate().plusDays(daysDiff);
+                                    return new AmendableField.ValueDate(newMatValueDate);
+                                });
+
+                        amendableFields.addForTradeLeg(MM_MATURITY, matLegVdConditionalSupplier);
+                    }
+                } else if (primaryAmendmentSubjectTradeLegType == MM_MATURITY && maturityLeg != null) {
+                    // Determine new valueDate for maturityLeg and add to the collection
+                    LocalDate newValueDate = determineMaturityLegValueDate(maturityLeg);
+                    amendableFields.addForTradeLeg(MM_MATURITY, new AmendableField.ValueDate(newValueDate));
+                    // NOTE: No adjustments to any other trade legs are required when valueDate of maturityLeg is amended
+                }
+            }
+        }
     }
 
     private TradeLegBuilder createPrincipalLegBuilder() {
