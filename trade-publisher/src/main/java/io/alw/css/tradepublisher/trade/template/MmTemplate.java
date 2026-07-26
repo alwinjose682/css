@@ -73,10 +73,8 @@ public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemp
             }
             case MM_CALL -> {
                 var interestLegIds = new Id(extTrd.nextTradeLegId(), VERSION_ONE);
-                this.withChildTemplateDirective(() -> {
-                    var directive = createInterestTradeLegBuildDirective(extTrd, interestLegIds, newTrdEventAndAction);
-                    this.withChildTemplateDirective(directive);
-                });
+                var directive = createInterestTradeLegBuildDirective(extTrd, interestLegIds, newTrdEventAndAction);
+                this.withChildTemplateDirective(directive);
             }
             default -> throw new RuntimeException("Invalid TradeType for MmTemplate");
         }
@@ -93,11 +91,7 @@ public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemp
         return switch (schedule.tradeLegType()) {
             case MM_INTEREST -> {
                 var interestLegIds = new Id(extTrd.nextTradeLegId(), VERSION_ONE);
-                Runnable childBuildDirective = () -> {
-                    var dir = createInterestTradeLegBuildDirective(extTrd, interestLegIds, schedule.tradeEventActionPair());
-                    this.withChildTemplateDirective(dir);
-                };
-                yield new ChildBuildDirective.ChildBuildDirectiveType2<>(childBuildDirective);
+                yield createInterestTradeLegBuildDirective(extTrd, interestLegIds, schedule.tradeEventActionPair());
             }
             case FX_SIDE1, FX_SIDE2, MM_PRINCIPAL, MM_MATURITY, PARENT_TRADE, CHILD_TRADE -> {
                 throw new RuntimeException("TradeLeg generation for: " + schedule.tradeLegType() + " is either not permitted or is invalid");
@@ -309,20 +303,22 @@ public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemp
     private void buildMaturityAndInterestLeg(MmTrade extTrade, Id maturityLegId, Id interestLegId, TradeEventActionPair trdEventAndAction) {
         // 1. Add building function of MATURITY leg to the builder
         this.withChildTemplateDirective(extTrade::setMaturityLeg, () -> createMaturityLegBuilder(extTrade, maturityLegId, trdEventAndAction));
-        // 2. create InterestTradeLeg object and add the interestLeg building function to the builder
-        this.withChildTemplateDirective(() -> {
-            var directive = createInterestTradeLegBuildDirective(extTrade, interestLegId, trdEventAndAction);
-            this.withChildTemplateDirective(directive);
-        });
+        // 2. create InterestTradeLeg build directive and add the directive to the builder
+        var directive = createInterestTradeLegBuildDirective(extTrade, interestLegId, trdEventAndAction);
+        this.withChildTemplateDirective(directive);
+
     }
 
     private ChildBuildDirective<TradeLeg, TradeLegBuilder, ?> createInterestTradeLegBuildDirective(MmTrade extTrd, Id interestLegId, TradeEventActionPair trdEventAndAction) {
-        var principalLeg = extTrd.principalLeg();
-        var maturityLeg = extTrd.maturityLeg(); // NOTE: the 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
-        // Create InterestTradeLeg object
-        Supplier<InterestTradeLeg> buildStepParamSupplier = () -> createInterestTradeLegAndAssociateWithMmTrade(extTrd, principalLeg, maturityLeg);
+        // Create InterestTradeLeg object supplier
+        Supplier<InterestTradeLeg> buildStepParamSupplier = () -> {
+            var principalLeg = extTrd.principalLeg();
+            var maturityLeg = extTrd.maturityLeg(); // NOTE: the 'maturityLeg' could be null, because for MM CALL trade MaturityLeg is not determined upfront
+            return createInterestTradeLegAndAssociateWithMmTrade(extTrd, principalLeg, maturityLeg);
+        };
         // Create interest TradeLeg directive
         Function<InterestTradeLeg, TradeLegBuilder> buildStep = interestTradeLeg -> createInterestLegBuilder(extTrd, interestLegId, trdEventAndAction, interestTradeLeg);
+        // Callback to associate TradeLeg to InterestTradeLeg object
         BiConsumer<InterestTradeLeg, TradeLeg> callback = InterestTradeLeg::setInterestLeg;
 
         return new ChildBuildDirective.ChildBuildDirectiveType3<>(buildStepParamSupplier, buildStep, callback);
