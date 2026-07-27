@@ -1,18 +1,22 @@
-package io.alw.css.tradepublisher.template;
+package io.alw.css.tradepublisher.trade.template;
 
 import io.alw.css.domain.common.*;
 import io.alw.css.domain.trade.*;
-import io.alw.css.tradepublisher.model.Entity;
-import io.alw.css.tradepublisher.model.TradeEventActionPair;
-import io.alw.css.tradepublisher.model.properties.TradeTemplateProperties;
-import io.alw.css.tradepublisher.service.RefDataService;
-import io.alw.css.tradepublisher.template.domain.ExtendedTrade;
-import io.alw.css.tradepublisher.template.model.*;
-import io.alw.css.tradepublisher.tradegenerator.DayTicker;
+import io.alw.css.tradepublisher.IdProvider;
+import io.alw.css.tradepublisher.generator.DayTicker;
+import io.alw.css.tradepublisher.properties.TradeTemplateProperties;
+import io.alw.css.tradepublisher.store.StoreHelper;
+import io.alw.css.tradepublisher.trade.model.Entity;
+import io.alw.css.tradepublisher.trade.model.TradeEventActionPair;
+import io.alw.css.tradepublisher.trade.service.RefDataService;
+import io.alw.css.tradepublisher.trade.template.domain.ExtendedTrade;
+import io.alw.css.tradepublisher.trade.template.model.*;
 import io.alw.datagen.template.AggregateTemplateBuilderResult;
 import io.alw.datagen.template.ChildBuildDirective;
 import io.alw.datagen.template.ChildBuildDirective.ChildBuildDirectiveType1;
 import io.alw.datagen.template.ParentBuildDirective;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -31,6 +35,8 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
         extends TradeTemplate<T, TT>
         permits TradeLegGeneratingTemplate, FxTemplate {
 
+    private static final Logger log = LoggerFactory.getLogger(TradeAmendmentTemplate.class);
+
     public TradeAmendmentTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, TradeTemplateProperties trdTemplateProps) {
         super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, trdTemplateProps);
     }
@@ -41,7 +47,7 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
     /// All the trade legs selected for amendment must belong only to the trdCtx being passed via this method
     protected abstract void buildTradeAmendmentContext(Consumer<TradeAmendmentContext> trdAmendmentBuilderFunc, T trdCtxForAmendment);
 
-    protected abstract TradeStoreHelper<T> trdStoreHelper();
+    protected abstract StoreHelper<T> trdStoreHelper();
 
     /// Both primary and secondary criteria will be applied to select a tradeContext for amendment.
     /// This applies both for the selecting a tradeContext for first time and each time after amendment
@@ -74,12 +80,14 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
         // Return messages(new+amends) which can be consumed by the TradeGenerators
         var tradeGeneratorInput = new ArrayList<>(buildResult.childResults());
         tradeGeneratorInput.add(buildResult.result());
+        log.info("Finished building new Trade and Trade Amendments. Total items: {}", tradeGeneratorInput.size());
+
         return Collections.unmodifiableList(tradeGeneratorInput);
     }
 
     protected TT withTradeAmendmentDirectives() {
         // 1. Get trades that need to be amended
-        final List<T> extTrds = trdStoreHelper().retrieveTradesForCurrentDay(TradeStoreHelper.TradeRetrievalPurpose.AMEND);
+        final Collection<T> extTrds = trdStoreHelper().remove(StoreHelper.Purpose.AMEND, trdTemplateHelper.currentDayForTrdTemplate());
         // 2. Create trade amendment directive
         for (T extTrd : extTrds) {
             // Trade amendment builder function
@@ -101,9 +109,12 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
     /// All the trade legs being amended belong to the same extTrd
     /// The steps to lazily build(functions) and the actual build done by [io.alw.datagen.template.AggregateTemplateBuilder] are performed in FIFO order
     protected ParentBuildDirective<Trade, TradeLeg, TradeBuilder, TradeLegBuilder> createTradeAmendmentDirective(TradeAmendmentContext trdAmndCtx, T extTrd) {
+        log.info("Creating Trade amendment directive for TradeId-Ver: {}-{}, TradeType: {}", extTrd.tradeId(), extTrd.tradeVersion(), extTrd.tradeType());
+
         // Amendment if trade is rebooked
         var nextEventAndAction = trdAmndCtx.tradeEventActionPair();
         if (nextEventAndAction.event() == TradeEventType.REBOOK) {
+            log.info("Trade amendment EventType is REBOOK. TradeId-Ver:{}-{}", extTrd.tradeId(), extTrd.tradeVersion());
             return handleTradeRebookEvent(trdAmndCtx, extTrd);
         }
 
@@ -160,6 +171,8 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
         var canTrdBuildDirective = new ParentBuildDirective.ParentBuildDirectiveType2<>(canTrdBdrFunc, canTrdLegBdrFunc, associationFunc, null);
         this.withRelatedTemplateDirective(canTrdBuildDirective);
 
+        log.info("Created cancellation directive for the original Trade and all its TradeLegs. TradeId-Ver: {}-{}, TradeType: {}", extTrd.tradeId(), extTrd.tradeVersion(), extTrd.tradeType());
+
         // 3. Create rebooked Trade
         final Supplier<TradeBuilder> newTrdBdrFunc = () -> {
             var newTrdEventAndAction = trdAmndCtx.tradeEventActionPair();
@@ -183,19 +196,25 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
         BiFunction<Trade, Set<TradeLeg>, Trade> newTrdAndTrdLegAssociationFunc = Trade::clearAndAddTradeLegs;
         Consumer<Trade> trdAndExtTrdAssociationFunc = extTrd::setTrade;
         Runnable newTrdBuildDirectiveFinalAction = () -> saveForFutureAmendment(extTrd);
+
+        log.info("Created rebook directive for Trade and relevant TradeLegs corresponding to the cancelled Trade. TradeId-Ver: {}-{}, TradeType: {}", extTrd.tradeId(), extTrd.tradeVersion(), extTrd.tradeType());
+
         return new ParentBuildDirective.ParentBuildDirectiveType3<>(newTrdBdrFunc, newTrdLegBdrFunc, newTrdAndTrdLegAssociationFunc, trdAndExtTrdAssociationFunc, newTrdBuildDirectiveFinalAction);
     }
 
     private TradeBuilder buildTradeAmendment(TradeAmendmentContext trdAmndCtx, T extTrd) {
         TradeEventActionPair nextEventAndAction = trdAmndCtx.tradeEventActionPair();
         TradeBuilder amndTrdBdr = createBuilderFrom(extTrd.trade());
+        final int tradeVersion = extTrd.tradeVersion() + 1;
         // Set new TradeEvent and TradeEventAction
         amndTrdBdr
-                .tradeVersion(extTrd.tradeVersion() + 1)
+                .tradeVersion(tradeVersion)
                 .tradeEventType(nextEventAndAction.event())
                 .tradeEventAction(nextEventAndAction.action());
 
         // Set amended values
+        StringBuilder amendedFieldsInfo = new StringBuilder();
+        amendedFieldsInfo.append("[");
         for (AmendableField amendableField : trdAmndCtx.tradeLevelAmendmentFields()) {
             switch (amendableField) {
                 case AmendableField.CounterpartyCode _, AmendableField.ValueDate _, AmendableField.Amount _ ->
@@ -204,11 +223,20 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
                         throw new RuntimeException("Incorrect use of `AmendableTradeMessageFieldSupplier` type. `AmendableTradeMessageFieldSupplier` type should be used only when the values are NOT known at the time of constructing the object");
             }
         }
+        amendedFieldsInfo.append(" ]");
+
+        log.info("Created amended Trade. TradeId-Ver: {}-{}, TradeType: {}, new EventType-Action: {}-{}. TradeLeg fields amended: {}",
+                extTrd.tradeId(), tradeVersion,
+                extTrd.tradeType(),
+                nextEventAndAction.event(), nextEventAndAction.action(),
+                amendedFieldsInfo);
 
         return amndTrdBdr;
     }
 
     private List<ChildBuildDirective<TradeLeg, TradeLegBuilder, ?>> buildTradeLegAmendment(TradeAmendmentContext trdAmndCtx, T extTrd) {
+        log.info("Creating TradeLeg amendment directive for TradeId-Ver: {}-{}, TradeType: {}", extTrd.tradeId(), extTrd.tradeVersion(), extTrd.tradeType());
+
         var buildItems = new ArrayList<ChildBuildDirective<TradeLeg, TradeLegBuilder, ?>>();
 
         var trdLegAmndCtxs = trdAmndCtx.tradeLegAmendmentContexts();
@@ -232,13 +260,16 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
 
     private List<ChildBuildDirective<TradeLeg, TradeLegBuilder, ?>> buildTradeLegAmendment(TradeAmendmentContext trdAmndCtx, TradeLegAmendmentContextLazy trdLegAmndCtxLazy, T extTrd) {
         var buildItems = new ArrayList<ChildBuildDirective<TradeLeg, TradeLegBuilder, ?>>();
-
         Set<AmendableField> concreteAmendableFields = new HashSet<>();
+
         for (AmendableField amendableField : trdLegAmndCtxLazy.amendableFields()) {
             switch (amendableField) {
                 case AmendableFieldSupplier fieldSupplier -> {
                     switch (fieldSupplier) {
                         case AmendableFieldSupplier.ConditionalSupplier supplier -> {
+                            log.debug("Resolving Lazy TradeLeg amendment context for: {}. TradeId-Ver: {}-{}, TradeType: {}",
+                                    "Conditional-Amendable-Field-Supplier", extTrd.tradeId(), extTrd.tradeVersion(), extTrd.tradeType());
+
                             // 1. Evaluate the condition and if applicable proceed with generating the build step
                             var tradeDetail = supplier.conditionSubject();
                             var condition = supplier.condition();
@@ -260,7 +291,10 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
                                 buildItems.add(bi);
                             }
                         }
-                        case AmendableFieldSupplier.SupplierWithMessageSelector supplier -> {
+                        case AmendableFieldSupplier.SupplierWithAmendmentSubjectSelector supplier -> {
+                            log.debug("Resolving Lazy TradeLeg amendment context for: {}. TradeId-Ver: {}-{}, TradeType: {}",
+                                    "Amendable-Field-Supplier-With-AmendmentSubject-Selector", extTrd.tradeId(), extTrd.tradeVersion(), extTrd.tradeType());
+
                             // 1. Get the amendment subjects
                             List<? extends TradeDetail> trdLegs = supplier.amendmentSubjectSelector().apply(supplier.trdCtx());
                             // 2. Get the fields for amendment for each amendment subject. If there are no amendment subject, nothing is there to build
@@ -318,15 +352,21 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
         TradeLegBuilder amndBdr = TradeLegBuilder.builder(tradeLeg);
 
         // If trade is rebooked, get a new tradeLegId. Note: the extTrd::nextTradeLegId counter was already reset in a previous step due to rebook event
+        final long tradeLegId;
+        final int tradeLegVersion;
         if (nextEventAndAction.event() == TradeEventType.REBOOK) {
+            tradeLegId = extTrd.nextTradeLegId();
+            tradeLegVersion = VERSION_ONE;
             amndBdr
-                    .tradeLegId(extTrd.nextTradeLegId())
-                    .tradeLegVersion(VERSION_ONE);
+                    .tradeLegId(tradeLegId)
+                    .tradeLegVersion(tradeLegVersion);
         }
         // If not rebooked, just increment the tradeLegVersion
         else {
+            tradeLegId = amndBdr.tradeLegId();
+            tradeLegVersion = tradeLeg.tradeLegVersion() + 1;
             amndBdr
-                    .tradeLegVersion(tradeLeg.tradeLegVersion() + 1);
+                    .tradeLegVersion(tradeLegVersion);
         }
         // set new trade even and action
         amndBdr
@@ -334,16 +374,36 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
                 .tradeEventAction(nextEventAndAction.action());
 
         // Set amended values
+        StringBuilder amendedFieldsInfo = new StringBuilder();
+        amendedFieldsInfo.append("[");
         for (AmendableField amendableField : amendableFields) {
             switch (amendableField) {
-                case AmendableField.ValueDate(var newValueDate) -> amndBdr.valueDate(newValueDate);
-                case AmendableField.Amount(var newAmount) -> amndBdr.amount(newAmount);
-                case AmendableField.CounterpartyCode(var cpCode) -> amndBdr.counterpartyCode(cpCode);
+                case AmendableField.ValueDate(var newValueDate) -> {
+                    amndBdr.valueDate(newValueDate);
+                    amendedFieldsInfo.append(" ValueDate: ").append(newValueDate);
+                }
+                case AmendableField.Amount(var newAmount) -> {
+                    amndBdr.amount(newAmount);
+                    amendedFieldsInfo.append(" Amount: ").append(newAmount);
+                }
+                case AmendableField.CounterpartyCode(var cpCode) -> {
+                    amndBdr.counterpartyCode(cpCode);
+                    amendedFieldsInfo.append(" Counterparty: ").append(cpCode);
+                }
                 case AmendableFieldSupplier _ -> {
                     throw new RuntimeException("Incorrect use of `AmendableTradeMessageFieldSupplier` type. `AmendableTradeMessageFieldSupplier` type should be used only when the values are NOT known at the time of constructing the object");
                 }
             }
         }
+
+        amendedFieldsInfo.append(" ]");
+
+        log.info("Created amended TradeLeg. TradeId-Ver: {}-{}, TradeLegId-Ver: {}-{}, TradeType: {}, new EventType-Action: {}-{}. TradeLeg fields amended: {}",
+                extTrd.tradeId(), extTrd.tradeVersion(),
+                tradeLegId, tradeLegVersion,
+                extTrd.tradeType(),
+                nextEventAndAction.event(), nextEventAndAction.action(),
+                amendedFieldsInfo);
 
         return amndBdr;
     }
@@ -354,7 +414,11 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
 
     protected void saveForFutureAmendment(T extTrd) {
         if (amendmentCandidateSelectionCriteria().test(extTrd)) {
-            trdStoreHelper().storeTradeForFutureRndmRetrievalDay(extTrd, TradeStoreHelper.TradeRetrievalPurpose.AMEND);
+            trdStoreHelper().storeForFutureRndmRetrievalDay(extTrd, StoreHelper.Purpose.AMEND);
+            log.info("Saved Trade for potential future amendment. TradeId-Ver: {}-{}, TradeType: {}, current EventType-Action: {}-{}",
+                    extTrd.tradeId(), extTrd.tradeVersion(),
+                    extTrd.tradeType(),
+                    extTrd.tradeEventType(), extTrd.tradeEventAction());
         }
     }
 }

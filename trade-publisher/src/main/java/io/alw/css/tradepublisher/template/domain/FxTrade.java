@@ -18,7 +18,7 @@ public final class FxTrade implements ExtendedTrade {
     }
 
     @Override
-    public int nextTradeLegId() {
+    public long nextTradeLegId() {
         return ++nextTradeLegId;
     }
 

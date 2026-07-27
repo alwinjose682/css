@@ -47,7 +47,7 @@ public final class MmTrade implements TradeLegGeneratableExtendedTrade {
     }
 
     @Override
-    public int nextTradeLegId() {
+    public long nextTradeLegId() {
         return ++nextTradeLegId;
     }
 

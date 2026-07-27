@@ -228,7 +228,7 @@ public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemp
 
         // NOTE: To determine new amount for InterestLeg, the amended amount and amended valueDate of both *principalLeg* and *maturityLeg* are needed, although they may not be computed yet during execution
         // One of the `AmendableTradeMessageFieldSupplier` type is used to lazily obtain the amendable fields after the amended principalLeg and maturityLeg are built.
-        var intLegAmndFieldSupplier = new AmendableFieldSupplier.SupplierWithMessageSelector(trd, extTrd -> ((MmTrade) extTrd).interestLegs().stream().filter(itl -> itl.interestLeg().valueDate().isAfter(trdTemplateHelper.currentDateForTrdTemplate())).toList());
+        var intLegAmndFieldSupplier = new AmendableFieldSupplier.SupplierWithAmendmentSubjectSelector(trd, extTrd -> ((MmTrade) extTrd).interestLegs().stream().filter(itl -> itl.interestLeg().valueDate().isAfter(trdTemplateHelper.currentDateForTrdTemplate())).toList());
 
         switch (amendableFieldType) {
             case COUNTERPARTY_CODE -> {
