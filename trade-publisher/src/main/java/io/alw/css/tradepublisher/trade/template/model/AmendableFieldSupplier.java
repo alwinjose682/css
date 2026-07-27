@@ -52,12 +52,12 @@ public sealed interface AmendableFieldSupplier extends AmendableField {
         }
     }
 
-    final class SupplierWithMessageSelector extends AmendableFieldSupplierBase {
+    final class SupplierWithAmendmentSubjectSelector extends AmendableFieldSupplierBase {
         private final ExtendedTrade trdCtx;
         private final Function<ExtendedTrade, List<? extends TradeDetail>> amendmentSubjectSelector;
 
 
-        public SupplierWithMessageSelector(ExtendedTrade trdCtx, Function<ExtendedTrade, List<? extends TradeDetail>> amendmentSubjectSelector) {
+        public SupplierWithAmendmentSubjectSelector(ExtendedTrade trdCtx, Function<ExtendedTrade, List<? extends TradeDetail>> amendmentSubjectSelector) {
             this.trdCtx = trdCtx;
             this.amendmentSubjectSelector = amendmentSubjectSelector;
         }
