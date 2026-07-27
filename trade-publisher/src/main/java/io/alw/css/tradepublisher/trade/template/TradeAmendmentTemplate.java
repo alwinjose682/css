@@ -87,7 +87,9 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
 
     protected TT withTradeAmendmentDirectives() {
         // 1. Get trades that need to be amended
-        final Collection<T> extTrds = trdStoreHelper().remove(StoreHelper.Purpose.AMEND, trdTemplateHelper.currentDayForTrdTemplate());
+        long day = trdTemplateHelper.currentDayForTrdTemplate();
+        final Collection<T> extTrds = trdStoreHelper().remove(StoreHelper.Purpose.AMEND, day);
+        log.info("Retrieved {} trades from store for amendment. Day: {}", extTrds.size(), day);
         // 2. Create trade amendment directive
         for (T extTrd : extTrds) {
             // Trade amendment builder function
@@ -352,21 +354,15 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
         TradeLegBuilder amndBdr = TradeLegBuilder.builder(tradeLeg);
 
         // If trade is rebooked, get a new tradeLegId. Note: the extTrd::nextTradeLegId counter was already reset in a previous step due to rebook event
-        final long tradeLegId;
-        final int tradeLegVersion;
         if (nextEventAndAction.event() == TradeEventType.REBOOK) {
-            tradeLegId = extTrd.nextTradeLegId();
-            tradeLegVersion = VERSION_ONE;
             amndBdr
-                    .tradeLegId(tradeLegId)
-                    .tradeLegVersion(tradeLegVersion);
+                    .tradeLegId(extTrd.nextTradeLegId())
+                    .tradeLegVersion(VERSION_ONE);
         }
         // If not rebooked, just increment the tradeLegVersion
         else {
-            tradeLegId = amndBdr.tradeLegId();
-            tradeLegVersion = tradeLeg.tradeLegVersion() + 1;
             amndBdr
-                    .tradeLegVersion(tradeLegVersion);
+                    .tradeLegVersion(tradeLeg.tradeLegVersion() + 1);
         }
         // set new trade even and action
         amndBdr
@@ -398,10 +394,10 @@ sealed abstract class TradeAmendmentTemplate<T extends ExtendedTrade, TT extends
 
         amendedFieldsInfo.append(" ]");
 
-        log.info("Created amended TradeLeg. TradeId-Ver: {}-{}, TradeLegId-Ver: {}-{}, TradeType: {}, new EventType-Action: {}-{}. TradeLeg fields amended: {}",
+        log.info("Created amended TradeLeg. TradeId-Ver: {}-{}, TradeLegId-Ver: {}-{}, TradeType: {}, TradeLegType: {}, new EventType-Action: {}-{}. TradeLeg fields amended: {}",
                 extTrd.tradeId(), extTrd.tradeVersion(),
-                tradeLegId, tradeLegVersion,
-                extTrd.tradeType(),
+                amndBdr.tradeLegId(), amndBdr.tradeLegVersion(),
+                extTrd.tradeType(), amndBdr.tradeLegType(),
                 nextEventAndAction.event(), nextEventAndAction.action(),
                 amendedFieldsInfo);
 
