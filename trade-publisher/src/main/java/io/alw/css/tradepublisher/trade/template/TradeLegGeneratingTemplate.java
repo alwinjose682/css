@@ -14,6 +14,8 @@ import io.alw.css.tradepublisher.trade.template.domain.TradeLegGenerationSchedul
 import io.alw.datagen.template.AggregateTemplateBuilderResult;
 import io.alw.datagen.template.ChildBuildDirective;
 import io.alw.datagen.template.ParentBuildDirective;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -26,6 +28,8 @@ public abstract sealed class TradeLegGeneratingTemplate<T extends TradeLegGenera
         extends TradeAmendmentTemplate<T, TT>
         permits MmTemplate {
 
+    private static final Logger log = LoggerFactory.getLogger(TradeLegGeneratingTemplate.class);
+
     public TradeLegGeneratingTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, TradeTemplateProperties trdTemplateProps) {
         super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, trdTemplateProps);
     }
@@ -35,7 +39,7 @@ public abstract sealed class TradeLegGeneratingTemplate<T extends TradeLegGenera
     protected abstract TradeLegGenerationSchedule buildNextTradeLegGenerationScheduleFor(TradeLegType tradeLegType, T extTrd);
 
     /// Generates TradeLegs based on TradeLeg generation schedule. This method is NOT for creating initial set of TradeLegs of a brand new Trade or for creating amended TradeLegs
-    protected abstract ChildBuildDirective<TradeLeg, TradeLegBuilder, ?> generateTradeLegsFromSchedule(T extTrd, TradeLegGenerationSchedule schedule);
+    protected abstract ChildBuildDirective<TradeLeg, TradeLegBuilder, ?> buildTradeLegGenerationDirectiveFromSchedule(T extTrd, TradeLegGenerationSchedule schedule);
 
     private final Predicate<T> newTradeLegCreationCriteriaPrimary = trd -> trd.tradeEventType() != TradeEventType.CANCEL;
 
@@ -52,15 +56,19 @@ public abstract sealed class TradeLegGeneratingTemplate<T extends TradeLegGenera
 
         // Store the newly created trade(ExtendedTrade) for future amendments if the selection criteria allows to do so
         // The same for amended trades(ExtendedTrade) are already done during the 'related template' build process, via a runnable in the build directive, prior to reaching this point.
-        saveForFutureAmendment(getExtendedTradeOfCurrentBuildCycle());
+        T extTrade = getExtendedTradeOfCurrentBuildCycle();
+        saveForFutureAmendment(extTrade);
         // Get initial TradeLeg generation schedules
-        List<TradeLegGenerationSchedule> schedules = getInitialTradeLegGenerationSchedules(getExtendedTradeOfCurrentBuildCycle());
+        log.info("Creating initial TradeLeg generation schedule for TradeId-Ver: {}-{}, TradeType: {}", extTrade.tradeId(), extTrade.tradeVersion(), extTrade.tradeType());
+        List<TradeLegGenerationSchedule> schedules = getInitialTradeLegGenerationSchedules(extTrade);
         // Store the ExtendedTrade object inorder to generate TradeLeg according to schedule
-        saveForTradeLegGenerationFromSchedule(schedules, getExtendedTradeOfCurrentBuildCycle());
+        saveForTradeLegGenerationFromSchedule(schedules, extTrade);
 
         // Return messages(new + amends + trdLegsFromSchedule) which can be consumed by the TradeGenerators
         var tradeGeneratorInput = new ArrayList<>(buildResult.childResults());
         tradeGeneratorInput.add(buildResult.result());
+
+        log.info("Finished building new Trade, Trade Amendments and TradeLegs based on schedule. Total items: {}", tradeGeneratorInput.size());
         return Collections.unmodifiableList(tradeGeneratorInput);
     }
 
@@ -72,6 +80,8 @@ public abstract sealed class TradeLegGeneratingTemplate<T extends TradeLegGenera
         }
 
         for (T extTrd : extTrds) {
+            log.info("Creating TradeLeg generation directives for TradeId-Ver: {}-{}, TradeType: {}", extTrd.tradeId(), extTrd.tradeVersion(), extTrd.tradeType());
+
             List<ChildBuildDirective<TradeLeg, TradeLegBuilder, ?>> tradeLegDirectives = new ArrayList<>();
             List<TradeLegGenerationSchedule> newSchedules = new ArrayList<>();
 
@@ -85,9 +95,10 @@ public abstract sealed class TradeLegGeneratingTemplate<T extends TradeLegGenera
             // For each TradeLeg, create build directive and next schedule corresponding to the executed schedule
             for (TradeLegGenerationSchedule schedule : schedules) {
                 // Create build directive for TradeLeg generation as per schedule
-                var trdLegDirective = generateTradeLegsFromSchedule(extTrd, schedule);
+                var trdLegDirective = buildTradeLegGenerationDirectiveFromSchedule(extTrd, schedule);
                 tradeLegDirectives.add(trdLegDirective);
                 // Create new schedule
+                log.info("Creating TradeLeg generation schedule for TradeLegType: {}, TradeId-Ver: {}-{}, TradeType: {}", schedule.tradeLegType(), extTrd.tradeId(), extTrd.tradeVersion(), extTrd.tradeType());
                 TradeLegGenerationSchedule newSchedule = buildNextTradeLegGenerationScheduleFor(schedule.tradeLegType(), extTrd);
                 newSchedules.add(newSchedule);
             }
@@ -102,7 +113,7 @@ public abstract sealed class TradeLegGeneratingTemplate<T extends TradeLegGenera
             BiFunction<Trade, Set<TradeLeg>, Trade> tradeAndTradeLegAssociationFunc = Trade::clearAndAddTradeLegs;
             // The build directive
             var buildDirective = new ParentBuildDirective.ParentBuildDirectiveType1<>(trdBdrFunc, tradeLegDirectives, tradeAndTradeLegAssociationFunc, null);
-            // 2. Register the amendmentTradeBuildDirective with the template builder
+            // 2. Register the buildDirective with the template builder
             this.withRelatedTemplateDirective(buildDirective);
         }
 
@@ -121,6 +132,10 @@ public abstract sealed class TradeLegGeneratingTemplate<T extends TradeLegGenera
         minSched.ifPresent(sched -> {
             if (newTradeLegCreationCriteriaPrimary.test(extTrd)) {
                 trdStoreHelper().storeForFutureRetrievalDay(extTrd, StoreHelper.Purpose.ITEM_SPECIFIC_EVENT, sched.scheduleDay());
+                log.info("Saved Trade for potential future TradeLeg generation based on schedule. TradeId-Ver: {}-{}, TradeType: {}, current EventType-Action: {}-{}",
+                        extTrd.tradeId(), extTrd.tradeVersion(),
+                        extTrd.tradeType(),
+                        extTrd.tradeEventType(), extTrd.tradeEventAction());
             }
         });
     }

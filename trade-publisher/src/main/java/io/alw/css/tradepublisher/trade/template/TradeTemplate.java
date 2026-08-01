@@ -14,6 +14,8 @@ import io.alw.css.tradepublisher.trade.service.RefDataService;
 import io.alw.css.tradepublisher.trade.template.domain.ExtendedTrade;
 import io.alw.datagen.provider.AbstractCyclicDataProvider;
 import io.alw.datagen.template.AggregateTemplateBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -35,6 +37,7 @@ sealed abstract class TradeTemplate<T extends ExtendedTrade, TT extends TradeTem
         implements Supplier<List<Trade>>
         permits TradeAmendmentTemplate {
 
+    private static final Logger log = LoggerFactory.getLogger(TradeTemplate.class);
     /// Variable values for each template build. These values remain un-modified for each template build.
     /// After each build of the template, the [ExtendedTrade] (trdCtx) and [TradeBuilder] (`bdr`) references are just assigned with new instances
     // ExtendedTrade object and Trade builder
@@ -83,6 +86,9 @@ sealed abstract class TradeTemplate<T extends ExtendedTrade, TT extends TradeTem
     /// This method ensures that the same [DayTicker#day()] is used at all points of building multiple trades in current cycle
     protected TT newBuildCycle() {
         trdTemplateHelper.setDayForTrdTemplate(dayTicker.day());
+        log.info("Started new build cycle for day: {}. TradeType: {}, Entity: {}, Currency: {}",
+                trdTemplateHelper.currentDayForTrdTemplate(), this.tradeType, this.entityCode, this.currCode);
+
         return self();
     }
 
@@ -94,7 +100,7 @@ sealed abstract class TradeTemplate<T extends ExtendedTrade, TT extends TradeTem
         this.bdr = TradeBuilder.builder();
         this.extTrd = trd;
 
-        return bdr
+        bdr
                 // Fixed value for this template
                 .tradeType(tradeType)
                 .transactionType(transactionType)
@@ -107,7 +113,11 @@ sealed abstract class TradeTemplate<T extends ExtendedTrade, TT extends TradeTem
                 // Ensuring below fields are not null
                 .tradeLinks(new ArrayList<>())
                 .tradeLegs(new HashSet<>())
-                ;
+        ;
+
+        log.info("Building new Trade. TradeType: {}, TradeId-Ver: {}-{}, EventType-Action: {}-{}", bdr.tradeType(), bdr.tradeID(), bdr.tradeVersion(), bdr.tradeEventType(), bdr.tradeEventAction());
+
+        return bdr;
     }
 
     protected TradeLegBuilder createNewTradeLegWithDefaultValues(ExtendedTrade extTrd, TradeLegType tradeLegType) {

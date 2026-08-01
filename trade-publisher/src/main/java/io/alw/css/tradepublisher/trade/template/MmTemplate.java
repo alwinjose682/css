@@ -87,7 +87,7 @@ public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemp
     }
 
     @Override
-    protected ChildBuildDirective<TradeLeg, TradeLegBuilder, ?> generateTradeLegsFromSchedule(MmTrade extTrd, TradeLegGenerationSchedule schedule) {
+    protected ChildBuildDirective<TradeLeg, TradeLegBuilder, ?> buildTradeLegGenerationDirectiveFromSchedule(MmTrade extTrd, TradeLegGenerationSchedule schedule) {
         return switch (schedule.tradeLegType()) {
             case MM_INTEREST -> {
                 var interestLegIds = new Id(extTrd.nextTradeLegId(), VERSION_ONE);
