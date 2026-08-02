@@ -86,7 +86,7 @@ sealed abstract class TradeTemplate<T extends ExtendedTrade, TT extends TradeTem
     /// This method ensures that the same [DayTicker#day()] is used at all points of building multiple trades in current cycle
     protected TT newBuildCycle() {
         trdTemplateHelper.setDayForTrdTemplate(dayTicker.day());
-        log.info("Started new build cycle for day: {}. TradeType: {}, Entity: {}, Currency: {}",
+        log.info("Started new Trade build cycle for day: {}. TradeType: {}, Entity: {}, Currency: {}",
                 trdTemplateHelper.currentDayForTrdTemplate(), this.tradeType, this.entityCode, this.currCode);
 
         return self();

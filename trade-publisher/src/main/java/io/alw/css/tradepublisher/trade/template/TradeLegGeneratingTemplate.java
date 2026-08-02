@@ -132,7 +132,7 @@ public abstract sealed class TradeLegGeneratingTemplate<T extends TradeLegGenera
         minSched.ifPresent(sched -> {
             if (newTradeLegCreationCriteriaPrimary.test(extTrd)) {
                 trdStoreHelper().storeForFutureRetrievalDay(extTrd, StoreHelper.Purpose.ITEM_SPECIFIC_EVENT, sched.scheduleDay());
-                log.info("Saved Trade for potential future TradeLeg generation based on schedule. TradeId-Ver: {}-{}, TradeType: {}, current EventType-Action: {}-{}",
+                log.info("Saved Trade for future TradeLeg generation based on schedule. TradeId-Ver: {}-{}, TradeType: {}, current EventType-Action: {}-{}",
                         extTrd.tradeId(), extTrd.tradeVersion(),
                         extTrd.tradeType(),
                         extTrd.tradeEventType(), extTrd.tradeEventAction());
