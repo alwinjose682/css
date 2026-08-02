@@ -20,10 +20,10 @@ public record ConfirmationMatchEvent(
         MatchStatus matchStatus,
         LocalDate matchDate
 //        LocalDateTime timeStamp
-) implements DataGeneratable, LongId {
+) implements DataGeneratable, ContextualId {
 
     @Override
-    public long id() {
+    public long contextualId() {
         return matchRequestId;
     }
 }

@@ -11,10 +11,10 @@ public record ConfirmationMatchRequest(
         int tradeVersion,
         Set<TradeLegMatchAttribute> tradeLegMatchAttributes,
         TradeType tradeType
-) implements LongId {
+) implements ContextualId {
 
     @Override
-    public long id() {
+    public long contextualId() {
         return requestId;
     }
 }

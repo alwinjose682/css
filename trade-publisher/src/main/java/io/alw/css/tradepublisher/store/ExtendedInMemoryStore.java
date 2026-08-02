@@ -1,12 +1,12 @@
 package io.alw.css.tradepublisher.store;
 
-import io.alw.css.confirmation.LongId;
+import io.alw.css.confirmation.ContextualId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public final class ExtendedInMemoryStore<T extends LongId> extends InMemoryStore<T> {
+public final class ExtendedInMemoryStore<T extends ContextualId> extends InMemoryStore<T> {
     private static final Logger log = LoggerFactory.getLogger(ExtendedInMemoryStore.class);
     private final Map<Long, Collection<T>> store1;
     private final Map<Long, Collection<T>> store2;
@@ -28,7 +28,7 @@ public final class ExtendedInMemoryStore<T extends LongId> extends InMemoryStore
         // Remove the references to the primaryStorage present in secondaryStorage
         Map<Long, Collection<T>> secondaryStorage = getSecondaryStore(storeIdx);
         if (secondaryStorage != null) {
-            primaryStorage.forEach(i -> secondaryStorage.remove(i.id()));
+            primaryStorage.forEach(i -> secondaryStorage.remove(i.contextualId()));
         } else {
             log.warn("secondaryStorage is null when primaryStorage is NOT null. This should not happen");
         }
@@ -37,7 +37,7 @@ public final class ExtendedInMemoryStore<T extends LongId> extends InMemoryStore
         return primaryStorage;
     }
 
-    /// Removes this single item identified by [LongId#id()] from the primary storage. Also remove the entry for the item from the secondary store
+    /// Removes this single item identified by [ContextualId#contextualId()] from the primary storage. Also remove the entry for the item from the secondary store
     /// The entry for the item in the secondary store is with mapping: item#id to the primaryStorage that contains the item
     public boolean removeById(long id, int storeIdx) {
         Collection<T> primaryStorage = getSecondaryStore(storeIdx) // get the secondary store
@@ -52,7 +52,7 @@ public final class ExtendedInMemoryStore<T extends LongId> extends InMemoryStore
 
         // Add the item to the secondary storage
         getSecondaryStore(storeIdx) // get the secondary store
-                .put(item.id(), primaryStorage); // save the primaryStorage, with mapping: item#id to the primaryStorage that contains the item
+                .put(item.contextualId(), primaryStorage); // save the primaryStorage, with mapping: item#id to the primaryStorage that contains the item
     }
 
     @Override
