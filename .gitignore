@@ -8,3 +8,10 @@ gitStatus.sh
 /confirmation-consumer/
 /netting-service/
 
+/trade-consumer/src/main/java/io/alw/css/tradeconsumer/confirmation/repository/cashflow_new_conf_status__merge_into_2.sql
+/trade-consumer/src/main/java/io/alw/css/tradeconsumer/confirmation/repository/cashflow_new_conf_status__anonymous_procedure.sql
+/trade-consumer/src/main/java/io/alw/css/tradeconsumer/confirmation/repository/cashflow_new_conf_status__merge_into_3.sql
+/trade-consumer/src/main/java/io/alw/css/tradeconsumer/confirmation/repository/cashflow_new_conf_status__merge_into_4.sql
+/trade-consumer/src/main/java/io/alw/css/tradeconsumer/confirmation/repository/cashflow_new_conf_status__merge_into__1.sql
+/trade-consumer/src/main/java/io/alw/css/tradeconsumer/confirmation/repository/sql__0.sql
+/trade-consumer/src/main/java/io/alw/css/tradeconsumer/confirmation/repository/sql__1.sql
