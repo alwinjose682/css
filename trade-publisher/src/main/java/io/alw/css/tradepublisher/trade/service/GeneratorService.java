@@ -55,8 +55,8 @@ public class GeneratorService {
         switch (outcome) {
             case GeneratorHandlerOutcome.Success success -> {
                 if (!container.isRunning()) {
-                    container.start();
                     kafkaConsumer.setConfirmationMatchEventTemplate(generatorHandler.confirmationMatchEventTemplate());
+                    container.start();
                     log.info("Started kafka listener for consuming ConfirmationMatchRequest events");
                 }
             }
