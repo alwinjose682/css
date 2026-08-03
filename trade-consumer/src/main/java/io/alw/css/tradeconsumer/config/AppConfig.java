@@ -4,13 +4,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.alw.css.dbshared.tx.TXRO;
 import io.alw.css.dbshared.tx.TXRW;
-import io.alw.css.tradeconsumer.model.properties.SuppressionConfig;
-import io.alw.css.tradeconsumer.processor.CashflowEnricher;
-import io.alw.css.tradeconsumer.processor.CashflowVersionManager;
-import io.alw.css.tradeconsumer.repository.CashflowRejectionRepository;
-import io.alw.css.tradeconsumer.repository.CashflowRepository;
-import io.alw.css.tradeconsumer.repository.CashflowStore;
-import io.alw.css.tradeconsumer.repository.TradeLinkRepository;
+import io.alw.css.serialization.confirmation.ConfirmationMatchRequestAvro;
+import io.alw.css.tradeconsumer.CssTaskExecutor;
+import io.alw.css.tradeconsumer.cashflow.model.properties.SuppressionConfig;
+import io.alw.css.tradeconsumer.cashflow.repository.CashflowRepository;
+import io.alw.css.tradeconsumer.cashflow.repository.CashflowStore;
+import io.alw.css.tradeconsumer.cashflow.repository.RejectionRepository;
+import io.alw.css.tradeconsumer.cashflow.repository.TradeLinkRepository;
+import io.alw.css.tradeconsumer.cashflow.service.CashflowEnrichmentService;
+import io.alw.css.tradeconsumer.cashflow.service.CashflowVersionService;
+import io.alw.css.tradeconsumer.confirmation.ConfirmationMatchRequestPublisher;
+import io.alw.css.tradeconsumer.confirmation.model.properties.KafkaTopicProperties;
+import io.alw.css.tradeconsumer.confirmation.repository.ConfirmationMatchStatusRepository;
+import io.alw.css.tradeconsumer.confirmation.repository.ConfirmationMatchStatusStore;
 import io.alw.css.tradeconsumer.service.CacheService;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -19,15 +25,38 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.support.incrementer.DataFieldMaxValueIncrementer;
+import org.springframework.jdbc.support.incrementer.OracleSequenceMaxValueIncrementer;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.web.client.RestTemplate;
 
+import javax.sql.DataSource;
+import java.util.random.RandomGenerator;
+
 @Configuration
 @EnableConfigurationProperties
-@EnableJpaRepositories(basePackages = "io.alw.css.tradeconsumer.repository")
-@EntityScan(basePackages = "io.alw.css.tradeconsumer.model.jpa")
+@EnableJpaRepositories(basePackages = {"io.alw.css.tradeconsumer.cashflow.repository","io.alw.css.tradeconsumer.confirmation.repository"})
+@EntityScan(basePackages = {"io.alw.css.tradeconsumer.cashflow.model.jpa","io.alw.css.tradeconsumer.confirmation.model.jpa"})
 // no @EnableTransactionManagement. Declarative tx is not used. Programmatic tx is used instead
 public class AppConfig {
+
+    @Bean
+    public NamedParameterJdbcTemplate namedParameterJdbcTemplate(DataSource dataSource) {
+        return new NamedParameterJdbcTemplate(dataSource);
+    }
+
+    @Bean("cashflowIdSeqIncrementer")
+    public DataFieldMaxValueIncrementer cashflowIdSeqIncrementer(DataSource dataSource) {
+        return new OracleSequenceMaxValueIncrementer(dataSource, "cashflow_seq");
+        // NOTE: Spring does not cache result produced by a sequence. But it does for ids generated via other means like table
+    }
+
+    @Bean("confMatchReqIdGenerator")
+    public DataFieldMaxValueIncrementer confMatchReqIdGenerator(DataSource dataSource) {
+        return new OracleSequenceMaxValueIncrementer(dataSource, "conf_match_req_id_seq");
+    }
 
     @Bean
     public ObjectMapper objectMapper() {
@@ -65,17 +94,37 @@ public class AppConfig {
     }
 
     @Bean
-    public CashflowVersionManager cashflowVersionManager(CashflowStore cashflowStore, TXRW txrw, TXRO txro) {
-        return new CashflowVersionManager(cashflowStore, txrw, txro);
+    public CashflowVersionService cashflowVersionManager(CashflowStore cashflowStore, TXRW txrw, TXRO txro) {
+        return new CashflowVersionService(cashflowStore, txrw, txro);
     }
 
     @Bean
-    public CashflowEnricher cashflowEnricher(SuppressionConfig suppressionConfig, CacheService cacheService) {
-        return new CashflowEnricher(suppressionConfig, cacheService);
+    public CashflowEnrichmentService cashflowEnricher(SuppressionConfig suppressionConfig, CacheService cacheService) {
+        return new CashflowEnrichmentService(suppressionConfig, cacheService);
     }
 
     @Bean
-    public CashflowStore cashflowStore(CashflowRepository cashflowRepository, CashflowRejectionRepository cashflowRejectionRepository, TradeLinkRepository tradeLinkRepository) {
-        return new CashflowStore(cashflowRepository, cashflowRejectionRepository, tradeLinkRepository);
+    public CashflowStore cashflowStore(CashflowRepository cashflowRepository, RejectionRepository rejectionRepository, TradeLinkRepository tradeLinkRepository, DataFieldMaxValueIncrementer cashflowIdSeqIncrementer, DataFieldMaxValueIncrementer confMatchReqIdGenerator) {
+        return new CashflowStore(cashflowRepository, rejectionRepository, tradeLinkRepository, cashflowIdSeqIncrementer, confMatchReqIdGenerator);
+    }
+
+    @Bean
+    public CssTaskExecutor cssTaskExecutor() {
+        return new CssTaskExecutor();
+    }
+
+    @Bean
+    public ConfirmationMatchRequestPublisher tradeMatchRequestPublisher(KafkaTopicProperties kafkaTopicProperties, KafkaTemplate<String, ConfirmationMatchRequestAvro> kafkaTemplateConfMatchRequest, CssTaskExecutor cssTaskExecutor) {
+        return new ConfirmationMatchRequestPublisher(kafkaTopicProperties, kafkaTemplateConfMatchRequest, cssTaskExecutor);
+    }
+
+    @Bean
+    public ConfirmationMatchStatusStore confirmationMatchStatusStore(NamedParameterJdbcTemplate namedParameterJdbcTemplate, ConfirmationMatchStatusRepository confirmationMatchStatusRepository, RejectionRepository rejectionRepository) {
+        return new ConfirmationMatchStatusStore(namedParameterJdbcTemplate, confirmationMatchStatusRepository, rejectionRepository);
+    }
+
+    @Bean
+    public RandomGenerator rndm() {
+        return RandomGenerator.getDefault();
     }
 }

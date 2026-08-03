@@ -2,10 +2,10 @@ package io.alw.css.tradeconsumer.config;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.alw.css.tradeconsumer.model.FoCashflowIdAndTradeId;
-import io.alw.css.tradeconsumer.model.generator.TradeGenerationInitialValues;
+import io.alw.css.tradeconsumer.cashflow.model.GeneratorIds;
+import io.alw.css.tradeconsumer.cashflow.repository.CashflowRepository;
+import io.alw.css.tradeconsumer.model.generator.GeneratorInitialValues;
 import io.alw.css.tradeconsumer.model.generator.TradeGeneratorStartResponse;
-import io.alw.css.tradeconsumer.repository.CashflowRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -67,22 +67,22 @@ public class ApplicationStartupEvent implements ApplicationListener<ApplicationR
         if (res.getStatusCode().is2xxSuccessful()) {
             var outcome = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(res.getBody()); // Converting the response to json again to write a readable friendly string
 
-            log.info("Started ALL Trade Generators in upstream/fo-simulator, {}", outcome);
+            log.info("Started ALL Trade and Confirmation Generators in upstream/trade-publisher, {}", outcome);
         } else {
-            log.warn("Failed to start Trade Generators in upstream/fo-simulator. Check the upstream simulator logs for details. REST Response: {}", res.getStatusCode());
+            log.warn("Failed to start Trade and/or Confirmation Generators in upstream/trade-publisher. Check the upstream simulator logs for details. REST Response: {}", res.getStatusCode());
         }
     }
 
-    private TradeGenerationInitialValues getTradeGenerationInitialValues() {
-        FoCashflowIdAndTradeId maxIds = cashflowRepository.findMaxTradeId();
-        if (maxIds == null || maxIds.tradeId() == null) {
-            var initValues = new TradeGenerationInitialValues(LocalDate.now(), 1054321L);
-            log.info("Staring Trade Generators with initial values: {}", initValues);
+    private GeneratorInitialValues getTradeGenerationInitialValues() {
+        GeneratorIds maxIds = cashflowRepository.findMaxTradeId();
+        if (maxIds == null || maxIds.tradeId() == null || maxIds.matchEventId() == null) {
+            var initValues = new GeneratorInitialValues(LocalDate.now(), 1054321L, 58255L);
+            log.info("Staring Trade and Confirmation Generators with default initial values: {}", initValues);
             return initValues;
         }
 
-        var initValues = new TradeGenerationInitialValues(LocalDate.now(), 1L + maxIds.tradeId());
-        log.info("Staring Trade Generators with initial values greater than the values of last processed cashflow: {}", initValues);
+        var initValues = new GeneratorInitialValues(LocalDate.now(), 1L + maxIds.tradeId().longValue(), maxIds.matchEventId().longValue());
+        log.info("Staring Trade and Confirmation Generators with initial values greater than the values of last processed cashflow and last generated confirmation event: {}", initValues);
         return initValues;
     }
 }

@@ -2,7 +2,7 @@ CREATE TABLE cashflow(
 cashflow_id NUMBER(19) NOT NULL,           							  				-- { cashflowId | nullable = false }
 cashflow_version NUMBER(10) NOT NULL,              							  		-- { cashflowVersion | nullable = false }
 latest VARCHAR2(1) NOT NULL CONSTRAINT cf_latest_chk CHECK(latest IN ('Y','N')),   	-- { latest | STRING }
-revision_type VARCHAR2(3) NOT NULL CONSTRAINT cf_revision_type_chk CHECK(revision_type IN ('NEW','CAN','COR')),   -- { revisionType | STRING }
+revision_type VARCHAR2(3) NOT NULL CONSTRAINT cf_revision_type_chk CHECK(revision_type IN ('NEW','CAN','COR','REV')),   -- { revisionType | STRING }
 trade_id NUMBER(19) NOT NULL,                                              		    -- { tradeId | nullable = false }
 trade_version NUMBER(10) NOT NULL,                                                  -- { tradeVersion | nullable = false}
 trade_leg_id NUMBER(19) NOT NULL,                                              		-- { tradeLegId | nullable = false }
@@ -24,6 +24,8 @@ curr_code VARCHAR2(3),                                                 				-- { 
 internal VARCHAR2(1) NOT NULL CONSTRAINT cf_internal_chk CHECK(internal IN ('Y','N')), -- { internal | STRING }
 nostro_id VARCHAR2(5),                                                   			-- { nostroID }
 ssi_id VARCHAR2(8),                                                      			-- { ssiID }
+confirmation_status VARCHAR2(9) NOT NULL,
+conf_req_id NUMBER(19),
 payment_suppression_category VARCHAR2(30) NOT NULL,				        			-- { paymentSuppressionCategory }
 input_by VARCHAR2(10),                                                     			-- { inputBy | ORDINAL }
 input_by_user_id VARCHAR2(10),                                          			-- { inputByUserID }
@@ -31,5 +33,7 @@ input_date_time TIMESTAMP(3)                                         			    -- {
 );
 
 ALTER TABLE cashflow ADD CONSTRAINT cf_pk PRIMARY KEY(cashflow_id, cashflow_version);
-ALTER TABLE cashflow ADD CONSTRAINT cf_uniq_1 UNIQUE(trade_id, trade_version, trade_leg_id, trade_leg_version);
+create INDEX cf_conf_idx on cashflow(trade_id, trade_version, trade_leg_id, trade_leg_version);
 --CREATE INDEX cf_netting_idx on cashflow(value_date, curr_code, payment_suppressed); -- index for netting is not required as there is no netting window in current design. Netting for CFs of any VD is done on confirmation event
+--Note: no index on conf_req_id. This corresponds to confirmation_match_status.id
+--Note: If confirmation match request is re-generated(ex: by user) for the cashflow, conf_req_id is should be updated or a new cashflow version record can be inserted

@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 /// Why not simply map counterparty directly to a nostroId instead of the sla?
 /// The back office application I used to work for did not have such a simple mapping. Dont know about the complexities of designing and managing a reference data system
@@ -18,7 +19,7 @@ public record Cashflow(
         // CSS Cashflow Version Data
         long cashflowId,
         int cashflowVersion,
-        boolean latest, // the field 'latest' is intended to be used only by CSS Services that synchronizes Cashflow processing by acquiring a lock
+        boolean latest, // the field 'latest' is intended to be used only by CSS Services
         RevisionType revisionType,
 
         // Trade Id and Version
@@ -46,6 +47,8 @@ public record Cashflow(
         boolean internal, // interBook, interBranch and interCompany are categorized as internal. Payment should not be generated for interBook CF
         String nostroId,
         String ssiId, // The counterparty's SSI. If an interBook trade and hence no real ssiId, then the dummy ssiId for interBook will be used
+        @NotNull CashflowConfirmationStatus confirmationStatus,
+        Long confReqId, // confirmation match request id is a nullable field. Not using Optional.
         @NotNull PaymentSuppressionCategory paymentSuppressionCategory,
 
         // Cashflow Entry Audit
@@ -53,4 +56,15 @@ public record Cashflow(
         String inputByUserId,
         LocalDateTime inputDateTime
 ) {
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Cashflow cashflow = (Cashflow) o;
+        return cashflowId == cashflow.cashflowId && cashflowVersion == cashflow.cashflowVersion;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(cashflowId, cashflowVersion);
+    }
 }

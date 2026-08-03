@@ -1,0 +1,30 @@
+{
+  "type": "record",
+  "name": "TradeLegMatchAttributeAvro",
+  "namespace": "io.alw.css.serialization.confirmation",
+  "fields": [
+    {
+      "name": "nostroId",
+      "type": "string"
+    },
+    {
+      "name": "ssiId",
+      "type": "string"
+    },
+    {
+      "name": "tradeLegId",
+      "type": "long"
+    },
+    {
+      "name": "tradeLegVersion",
+      "type": "int"
+    },
+    {
+      "name": "valueDate",
+      "type": {
+        "type": "int",
+        "logicalType":"date"
+      }
+    }
+  ]
+}

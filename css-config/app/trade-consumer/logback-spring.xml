@@ -10,7 +10,7 @@
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <Pattern>
-                %red(%d{yyyy-MM-dd HH:mm:ss.SSS}) %-5p [%blue(%t)] %yellow(%-50logger{36}) : %m [%yellow(%C{0})]%n%throwable{full}
+                %red(%d{yyyy-MM-dd HH:mm:ss.SSS}) %-5p [%blue(%t), %X{kafkaPartition}] %yellow(%-50logger{36}) [%X{id}] : %m [%yellow(%C{0})]%n%throwable{full}
                 <!--                %red(%d{yyyy-MM-dd HH:mm:ss.SSS}) %-5p %yellow(%-50logger{36}) : %m [%yellow(%C{0})]%n%throwable{full} &lt;!&ndash; Does not print thread name&ndash;&gt;-->
             </Pattern>
         </encoder>
@@ -24,7 +24,7 @@
             <append>true</append>
             <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
                 <Pattern>
-                    %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t] %-50logger{36} : %m %n%throwable{full}
+                    %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t, %X{kafkaPartition}] %-50logger{36} [%X{id}] : %m %n%throwable{full}
                     <!--                    %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p %-50logger{36} : %m [%C{0}]%n%throwable{full} &lt;!&ndash; Does not print thread name&ndash;&gt;-->
                 </Pattern>
             </encoder>

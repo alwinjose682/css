@@ -1,0 +1,34 @@
+{
+  "type": "record",
+  "name": "ConfirmationMatchRequestAvro",
+  "namespace": "io.alw.css.serialization.confirmation",
+  "fields": [
+    {
+      "name": "requestId",
+      "type": "long"
+    },
+    {
+      "name": "contraPairId",
+      "type": ["null","long"]
+    },
+    {
+      "name": "tradeId",
+      "type": "long"
+    },
+    {
+      "name": "tradeLegMatchAttributes",
+      "type": {
+        "type": "array",
+        "items": "io.alw.css.serialization.confirmation.TradeLegMatchAttributeAvro"
+      }
+    },
+    {
+      "name": "tradeType",
+      "type": "string"
+    },
+    {
+      "name": "tradeVersion",
+      "type": "int"
+    }
+  ]
+}
