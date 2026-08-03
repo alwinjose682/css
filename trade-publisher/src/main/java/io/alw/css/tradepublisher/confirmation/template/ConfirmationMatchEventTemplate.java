@@ -204,7 +204,7 @@ public final class ConfirmationMatchEventTemplate implements Supplier<List<Confi
                 .tradeLegMatchAttributes()
                 .stream().anyMatch(attr -> attr
                         .valueDate()
-                        .isBefore(getFutureDateForTemplateRelativeToCurrentDate(10)));
+                        .isBefore(getFutureDateForTemplateRelativeToCurrentDate(2)));
     }
 
     private boolean isMatchRequestAnAmendment(ConfirmationMatchRequest matchRequest) {
