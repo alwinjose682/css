@@ -50,7 +50,7 @@ public final class ConfirmationMatchEventTemplate implements Supplier<List<Confi
 
     /// Generates [ConfirmationMatchEvent] immediately or on a future date.
     /// The events generated immediately are publisher to CSS.
-    /// The match requests and event amendments queued for a future date are obtained by [io.alw.css.tradepublisher.generator.Generator] at pre-configured intervals and then published to CSS
+    /// The match requests and event amendments queued for a future date are obtained by [io.alw.css.tradepublisher.generator.Generator] at pre-configured intervals from this template and then published to CSS
     public void consume(ConfirmationMatchRequest matchRequest) {
         if (isMatchRequestAnAmendment(matchRequest)) {
             Long contraPairId = matchRequest.contraPairId();
