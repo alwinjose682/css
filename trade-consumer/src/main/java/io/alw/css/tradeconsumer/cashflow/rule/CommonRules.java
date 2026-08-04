@@ -1,4 +1,4 @@
-package io.alw.css.tradeconsumer.cashflow.processor.rule;
+package io.alw.css.tradeconsumer.cashflow.rule;
 
 import io.alw.css.domain.common.TradeEventType;
 
@@ -6,8 +6,8 @@ import java.util.List;
 
 import static io.alw.css.domain.common.RevisionType.*;
 import static io.alw.css.domain.common.TradeEventAction.*;
-import static io.alw.css.tradeconsumer.cashflow.processor.rule.CashflowSequence.INITIAL;
-import static io.alw.css.tradeconsumer.cashflow.processor.rule.CashflowSequence.SUBSEQUENT;
+import static io.alw.css.tradeconsumer.cashflow.rule.CashflowSequence.INITIAL;
+import static io.alw.css.tradeconsumer.cashflow.rule.CashflowSequence.SUBSEQUENT;
 
 public final class CommonRules implements RuleDefinition {
     private final static Rule rule1 = new Rule(null, NEW, INITIAL, List.of(

@@ -11,7 +11,7 @@ import io.alw.css.domain.trade.TradeLegType;
 import io.alw.css.serialization.trade.TradeAvro;
 import io.alw.css.serialization.trade.TradeLegAvro;
 import io.alw.css.tradeconsumer.cashflow.model.jpa.TradeLinkEntity;
-import io.alw.css.tradeconsumer.cashflow.processor.rule.RevisionTypeResolver;
+import io.alw.css.tradeconsumer.cashflow.rule.RevisionTypeResolver;
 import io.alw.css.tradeconsumer.cashflow.util.CashflowUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

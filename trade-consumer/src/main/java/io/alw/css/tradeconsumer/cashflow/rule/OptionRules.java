@@ -1,4 +1,4 @@
-package io.alw.css.tradeconsumer.cashflow.processor.rule;
+package io.alw.css.tradeconsumer.cashflow.rule;
 
 import io.alw.css.domain.common.TradeEventType;
 
@@ -8,8 +8,8 @@ import static io.alw.css.domain.common.RevisionType.CAN;
 import static io.alw.css.domain.common.RevisionType.NEW;
 import static io.alw.css.domain.common.TradeEventAction.ADD;
 import static io.alw.css.domain.common.TradeType.OPTION;
-import static io.alw.css.tradeconsumer.cashflow.processor.rule.CashflowSequence.BOTH;
-import static io.alw.css.tradeconsumer.cashflow.processor.rule.CashflowSequence.SUBSEQUENT;
+import static io.alw.css.tradeconsumer.cashflow.rule.CashflowSequence.BOTH;
+import static io.alw.css.tradeconsumer.cashflow.rule.CashflowSequence.SUBSEQUENT;
 
 public final class OptionRules implements RuleDefinition {
     private final static Rule rule1 = new Rule(OPTION, NEW, BOTH, List.of(

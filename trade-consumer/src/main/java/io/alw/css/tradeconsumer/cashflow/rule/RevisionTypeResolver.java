@@ -1,4 +1,4 @@
-package io.alw.css.tradeconsumer.cashflow.processor.rule;
+package io.alw.css.tradeconsumer.cashflow.rule;
 
 import io.alw.css.domain.common.RevisionType;
 import io.alw.css.domain.common.TradeEventAction;

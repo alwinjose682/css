@@ -1,9 +1,10 @@
-package io.alw.css.tradeconsumer.cashflow.processor.rule;
+package io.alw.css.tradeconsumer.cashflow.rule.rule;
 
 import io.alw.css.domain.common.RevisionType;
 import io.alw.css.domain.common.TradeEventAction;
 import io.alw.css.domain.common.TradeEventType;
 import io.alw.css.domain.common.TradeType;
+import io.alw.css.tradeconsumer.cashflow.rule.RevisionTypeResolver;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
