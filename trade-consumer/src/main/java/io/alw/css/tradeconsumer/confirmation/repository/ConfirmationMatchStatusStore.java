@@ -5,6 +5,7 @@ import io.alw.css.domain.common.CashflowConfirmationStatus;
 import io.alw.css.domain.common.InputBy;
 import io.alw.css.tradeconsumer.cashflow.model.jpa.RejectionEntity;
 import io.alw.css.tradeconsumer.cashflow.repository.RejectionRepository;
+import io.alw.css.tradeconsumer.confirmation.exception.CashflowConfirmationException;
 import io.alw.css.tradeconsumer.confirmation.model.jpa.ConfirmationMatchStatusEntity;
 import io.alw.css.tradeconsumer.confirmation.repository.sqlconstants.SqlAndMetadata;
 import org.slf4j.Logger;
@@ -36,7 +37,7 @@ public class ConfirmationMatchStatusStore {
         rejectionRepository.save(ent);
     }
 
-    public int updateCashflowWithConfirmationStatus(SqlAndMetadata sqlAndMetadata, ConfirmationMatchEvent confMatchEvent, CashflowConfirmationStatus confirmationStatus, InputBy inputBy, String inputByUserId) {
+    public int updateCashflowWithConfirmationStatus(SqlAndMetadata sqlAndMetadata, ConfirmationMatchEvent confMatchEvent, CashflowConfirmationStatus confirmationStatus, InputBy inputBy, String inputByUserId) throws CashflowConfirmationException {
         long tradeId = confMatchEvent.tradeId();
         int tradeVersion = confMatchEvent.tradeVersion();
         long confReqId = confMatchEvent.matchRequestId();
@@ -57,9 +58,12 @@ public class ConfirmationMatchStatusStore {
                 ).toArray(MapSqlParameterSource[]::new);
 
         int[] numOfRowsUpdated = namedParameterJdbcTemplate.batchUpdate(sqlAndMetadata.sql(), params);
+        int numOfErrors = 0;
         for (int i = 0; i < numOfRowsUpdated.length; ++i) {
             int updateNum = numOfRowsUpdated[i];
             if (updateNum != sqlAndMetadata.numberOfRecordsUpdated()) {
+                ++numOfErrors;
+
                 MapSqlParameterSource param = params[i];
                 long pConfReqId = (long) param.getValue("p_conf_req_id");
                 long pTradeId = (long) param.getValue("p_trade_id");
@@ -70,6 +74,10 @@ public class ConfirmationMatchStatusStore {
                 log.error("Error updating cashflow with new confirmation status. Number of expected updates: {}, Actual updates: {}, ConfRequestId: {}, TradeId-Ver: {}-{}, TradeLegId-Ver: {}-{}",
                         sqlAndMetadata.numberOfRecordsUpdated(), updateNum, pConfReqId, pTradeId, pTradeVersion, pTradeLegId, pTradeLegVersion);
             }
+        }
+
+        if (numOfErrors > 0) {
+            throw new CashflowConfirmationException("Error confirming cashflows. Number of cashflow confirmations with error: {}", numOfErrors);
         }
 
         return numOfRowsUpdated.length;
