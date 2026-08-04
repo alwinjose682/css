@@ -220,11 +220,22 @@ public final class GeneratorHandler {
     private long getGeneratorSleepDurationFor(String generatorKey) {
         Map<String, Long> cfgProps = tradeGeneratorProperties.frequencySeconds();
         String[] gkp = generatorKey.split(GENERATOR_KEY_PART_SEPARATOR);
+        String generatorType = gkp[0];
+        String transactionType = gkp[1];
+        String tradeType = gkp[2];
+        String entityCode = gkp[3];
 
         for (String key : cfgProps.keySet()) {
-            if (key.equalsIgnoreCase(gkp[1] + GENERATOR_KEY_PART_SEPARATOR + gkp[2])
-                    || key.equalsIgnoreCase(gkp[1] + GENERATOR_KEY_PART_SEPARATOR)
-                    || key.equalsIgnoreCase(GENERATOR_KEY_PART_SEPARATOR + gkp[2])) {
+            if (
+                // Evaluates in the order of preference
+                    key.equalsIgnoreCase(generatorType + GENERATOR_KEY_PART_SEPARATOR + transactionType + GENERATOR_KEY_PART_SEPARATOR + tradeType + GENERATOR_KEY_PART_SEPARATOR + entityCode)
+                            || key.equalsIgnoreCase(transactionType + GENERATOR_KEY_PART_SEPARATOR + tradeType + GENERATOR_KEY_PART_SEPARATOR + entityCode)
+                            || key.equalsIgnoreCase(transactionType + GENERATOR_KEY_PART_SEPARATOR + tradeType)
+                            || key.equalsIgnoreCase(tradeType + GENERATOR_KEY_PART_SEPARATOR + entityCode)
+                            || key.equalsIgnoreCase(tradeType)
+                            || key.equalsIgnoreCase(entityCode)
+                            || key.equalsIgnoreCase(transactionType)
+            ) {
                 return cfgProps.get(key);
             }
         }
