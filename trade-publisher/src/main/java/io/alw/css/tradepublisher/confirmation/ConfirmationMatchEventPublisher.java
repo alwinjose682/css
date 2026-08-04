@@ -34,16 +34,17 @@ public final class ConfirmationMatchEventPublisher implements Consumer<List<Conf
         String outputTopic = kafkaTopicProperties.confirmationMatchEventTopic();
         ConfirmationMatchEventAvro avroMsg = ConfirmationMatchEventMapper.instance().domainToAvro(event);
         String key = String.valueOf(avroMsg.getTradeId());
-        log.trace("Sending ConfirmationMatchEvent {} to topic: {}", key, outputTopic);
+        String eventIdVer = avroMsg.getEventId() + "-" + avroMsg.getEventVersion();
+        log.trace("Sending ConfirmationMatchEvent {} to topic: {}", eventIdVer, outputTopic);
 
         kafkaTemplateConfMatchEvent
                 .send(outputTopic, key, avroMsg)
                 .whenCompleteAsync((result, e) -> {
                     if (e == null) {
                         RecordMetadata recordMetadata = result.getRecordMetadata();
-                        log.info("Published ConfirmationMatchEvent[{}] to topic: {}, partition: {}, offset: {}", key, outputTopic, recordMetadata.partition(), recordMetadata.offset());
+                        log.info("Published ConfirmationMatchEvent[{}] to topic: {}, partition: {}, offset: {}", eventIdVer, outputTopic, recordMetadata.partition(), recordMetadata.offset());
                     } else {
-                        log.error("An error occurred when publishing ConfirmationMatchEvent[{}] to kafka topic: {}. Message: {}", key, outputTopic, avroMsg);
+                        log.error("An error occurred when publishing ConfirmationMatchEvent[{}] to kafka topic: {}. Message: {}", eventIdVer, outputTopic, avroMsg);
                     }
                 }, cssTaskExecutor.executor());
     }

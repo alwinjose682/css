@@ -32,7 +32,7 @@ public class KafkaConsumer {
         long tradeId = matchRequestAvro.getTradeId();
         int tradeVersion = matchRequestAvro.getTradeVersion();
 
-        log.info("Received ConfirmationMatchRequestAvro[tradeId: {}, tradeVersion: {}] for confirmation message generation and matching", tradeId, tradeVersion);
+        log.info("Received ConfirmationMatchRequestAvro[tradeId-Ver: {}-{}] for confirmation message generation and matching", tradeId, tradeVersion);
         ConfirmationMatchRequest req = ConfirmationMatchRequestMapper.instance().avroToDomain(matchRequestAvro);
         confirmationMatchEventTemplate.consume(req);
     }

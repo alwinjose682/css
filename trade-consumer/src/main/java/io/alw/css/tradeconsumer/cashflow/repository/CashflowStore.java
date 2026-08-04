@@ -102,7 +102,7 @@ public final class CashflowStore {
 
         // Exactly ONE row is updated. Therefore, persist the cashflows.
         return newCashflows.stream()
-                .peek(cf -> log.trace("Saving Cashflow[{}-{}] to DB. TradeLeg[{}-{}]", cf.cashflowId(), cf.cashflowVersion(), cf.tradeLegId(), cf.tradeLegVersion()))
+                .peek(cf -> log.trace("Saving Cashflow[{}-{}] in database. TradeLeg[{}-{}]", cf.cashflowId(), cf.cashflowVersion(), cf.tradeLegId(), cf.tradeLegVersion()))
                 .map(CashflowMapper::mapToEntity)
                 .map(cashflowRepository::save)
                 .map(CashflowMapper.instance()::mapToDomain_excludingAssociations)

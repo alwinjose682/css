@@ -34,16 +34,17 @@ public class TradePublisher implements Consumer<List<Trade>> {
         String outputTopic = kafkaTopicProperties.tradeOutputTopic();
         TradeAvro avroMsg = TradeAvroMapper.instance().domainToAvro(trdMsg);
         String key = String.valueOf(avroMsg.getTradeID());
-        log.trace("Sending trade message: {} to topic: {}", key, outputTopic);
+        String tradeIdVer = avroMsg.getTradeID() + "-" + avroMsg.getTradeVersion();
+        log.trace("Sending trade message: {} to topic: {}", tradeIdVer, outputTopic);
 
         kafkaTemplateTradeCashGenerationEvent
                 .send(outputTopic, key, avroMsg)
                 .whenCompleteAsync((result, e) -> {
                     if (e == null) {
                         RecordMetadata recordMetadata = result.getRecordMetadata();
-                        log.info("Published Trade message[{}] to topic: {}, partition: {}, offset: {}", key, outputTopic, recordMetadata.partition(), recordMetadata.offset());
+                        log.info("Published Trade message[{}] to topic: {}, partition: {}, offset: {}", tradeIdVer, outputTopic, recordMetadata.partition(), recordMetadata.offset());
                     } else {
-                        log.error("An error occurred when publishing Trade message[{}] to kafka topic: {}. Message: {}", key, outputTopic, avroMsg);
+                        log.error("An error occurred when publishing Trade message[{}] to kafka topic: {}. Message: {}", tradeIdVer, outputTopic, avroMsg);
                     }
                 }, cssTaskExecutor.executor());
     }

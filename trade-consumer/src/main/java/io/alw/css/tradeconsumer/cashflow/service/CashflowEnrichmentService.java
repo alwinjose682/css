@@ -46,7 +46,7 @@ public class CashflowEnrichmentService {
         setInternalValue(builder, ssiWithCpData);
         setPaymentSuppressionValue(builder);
 
-        log.debug("Successfully Validated and Enriched the cashflow. TradeLegId-Ver: {}-{}", builder.tradeLegId(), builder.tradeLegVersion());
+        log.debug("Successfully Validated and Enriched cashflow. TradeLegId-Ver: {}-{}", builder.tradeLegId(), builder.tradeLegVersion());
     }
 
     void validateEntityAndCurrCode(CashflowBuilder builder) {
@@ -71,7 +71,7 @@ public class CashflowEnrichmentService {
             if (overridableNostro != null) {
                 String nostroID = overridableNostro.nostroID();
                 builder.nostroId(nostroID);
-                log.info("Enriched cashflow with nostroID: {} by overriding primary nostro with secondary configured in counterparty profile. CounterpartyCode: {}, CurrCode: {}, EntityCode: {}, TradeLegId-Ver: {}-{}", nostroID, overridableNostro.counterpartyCode(), overridableNostro.currCode(), overridableNostro.entityCode(), builder.tradeLegId(), builder.tradeLegVersion());
+                log.info("Enriched cashflow with secondary nostroID: {} by overriding primary nostro due to counterparty profile configuration. CounterpartyCode: {}, CurrCode: {}, EntityCode: {}, TradeLegId-Ver: {}-{}", nostroID, overridableNostro.counterpartyCode(), overridableNostro.currCode(), overridableNostro.entityCode(), builder.tradeLegId(), builder.tradeLegVersion());
                 return;
             } else if (primaryNostro != null) {
                 String nostroID = primaryNostro.nostroID();

@@ -130,7 +130,7 @@ public class TradeConfirmationService {
 
         // Create ConfirmationMatchRequests
         List<ConfirmationMatchRequestFactoryOutcome> outcomes = TradeConfirmationServiceDelegate.buildConfirmationMatchRequests(groupedCashflows, tradeId, tradeVersion, tradeType);
-        log.debug("Created confirmation match requests. Number of of requests: {}", outcomes.size());
+        log.debug("Created confirmation match requests. Number of requests: {}", outcomes.size());
 
         // Save database audit
         try {
