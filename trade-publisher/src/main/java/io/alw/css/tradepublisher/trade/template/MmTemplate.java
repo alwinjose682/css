@@ -37,18 +37,21 @@ import static io.alw.css.domain.common.PayOrReceive.PAY;
 import static io.alw.css.domain.common.PayOrReceive.RECEIVE;
 import static io.alw.css.domain.common.RateType.FLOAT;
 import static io.alw.css.domain.trade.TradeLegType.*;
-import static io.alw.css.tradepublisher.trade.template.MmTemplateConstants.*;
+import static io.alw.css.tradepublisher.trade.template.MmTemplateConstants.principalLegAmountBound;
+import static io.alw.css.tradepublisher.trade.template.MmTemplateConstants.principalLegAmountOrigin;
 import static io.alw.css.tradepublisher.trade.template.domain.InterestBasis.ThirtyBy360;
 import static io.alw.css.tradepublisher.trade.template.domain.InterestPayoutFrequency.*;
 
 public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemplate> {
     private final StoreHelper<MmTrade> trdStoreHelper;
+    private final MmTemplateConstants mmTemplateConstants;
 
     public MmTemplate(Entity entity, TradeType tradeType, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, TradeTemplateProperties trdTemplateProps) {
         super(entity, tradeType, transactionType, rndm, initialValueDate, refDataService, dayTicker, trdTemplateProps);
 
         Store<MmTrade> trdStore = new InMemoryStore<>();
         this.trdStoreHelper = new StoreHelper<>(dayTicker, trdStore, rndm);
+        mmTemplateConstants = new MmTemplateConstants();
     }
 
     /// Build new template for MM trade. A new MM trade can have 1 to 3 trade legs depending on whether it is a TERM or CALL and depending on the interest tradeLeg
@@ -124,7 +127,7 @@ public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemp
 
     @Override
     protected void buildTradeAmendmentContext(Consumer<TradeAmendmentContext> trdAmendmentBuilderFunc, MmTrade trdForAmendment) {
-        switch (cyclicAmendableMmLegProvider.get()) {
+        switch (mmTemplateConstants.cyclicAmendableMmLegProvider.get()) {
             case MM_PRINCIPAL -> {
                 var trdAmendCtx = buildTradeAmendmentContextStep2(trdForAmendment.principalLeg(), trdForAmendment);
                 trdAmendmentBuilderFunc.accept(trdAmendCtx);
@@ -169,7 +172,7 @@ public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemp
         var maturityLeg = trd.maturityLeg(); // NOTE: MaturityLeg could be null for MM CALL trades
 
         // Get all fields, that require amendment, with their amended value
-        Set<AmendableFieldType> amendableFieldTypes = cyclicAmendableTradeMessageFieldTypeProvider.get();
+        Set<AmendableFieldType> amendableFieldTypes = mmTemplateConstants.cyclicAmendableTradeMessageFieldTypeProvider.get();
         var amendableFields = new AmendableFieldsCollection();
         for (var ft : amendableFieldTypes) {
             switch (ft.amendmentTarget()) {
@@ -489,8 +492,8 @@ public final class MmTemplate extends TradeLegGeneratingTemplate<MmTrade, MmTemp
     /// Interest trade leg should be generated based on [InterestPayoutFrequency]
     @Override
     protected MmTrade createExtendedTrade() {
-        var rateType = cyclicRateTypeProvider.get();
-        var ipFrequency = cyclicIpFrequencyProvider.get();
+        var rateType = mmTemplateConstants.cyclicRateTypeProvider.get();
+        var ipFrequency = mmTemplateConstants.cyclicIpFrequencyProvider.get();
         var basis = ThirtyBy360;
 
         return new MmTrade(rateType, ipFrequency, basis, trdTemplateHelper.currentDayForTrdTemplate());

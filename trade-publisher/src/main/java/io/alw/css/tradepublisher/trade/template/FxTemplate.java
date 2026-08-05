@@ -29,7 +29,7 @@ import static io.alw.css.tradepublisher.trade.template.model.AmendableFieldType.
 
 public final class FxTemplate extends TradeAmendmentTemplate<FxTrade, FxTemplate> {
     private final StoreHelper<FxTrade> trdStoreHelper;
-    private static final Supplier<Set<AmendableFieldType>> cyclicAmendableTradeMessageFieldTypeProvider = new CyclicAmendableTradeMessageFieldProvider(getListOfAmendableTradeMessageFieldTypes());
+    private final Supplier<Set<AmendableFieldType>> cyclicAmendableTradeMessageFieldTypeProvider = new CyclicAmendableTradeMessageFieldProvider(getListOfAmendableTradeMessageFieldTypes());
 
     public FxTemplate(Entity entity, TransactionType transactionType, RandomGenerator rndm, LocalDate initialValueDate, RefDataService refDataService, DayTicker dayTicker, TradeTemplateProperties tradeTemplateProperties) {
         super(entity, TradeType.FX, transactionType, rndm, initialValueDate, refDataService, dayTicker, tradeTemplateProperties);
@@ -191,7 +191,7 @@ public final class FxTemplate extends TradeAmendmentTemplate<FxTrade, FxTemplate
         return trdStoreHelper;
     }
 
-    private static class CyclicAmendableTradeMessageFieldProvider extends AbstractCyclicDataProvider<Set<AmendableFieldType>> {
+    private class CyclicAmendableTradeMessageFieldProvider extends AbstractCyclicDataProvider<Set<AmendableFieldType>> {
         public CyclicAmendableTradeMessageFieldProvider(List<Set<AmendableFieldType>> fields) {
             super(fields);
         }
