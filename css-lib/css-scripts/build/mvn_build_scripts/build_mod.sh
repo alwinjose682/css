@@ -20,29 +20,21 @@ function getProperty(){
 
 # Start
 ### Mandatory params
-declare -r mvnAppDirName="${1}"
+declare -r mvnAppSubDir="${1}"
 declare -r mvnAppDir="${2}"
 declare -r mvnAppSpecificPropertyFile="${3}"
-### Optional Params
-if [ -n "${4}" ];then
-  declare -r mvnFlag="${4}"
-fi
-
-if [ -z "${mvnAppDirName}" ];then
-  echo "Maven project directory name is not provided"
-  exit 0
-fi
+declare -r mvnCmd="${4}"
 
 if [ -d "${mvnAppDir}" ];then
   declare -r pomFile="${mvnAppDir}/pom.xml"
-  echo "MVN_CMD: mvn ${mvnFlag} -f ${pomFile} clean install$(getProperty)"
+  echo "MVN_CMD: mvn -f ${pomFile} ${mvnCmd}$(getProperty)"
   if [ -f "${pomFile}" ];then
-    /bin/bash -c "mvn ${mvnFlag} -f ${pomFile} clean install$(getProperty)"
+    /bin/bash -c "mvn -f ${pomFile} ${mvnCmd}$(getProperty)"
   else
-    echo "pom.xml is not present in the project directory: ${mvnAppDir}"
-    exit 0
+    echo "ERROR: pom.xml is not present in the project directory: ${mvnAppDir}"
+    exit 1
   fi
 else
-  echo "Incorrect maven project directory path: ${mvnAppDir}"
-  exit 0
+  echo "ERROR: Incorrect maven project directory path: ${mvnAppDir}"
+  exit 1
 fi
