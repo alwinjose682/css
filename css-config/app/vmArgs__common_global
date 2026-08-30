@@ -1,0 +1,9 @@
+# Temporary directory for all apps instead of using standard /tmp
+-Djava.io.tmpdir=./tmp
+
+# Heap dump
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=./logs
+
+# Log directory
+-Dapp.log.filePath=./logs

@@ -1,0 +1,13 @@
+# DNS caching ttl seconds
+-Dsun.net.inetaddr.ttl=30
+
+# Exit immediately, but gracefully on OOM without skipping heap dump, so that k8 can restart the pod
+-XX:+ExitOnOutOfMemoryError
+
+# Crash immediately. Unlike exiting gracefully, crash and generate core dump
+###-XX:+CrashOnOutOfMemoryError
+
+# Usual args for containerized app
+-XX:+UseContainerSupport
+-XX:MaxRAMPercentage=75.0
+-Djava.security.egd=file:/dev/./urandom
