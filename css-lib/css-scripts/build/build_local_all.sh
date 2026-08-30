@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Build all java components
 ./build.sh clean install dir:css-lib/css-shared/

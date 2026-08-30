@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 ### Get the project specific vars
 . ../proj_specific_vars.sh
