@@ -18,12 +18,13 @@ echo $DIR
 #PROJ_DIR=$(dirname "$(readlink -f "$0")") # Note: $0 and ${BASH_SOURCE[0]} are different
 this_script_dir="$(get_script_dir)"
 PROJ_DIR="$(dirname "$(dirname "${this_script_dir}")")"
-projCfgDir="${PROJ_DIR}/css-config"
-APP_CFG_DIR_ROOT="${projCfgDir}/app"
+PROJ_CFG_DIR="${PROJ_DIR}/css-config"
+APP_CFG_DIR_ROOT="${PROJ_CFG_DIR}/app"
 #MVN_BUILD_SCRIPTS_DIR="${this_script_dir}/"
 PROJ_APP_DIR="${PROJ_DIR}/app"
 
 export PROJ_DIR
+export PROJ_CFG_DIR
 export APP_CFG_DIR_ROOT
 #export MVN_BUILD_SCRIPTS_DIR
 export PROJ_APP_DIR

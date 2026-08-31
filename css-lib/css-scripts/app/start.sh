@@ -1,44 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-function start(){
-  echo ""
-
-  ### App specific VM args (JVM Args specified in a file)
-  #### https://docs.oracle.com/en/java/javase/24/docs/specs/man/java.html#java-command-line-argument-files
-  argFiles=""
-  for argFile in $(cat "${appCfgDir}/javaCmdLineArgFiles" | tr -s '[:blank:]') ; do
-    argFiles="${argFiles} @${appCfgDir}/${argFile}"
-    argFilesForDisplay="${argFilesForDisplay} @${argFile}"
-  done
-
-  ### Java cmd
-  javaCmd="java \
-${argFiles} \
--Dspring.config.location=${APP_CFG_DIR_ROOT}/,${appCfgDir}/ \
--Dlogging.config=${appCfgDir}/logback-spring.xml \
--Dspring.profiles.active=${PROJ_PROFILES} \
--Dcss.cert.path=${CERT_DIR} \
--jar ${appBinDir}/${appJar} \
-"
-
-echo "\
-JAR_FILE      :      ${appBinDir}/${appJar}
-VM_ARG_FILES  :      ${argFilesForDisplay}
-JAVA_CMD      :      ${javaCmd}\
-"
-
-  ### Start the app
-  ### It is important to move to the app's bin directory because java command line argument file only recognizes relative paths with respect to current directory
-  echo ""
-  java -version
-  /bin/bash -c " \
-cd ${appBinDir} ; \
-${javaCmd} \
-"
-
-}
-
 function findJarIn(){
       jarNotFound="T"
       searchDir=$1
@@ -58,8 +20,10 @@ function findJarIn(){
 }
 
 ### Just a local deploy, ie; moving the jar file from maven build directory to app's bin directory
-function deploy(){
-  mvnAppBuildDir="${PROJ_DIR}/${appDir}/target"
+function deploy_local(){
+  appBinDir="${PROJ_APP_DIR}/${appDir}"                 # Ex: css/app
+  local mvnAppBuildDir="${PROJ_DIR}/${appDir}/target"   # Ex: css/trade-consumer/target
+
   if [ -d "${mvnAppBuildDir}" ];then
     findJarIn "${mvnAppBuildDir}"
 #    buildArtifact=echo $?
@@ -90,16 +54,43 @@ function deploy(){
     appJar=$(basename "${buildArtifact}")
 
   else
-    echo "The app build directory does not exist: ${mvnAppBuildDir}"
+    echo "ERROR: The app build directory does not exist: ${mvnAppBuildDir}" >&2
     exit 1
   fi
 }
 
 # MAIN
-### Get the project specific vars
-. ../proj_specific_vars.sh
+# NOTE:
+#       The caller must source '01_proj_vars.sh' and '02_proj_env_vars.sh' by specifying the appropriate values.
+#       'strict mode(set -euo pipefail)' is enabled for this bash script to catch such mistakes
+#       '03_jvm_opts.sh' is sourced by this script
 
-appDir="${1}" # Note: 'appDir' is not the complete dir path. Its only the path relative to the project root directory
+containerized="false"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -c|--containerized)
+      containerized="true"
+      shift
+      ;;
+    -*)
+      echo "ERROR: Unknown option $1"
+      exit 1
+      ;;
+    *)
+      appDir="$*"
+      break
+      ;;
+  esac
+done
+
+# 1. Basic verifications
+if [ -z "${APP_CFG_DIR_ROOT}" ] || [ -z "${CONFIG_STAGE}" ] || [ -z "${PROJ_APP_DIR}" ] || [ -z "${CERT_DIR}" ] || [ -z "${PROJ_PROFILES}" ];then
+  echo "APP_CFG_DIR_ROOT, CONFIG_STAGE, PROJ_APP_DIR, CERT_DIR and PROJ_PROFILES variables must be set"
+  exit 1
+fi
+
+# 2. Format 'appDir' input
+# Note: 'appDir' is not the complete dir path. Its only the path relative to the project root directory
 if [ -z "${appDir}" ];then
   echo "App directory is not provided"
   exit 1
@@ -116,6 +107,10 @@ appDir=$(echo "${appDir%/}");
 appDirName="$(basename "${appDir}")"
 appCfgDir="${APP_CFG_DIR_ROOT}/${appDir}"
 
+# 3. Source JVM Options(jvmOpts)
+. ../03_jvm_opts.sh "${appCfgDir}"
+
+# 4. Print info
 echo "\
 PROJ_DIR      :      ${PROJ_DIR}
 CONFIG_STAGE  :      ${CONFIG_STAGE}
@@ -126,11 +121,7 @@ APP_LOG_DIR   :      ${PROJ_APP_DIR}/${appDir}/logs
 JFR_REC_DIR   :      ${PROJ_APP_DIR}/${appDir}/recordings
 "
 
-if [ -z "${APP_CFG_DIR_ROOT}" ] || [ -z "${CONFIG_STAGE}" ] || [ -z "${PROJ_APP_DIR}" ] || [ -z "${CERT_DIR}" ];then
-  echo "APP_CFG_DIR_ROOT, CONFIG_STAGE, PROJ_APP_DIR and CERT_DIR variables must be set"
-  exit 1
-fi
+# 5. Perform local deployment
+deploy_local
 
-appBinDir="${PROJ_APP_DIR}/${appDir}"
-deploy
-start
+./start_app.sh -d "${appBinDir}" -j "${appJar}" -i "${argFilesForDisplay}" "${jvmOpts[@]}"
