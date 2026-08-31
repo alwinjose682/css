@@ -1,4 +1,4 @@
 #! /bin/bash
 set -euo pipefail
 
-./build.sh clean install dir:"${1}"
+./build.sh clean install -d "${1}"

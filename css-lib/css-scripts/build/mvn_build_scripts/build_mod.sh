@@ -1,41 +1,45 @@
-#!/bin/bash
+#!/bin/bash -x
 set -euo pipefail
 
-function getProperty(){
-  property=""
-
+function setMvnAppSpecificProperties(){
 #  ### Custom maven output directory
 #  if [ -n "${appBuildDir}" ];then
 #    #NOTE: ${project.name}, ${project.version}, ${project.build.finalName} are maven property placeholders that will be expanded by maven during maven execution
-#    property="${property} -Dproj.build.dir=${appBuildDir}/\$\{project.build.finalName\} "
+#    properties="${properties} -Dproj.build.dir=${appBuildDir}/\$\{project.build.finalName\} "
 #  fi
   if [ -f "${mvnAppSpecificPropertyFile}" ];then
     for propItem in $(cat "${mvnAppSpecificPropertyFile}");do
-      property="${property}-D${propItem} "
-#      echo "property:${property}"
+      mvnCmd+=("-D${propItem}")
     done
   fi
-
-  echo "${property}"
 }
 
 # Start
-### Mandatory params
 declare -r mvnAppSubDir="${1}"
 declare -r mvnAppDir="${2}"
 declare -r mvnAppSpecificPropertyFile="${3}"
-declare -r mvnCmd="${4}"
+shift 3
+declare -r mvnCmd_part2=("${@}")
+mvnCmd=()
 
 if [ -d "${mvnAppDir}" ];then
   declare -r pomFile="${mvnAppDir}/pom.xml"
-  echo "MVN_CMD: mvn -f ${pomFile} ${mvnCmd}$(getProperty)"
+
+  # Form the maven command
+  mvnCmd+=("-f")
+  mvnCmd+=("${pomFile}")
+  mvnCmd+=("${mvnCmd_part2[@]}")
+  setMvnAppSpecificProperties
+
+  echo "MVN_CMD: mvn ${mvnCmd[*]}"
   if [ -f "${pomFile}" ];then
-    /bin/bash -c "mvn -f ${pomFile} ${mvnCmd}$(getProperty)"
+    # Build, by executing mvn with commands
+    mvn "${mvnCmd[@]}"
   else
-    echo "ERROR: pom.xml is not present in the project directory: ${mvnAppDir}"
+    echo "ERROR: pom.xml is not present in the project directory: ${mvnAppDir}" >&2
     exit 1
   fi
 else
-  echo "ERROR: Incorrect maven project directory path: ${mvnAppDir}"
+  echo "ERROR: Incorrect maven project directory path: ${mvnAppDir}" >&2
   exit 1
 fi
