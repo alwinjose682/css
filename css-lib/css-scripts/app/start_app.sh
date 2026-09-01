@@ -46,7 +46,6 @@ echo ""
 java -version
 /bin/bash -c ' \
 set -euo pipefail; \
-cd $1 ; \
-shift; \
+cd $1 ; shift; \
 java "$@" \
 ' "run_jar_sh" ${binDir} "${javaArgs[@]}"

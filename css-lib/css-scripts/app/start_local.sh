@@ -12,6 +12,6 @@ if [ $# -eq 2 ]; then
 elif [ $# -eq 1 ]; then
   ./start.sh "$1"
 else
-  echo "ERROR: Incorrect number of parameters passed. Num: $#" >&2
+  echo "ERROR: Incorrect number of parameters passed. Expected: '-c|--containerized'(optional), '<component-name>'. Actual: $# " >&2
   exit 1
 fi

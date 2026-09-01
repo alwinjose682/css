@@ -110,18 +110,17 @@ cat ~/.config/containers/registries.conf -> unqualified-search-registries = ['do
 **Non-Containerized components:**
 
 2. cd css-lib/css-scripts/build
-    1. ./buildAll.sh
+    1. ./build_local_all.sh
 
    **OR**
-
-    1. ./install.sh css-lib/css-shared
-    2. ./install.sh css-lib/data-generator-shared
-    3. ./install.sh refdata-generator
-    4. ./install.sh css-infra/ignite-cache
-    5. ./install.sh db-cache-data-loader
-    6. ./install.sh fo-simulator
-    7. ./install.sh cashflow-consumer
-    8. ./install.sh css-infra/h2-server (If H2 database is used)
+1. ./build.sh clean install -d css-lib/css-shared
+2. ./build.sh clean install -d css-lib/data-generator-shared
+3. ./build.sh clean install -d refdata-generator 
+4. ./build.sh clean install -d css-infra/ignite-cache
+5. ./build.sh clean install -d db-cache-data-loader 
+6. ./build.sh clean install -d trade-publisher 
+7. ./build.sh clean install -d trade-consumer
+8. ./build.sh clean install -d css-infra/h2-server # (If H2 database is used)
 
 ### Steps to setup Oracle Database
 
@@ -139,14 +138,14 @@ cat ~/.config/containers/registries.conf -> unqualified-search-registries = ['do
 - Logs will be written in following directory path: '<css-root-dir>/app/<app-name>/logs'
 - Use the start scripts to run the CSS Components inorder to have the appropriate jvm args and commandline parameters
 
-| Component       | Command                                                                                                                                                                                                                                            |
-|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Oracle Database | (If Oracle database is used) <br/> podman run --rm --name cssdb -d -p 127.0.0.1:1521:1521 -v cssdbdata:/opt/oracle/oradata container-registry.oracle.com/database/express:21.3.0-xe                                                                | 
-| Ignite Cache    | podman run -d --rm -p 127.0.0.1:8095:8080,127.0.0.1:10800:10800 alw.io/ignite                                                                                                                                                                      | 
-| Kafka           | podman run -d --rm -p 127.0.0.1:9092:9092 docker.io/apache/kafka:4.0.0                                                                                                                                                                             |
-| Schema Registry | podman run -d --rm --net=host -e SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=PLAINTEXT://localhost:9092 -e SCHEMA_REGISTRY_HOST_NAME=localhost -e SCHEMA_REGISTRY_LISTENERS=http://localhost:8995 docker.io/confluentinc/cp-schema-registry:7.9.1 |
-|                 | ***---   Wait for 1 or 2 minutes for above components to start and become active   ---***                                                                                                                                                          |
-| CSS Components  | cd css-lib/css-scripts/app<br/> 1) ./start.sh css-infra/h2-server (If H2 DB is used) <br/> 2) ./start.sh db-cache-data-loader (NOTE: Data load may take more than 5 mins) <br/> 3) ./start.sh fo-simulator <br/> 4) ./start.sh cashflow-consumer   |
+| Component       | Command                                                                                                                                                                                                                                                                  |
+|-----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Oracle Database | (If Oracle database is used) <br/> podman run --rm --name cssdb -d -p 127.0.0.1:1521:1521 -v cssdbdata:/opt/oracle/oradata container-registry.oracle.com/database/express:21.3.0-xe                                                                                      | 
+| Ignite Cache    | podman run -d --rm -p 127.0.0.1:8095:8080,127.0.0.1:10800:10800 alw.io/ignite                                                                                                                                                                                            | 
+| Kafka           | podman run -d --rm -p 127.0.0.1:9092:9092 docker.io/apache/kafka:4.0.0                                                                                                                                                                                                   |
+| Schema Registry | podman run -d --rm --net=host -e SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=PLAINTEXT://localhost:9092 -e SCHEMA_REGISTRY_HOST_NAME=localhost -e SCHEMA_REGISTRY_LISTENERS=http://localhost:8995 docker.io/confluentinc/cp-schema-registry:7.9.1                       |
+|                 | ***---   Wait for 1 or 2 minutes for above components to start and become active   ---***                                                                                                                                                                                |
+| CSS Components  | cd css-lib/css-scripts/app<br/> 1) ./start_local.sh css-infra/h2-server (If H2 DB is used) <br/> 2) ./start_local.sh db-cache-data-loader (NOTE: Data load may take more than 5 mins) <br/> 3) ./start_local.sh trade-publisher <br/> 4) ./start_local.sh trade-consumer |
 
 ### Steps to stop
 
