@@ -67,15 +67,14 @@ JFR_REC_DIR   :      ${PROJ_APP_DIR}/${appDir}/recordings
 echo "INFO: Performing deployment for environment: ${CONFIG_STAGE}"
 if [ "${CONFIG_STAGE}" == "local" ];then
   deployResult=$(./deploy/deploy_local.sh "${appDir}" "${appDirName}")
-  read -r -a appBinAndJar <<< "${deployResult}"
+  # read -r -a appBinAndJar <<< "${deployResult}"
+  read -r appBinDir appJar <<< "${deployResult}"
 else
   echo "ERROR: Unable to determine deployment strategy due to invalid CONFIG_STAGE: {CONFIG_STAGE}" >&2
   exit 1
 fi
 
 # 6. Create custom 'tmp' directory for the app instead of using standard linux '/tmp'
-appBinDir=${appBinAndJar[0]}
-appJar=${appBinAndJar[1]}
 mkdir -p ${appBinDir}/tmp
 
 # 7. Start the app
