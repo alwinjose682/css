@@ -11,6 +11,11 @@
     </parent>
 
     <artifactId>trade-publisher</artifactId>
+    <version>${revision}</version>
+
+    <properties>
+        <revision>1.0.0-SNAPSHOT</revision>
+    </properties>
 
     <dependencies>
         <dependency>

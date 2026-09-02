@@ -11,9 +11,10 @@
     </parent>
 
     <artifactId>db-cache-data-loader</artifactId>
-    <version>1.0.0</version>
+    <version>${revision}</version>
 
     <properties>
+        <revision>1.0.0-SNAPSHOT</revision>
         <hibernate-version>6.5.3.Final</hibernate-version>
         <hikariCP-version>6.2.1</hikariCP-version>
     </properties>

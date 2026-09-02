@@ -11,6 +11,11 @@
     </parent>
 
     <artifactId>trade-consumer</artifactId>
+    <version>${revision}</version>
+
+    <properties>
+        <revision>1.0.0-SNAPSHOT</revision>
+    </properties>
 
     <!-- All dependencies are imported either from 'css-services' or 'css-parent' poms -->
     <dependencies>

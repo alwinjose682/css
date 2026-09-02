@@ -130,6 +130,7 @@
 
     <build>
         <defaultGoal>clean install</defaultGoal>
+        <finalName>${project.artifactId}-${project.version}</finalName>
 
         <plugins>
             <plugin>
