@@ -1,0 +1,6 @@
+# Contains only those common global args that are applicable when the Docker/OCI image image is created not via Buildpack
+
+# Usual args for containerized app
+### Note: Buildpack does a better job in determining these based on available memory, app's platform thread count etc.
+-XX:+UseContainerSupport
+-XX:MaxRAMPercentage=75.0

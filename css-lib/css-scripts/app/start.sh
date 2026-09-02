@@ -50,7 +50,7 @@ appDirName="$(basename "${appDir}")"
 appCfgDir="${APP_CFG_DIR_ROOT}/${appDir}"
 
 # 3. Source JVM Options(jvmOpts)
-. ../03_jvm_opts.sh "${appCfgDir}"
+. ../03_jvm_opts.sh "${appCfgDir}" "${containerized}"
 
 # 4. Print info
 echo "\

@@ -5,11 +5,14 @@ set -euo pipefail
 #### https://docs.oracle.com/en/java/javase/24/docs/specs/man/java.html#java-command-line-argument-files
 
 appCfgDir="${1}"
+containerized="${2}"
 jvmOpts=()
 
 if [[ ${containerized} == "true" ]]; then
 jvmOpts+=("@${APP_CFG_DIR_ROOT}/vmArgs__common_global__containerized")
+jvmOpts+=("@${APP_CFG_DIR_ROOT}/vmArgs__common_global__containerized__non_buildpack")
 argFilesForDisplay="${argFilesForDisplay:-} @vmArgs__common_global__containerized, "
+argFilesForDisplay="${argFilesForDisplay:-} @vmArgs__common_global__containerized__non_buildpack, "
 fi
 jvmOpts+=("@${APP_CFG_DIR_ROOT}/vmArgs__common_global")
 argFilesForDisplay="${argFilesForDisplay:-} @vmArgs__common_global"

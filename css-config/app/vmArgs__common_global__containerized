@@ -8,6 +8,11 @@
 ###-XX:+CrashOnOutOfMemoryError
 
 # Usual args for containerized app
--XX:+UseContainerSupport
--XX:MaxRAMPercentage=75.0
 -Djava.security.egd=file:/dev/./urandom
+
+### Below args are commented out because:
+###     Buildpack does a better job in determining these based on available memory, app's platform thread count etc.
+###     Note: OCI/Docker images create via Dockerfile can use below file in combination to this file
+###           fileName: vmArgs__common_global__containerized__non_buildpack
+####-XX:+UseContainerSupport
+####-XX:MaxRAMPercentage=75.0
