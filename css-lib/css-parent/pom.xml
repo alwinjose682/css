@@ -23,6 +23,13 @@
         <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
+        <!--        - Buildpack related -
+             Docker defaults is configured below. ie; no binding required.
+             When podman is used, the relevant maven profile will be activated with proper values. Default is docker.
+        -->
+        <docker.host>NO_VALUE_NULL</docker.host>
+        <docker.bindHostToBuilder>false</docker.bindHostToBuilder>
+
         <!--        Non-Test     -->
         <avro.version>1.12.0</avro.version>
         <confluent.avro.serializer.version>7.9.1</confluent.avro.serializer.version>
@@ -114,23 +121,9 @@
         </dependencies>
     </dependencyManagement>
 
-    <profiles>
-        <profile>
-            <activation>
-                <property>
-                    <name>proj.build.dir</name>
-                </property>
-            </activation>
-            <id>ProjBuildDirectoryRoot</id>
-            <build>
-                <directory>${proj.build.dir}</directory>
-            </build>
-        </profile>
-    </profiles>
-
     <build>
         <defaultGoal>clean install</defaultGoal>
-        <finalName>${project.artifactId}-${project.version}</finalName>
+        <finalName>${project.artifactId}:${project.version}</finalName>
 
         <plugins>
             <plugin>
@@ -163,6 +156,128 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <configuration>
+                        <!--        Useful Resources:
+                                                        https://paketo.io/docs/reference/java-reference/#memory-calculator
+                                                        https://docs.spring.io/spring-boot/maven-plugin/build-image.html
+                                                        https://paketo.io/docs/howto/java/
+                                                        https://paketo.io/docs/howto/sbom/#access-the-software-bill-of-materials-on-a-sample-application
+                                                        https://buildpacks.io/docs/for-app-developers/concepts/buildpack/
+                                                        https://buildpacks.io/docs/for-buildpack-authors/
+                                                        https://paketo.io/docs/reference/builders-reference/
+                                                        https://buildpacks.io/docs/for-platform-operators/how-to/integrate-ci/pack/concepts/trusted_builders/#what-is-a-trusted-builder
+                                                        https://buildpacks.io/docs/for-platform-operators/how-to/integrate-ci/pack/cli/pack/
+                                                        https://buildpacks.io/docs/for-app-developers/how-to/build-outputs/
+                                                        https://buildpacks.io/docs/for-app-developers/how-to/special-cases/use-http-proxy/
+                                                        -->
+                        <docker>
+                            <host>${docker.host}</host>
+                            <bindHostToBuilder>${docker.bindHostToBuilder}</bindHostToBuilder>
+                            <!--                            <publishRegistry>-->
+                            <!--                                <url>${docker.publishRegistry.url}</url>-->
+                            <!--                                <username>${docker.publishRegistry.username}</username>-->
+                            <!--                                <password>${docker.publishRegistry.password}</password>-->
+                            <!--                            </publishRegistry>-->
+                        </docker>
+                        <!--        NOTE: Buildpack builds and runs as non-root as per the security standard. No explicit config is needed         -->
+                        <!--        Enable SpringBoot layers         -->
+                        <layers>
+                            <enabled>true</enabled>
+                        </layers>
+                        <image>
+                            <!--        NOTE:   The JVM used by default is Liberica JVM which is free for use. Good that it is not Adoptium's jdk
+                                                To change JVM to another supported one, see: https://paketo.io/docs/howto/java/#use-an-alternative-jvm         -->
+                            <name>alw.io/css/${build.finalName}</name>
+                            <applicationDirectory>/css</applicationDirectory>
+                            <builder>docker.io/paketobuildpacks/builder-noble-java-tiny:latest</builder> <!--docker.io/paketobuildpacks/ubuntu-noble-builder-->
+                            <!-- <imagePlatform>linux/amd64</imagePlatform>-->
+                            <!-- <command>/workspace/entrypoint.sh</command>   NOTE: not needed, may use distroless image with no shell in the future -->
+
+                            <env>
+                                <!--        SPRING         -->
+                                <BP_SPRING_CLOUD_BINDINGS_DISABLED>true</BP_SPRING_CLOUD_BINDINGS_DISABLED>
+                                <!--        MAVEN         -->
+                                <BP_MAVEN_BUILD_ARGUMENTS>-Dmaven.test.skip=true</BP_MAVEN_BUILD_ARGUMENTS>
+                                <!--        BOM         -->
+                                <BP_OCI_SOURCE>https://github.com</BP_OCI_SOURCE>
+
+                                <!--        JVM AND RELATED        -->
+                                <!--        NOTE:   A buildpack supports only a specific jdk version.
+                                                    To use an updated jdk(ex: 26.0.2 instead of 26.0.1) an updated buildpack version need to be used         -->
+                                <BP_JVM_VERSION>${java.version}</BP_JVM_VERSION>
+                                <BP_JVM_TYPE>JRE</BP_JVM_TYPE>    <!--NOTE: May not be needed as jlink is used-->
+                                <BP_JLINK_ENABLED>true</BP_JLINK_ENABLED>
+                                <!--        NOTE:   Specifying headroom explicitly although the buildpack's default headroom size is zero.
+                                                    "Headroom is a percentage of the container’s total memory that can be excluded from the memory calculator’s algorithm and left for non-JVM operations."
+                                                    See the java buildpack's note on memory calculator to understand better-->
+                                <BPL_JVM_HEAD_ROOM>0</BPL_JVM_HEAD_ROOM>
+                                <BP_JLINK_ARGS>
+                                    --no-man-pages
+                                    --no-header-files
+                                    --strip-debug
+                                    --compress=2
+                                </BP_JLINK_ARGS>
+
+                                <!--        ABOUT MEMORY LIMITS
+                                            ===================
+
+                                            NOTE:   Read below notes on memory limit, check how the java memory calculator works, the formula used to calculate heap and non-heap sizes.
+                                                    The non-heap size stays static for a given app that does not operate on non-heap.
+                                                        Ex: For a container with 1GB memory, total non-heap usage could be approximately as below:
+                                                            Direct Memory(10M), JVM Code Cache(240M), Metaspace(112M), Thread Stacks(250M)
+                                                            This sums up as 612M of non-heap usage leaving only 412M for heap usage
+                                                    BPL_JVM_THREAD_COUNT:   If the app uses less thread count than the default(250), then explicitly setting the count via this env will help to increase the memory available for heap.
+
+                                            NOTE:  - Memory limit -
+                                                     Unlike Dockerfile method, no max memory percent usage limit need to be set explicitly.
+                                                     Because buildpack does a better job in determining memory headroom, thread count, loaded class count etc
+
+                                            NOTE:  - NMT tracking: BPL_JAVA_NMT_ENABLED -
+                                                    'Java Native Memory Tracking' defaults to true, but comes with compute/CPU cost(5-10%) in detail mode for app using native memory heavily.
+                                                     Java Buildpack enables this by default in summary mode. The CPU and memory overhead is expected to be negligible.
+                                                     In case OOM happens due potentially due to its' memory overhead, add head room explicitly via 'BPL_JVM_HEAD_ROOM'
+                                -->
+
+                                <!--        NOTE:  - Including/Excluding other files during app build stage -
+                                                     Use a single tag with glob patterns separated by colons -->
+                                <!--                                <BP_INCLUDE_FILES>src/main/resources/config.yaml:scripts/*.sh:certs/internal-ca.crt</BP_INCLUDE_FILES>-->
+                                <!--                 Exclude local testing tools or temporary logs within those paths -->
+                                <!--                                <BP_EXCLUDE_FILES>scripts/local-test-tool.sh:docs/*.tmp:**/*.log</BP_EXCLUDE_FILES>-->
+                            </env>
+
+                            <!--            NOTE:   - Specifying buildpacks explicitly -
+                                                      Specifying buildpacks explicitly require to explicitly specify the entire pipeline -->
+                            <!--                            <buildpacks>-->
+                            <!--                                <buildpack>urn:cnb:builder:paketo-buildpacks/ca-certificates</buildpack>-->
+                            <!--                                <buildpack>urn:cnb:builder:paketo-buildpacks/bellsoft-liberica</buildpack>-->
+                            <!--                                <buildpack>urn:cnb:builder:paketo-buildpacks/syft</buildpack>-->
+                            <!--                                <buildpack>urn:cnb:builder:paketo-buildpacks/executable-jar</buildpack>-->
+                            <!--                                <buildpack>urn:cnb:builder:paketo-buildpacks/spring-boot</buildpack>-->
+                            <!--                            </buildpacks>-->
+
+                            <publish>false</publish>
+                            <!-- https://docs.spring.io/spring-boot/maven-plugin/build-image.html#build-image.examples.caches-->
+
+                            <buildCache>
+                                <volume>
+                                    <name>cache-${project.artifactId}.build</name>
+                                </volume>
+                            </buildCache>
+                            <launchCache>
+                                <volume>
+                                    <name>cache-${project.artifactId}.launch</name>
+                                </volume>
+                            </launchCache>
+                            <!--                        <registry>-->
+                            <!--                            <username>${env.REGISTRY_USER}</username>-->
+                            <!--                            <password>${env.REGISTRY_PASSWORD}</password>-->
+                            <!--                        </registry>-->
+                        </image>
+                    </configuration>
+                </plugin>
+                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <configuration>
@@ -179,6 +294,41 @@
             </plugins>
         </pluginManagement>
     </build>
+
+    <profiles>
+        <profile>
+            <id>podman-linux</id>
+            <activation>
+                <property>
+                    <name>env.XDG_RUNTIME_DIR</name> <!-- Most linux systems have this env set. So the profile will be activated automatically -->
+                </property>
+            </activation>
+            <properties>
+                <docker.host>unix://${env.XDG_RUNTIME_DIR}/podman/podman.sock</docker.host>
+                <docker.bindHostToBuilder>true</docker.bindHostToBuilder>
+            </properties>
+        </profile>
+        <!-- Podman on macOS/Windows-->
+        <profile>
+            <id>podman</id>
+            <properties>
+                <docker.host>unix://${user.home}/.local/share/containers/podman/machine/podman.sock</docker.host>
+                <docker.bindHostToBuilder>true</docker.bindHostToBuilder>
+            </properties>
+        </profile>
+        <profile>
+            <activation>
+                <property>
+                    <name>proj.build.dir</name>
+                </property>
+            </activation>
+            <id>ProjBuildDirectoryRoot</id>
+            <build>
+                <directory>${proj.build.dir}</directory>
+            </build>
+        </profile>
+    </profiles>
+
     <repositories>
         <repository>
             <id>confluent</id>
