@@ -7,3 +7,8 @@
 
 # Log directory
 -Dapp.log.filePath=./logs
+
+# Do not enable NUMA for un-supported hardware due to below edge case:
+## Containerized Workloads (Misconfigured Cgroups): If Docker or Kubernetes pins a container across sockets without NUMA balancing, forced NUMA allocations can trigger disproportionate memory pressure or early OutOfMemoryErrors on constrained local nodes.
+## If running inside Docker/Kubernetes pinned to 1 CPU core/node while the host has multiple NUMA nodes, ensure your cgroups properly reflect the single node topology; otherwise, the JVM might miscalculate available node topology, though this still will not crash the application.
+###-XX:+UseNUMA
