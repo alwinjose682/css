@@ -4,7 +4,7 @@ set -euo pipefail
 mvnAppSubDir="${1}"
 
 ### Get the project specific vars
-. ../01_proj_vars.sh
+. ../01_common_env.sh
 
 # START
 if [ $# -eq 0 ];then
