@@ -43,11 +43,22 @@ function perform_local_containerized_app_start(){
       run \
       --rm \
       -v css-config:${cfgDirRoot}:ro,z \
+      -v scratch-vol:/css/tmp:U \
       -e JDK_JAVA_OPTIONS="${jvmArgs[@]}" \
       -p "${portMapping}" \
       "${imgRef}"
   ' "run_app_image__sh" ${containerEngine} "${cfgDirRoot}" "${jvmArgs[*]}" "${portMapping}" "${imgRef}"
 
+# NOTE: Mounting a writable /css/tmp directory with proper ownership and read and write permissions
+#       IMP: All the CSS java spring boot apps are configured to use './tmp' as the '-Djava.io.tmpdir'. Check the vmArgs files.
+#
+# To mount tmpfs
+#       --user 1002:1000 \
+#       --mount type=tmpfs,destination=/css/tmp,tmpfs-mode=0700,uid=1002,gid=1000 \
+#
+# To mount an ephemeral disk backed volume with auto chown(:U)
+#       --user 1002:1000 \
+#       -v scratch-vol:/css/tmp:U \
 }
 
 function perform_local_app_start(){
