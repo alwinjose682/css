@@ -1,3 +1,12 @@
+# IMPORTANT: Enable basic logging of VM(using JEP 158) info at startup for all CSS apps. [See: java -Xlog:help]
+## To print the explicitly set VM args, java_command, class_path etc. NOTE: This will print options like '--add-opens'
+-Xlog:arguments=debug:stdout:uptime,level,tags,pid,tid
+
+## To print *ALL* hotspot flags enabled for the VM - both default and explicitly set
+###   - Flags modified from defaults are indicated via ':='
+###   - Launcher flags like --add-opens are not printed. They require argument logging(-Xlog:arguments=debug) or --dry-run
+###-XX:+PrintFlagsFinal
+
 # Temporary directory for all apps instead of using standard /tmp
 -Djava.io.tmpdir=./tmp
 
