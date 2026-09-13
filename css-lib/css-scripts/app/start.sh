@@ -29,7 +29,7 @@ function perform_local_containerized_app_start(){
   VM_ARG_FILES  :      ${argFilesForDisplay}
   "
 
-  # Start the containerized app locally
+  # Start the containerized app locally. NOTE: The network mode used is host. No network is created
   . ../detect_container_engine.sh
   /bin/bash -cx '
     set -euo pipefail
@@ -41,11 +41,12 @@ function perform_local_containerized_app_start(){
 
     ${containerEngine} \
       run \
+      -d \
       --rm \
+      --network=host \
       -v css-config:${cfgDirRoot}:ro,z \
       -v scratch-vol:/css/tmp:U \
       -e JDK_JAVA_OPTIONS="${jvmArgs[@]}" \
-      -p "${portMapping}" \
       "${imgRef}"
   ' "run_app_image__sh" ${containerEngine} "${cfgDirRoot}" "${jvmArgs[*]}" "${portMapping}" "${imgRef}"
 

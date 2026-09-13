@@ -25,11 +25,13 @@ if [[ ${containerized} == "true" ]]; then
 
   # App specific VM args.
   # For a containerized app:
-  #     only the vmArgs__common which is mandatory for any app is used by default.
-  #     all other vmArgs are treated as optional and must be supplied explicitly. Ex: via podman cli, K8 configMap etc
+  #     Only the vmArgs__common and vmArgs__jfr which is mandatory for all the apps are used by default.
+  #     All other vmArgs are treated as optional and must be supplied explicitly. Ex: via podman cli, K8 configMap etc
   #     NOTE: This is the planned preferred way to provide vmArgs going forward. 'javaCmdLineArgFiles' support will be removed
       jvmArgs+=("@${appCfgDir}/vmArgs__common")
+      jvmArgs+=("@${appCfgDir}/vmArgs__jfr")
       argFilesForDisplay="${argFilesForDisplay}, @vmArgs__common"
+      argFilesForDisplay="${argFilesForDisplay}, @vmArgs__jfr"
 else
   # App specific VM args, selects the vmArgs file that are listed in the metadata file: 'javaCmdLineArgFiles'
   # NOTE: This is ***NOT*** the planned preferred way to provide vmArgs going forward. 'javaCmdLineArgFiles' support will be removed
