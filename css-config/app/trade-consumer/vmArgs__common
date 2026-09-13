@@ -1,5 +1,5 @@
 # Required for apache ignite
---add-opens java.base/java.nio=ALL-UNNAMED
+--add-opens=java.base/java.nio=ALL-UNNAMED
 
 # GC
 -XX:+UseG1GC
