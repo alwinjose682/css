@@ -20,6 +20,8 @@
     <description>Common definition for Cashflow Settlement Services</description>
 
     <properties>
+        <!--        IMPORTANT: All projects directly inheriting from this root pom must override 'root-pom.dir' to point to the root pom's directory    -->
+        <root-pom.dir>${project.basedir}</root-pom.dir>
         <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 

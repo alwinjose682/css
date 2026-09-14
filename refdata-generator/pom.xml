@@ -8,12 +8,15 @@
         <groupId>io.alw.css</groupId>
         <artifactId>css-parent</artifactId>
         <version>1.0.0</version>
-        <relativePath>../css-lib/css-parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>refdata-generator</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
+
+    <properties>
+        <root-pom.dir>${project.basedir}/../</root-pom.dir>
+    </properties>
 
     <dependencies>
         <dependency>

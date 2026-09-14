@@ -8,12 +8,15 @@
         <groupId>io.alw.css</groupId>
         <artifactId>css-parent</artifactId>
         <version>1.0.0</version>
-        <relativePath>./css-parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>css-lib</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
+
+    <properties>
+        <root-pom.dir>${project.basedir}/../</root-pom.dir>
+    </properties>
 
     <modules>
         <module>css-shared</module>
