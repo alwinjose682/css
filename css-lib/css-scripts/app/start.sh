@@ -5,9 +5,6 @@ function perform_local_containerized_app_start(){
   if [ -z "${1}" ];then
     echo "ERROR: A tag based OCI image reference is not provided. Example of an OCI image reference: 'alw.io/css/db-cache-data-loader:1.0.0-SNAPSHOT'" >&2
     exit 1
-  elif [ -z "${portMapping}" ];then
-    echo "ERROR: Port mapping for running the containerized app is not provided" >&2
-    exit 1
   fi
 
   imgRef="${1}"
@@ -36,8 +33,7 @@ function perform_local_containerized_app_start(){
     containerEngine="${1}"
     cfgDirRoot="${2}"
     jvmArgs=("${3}")
-    portMapping="${4}"
-    imgRef="${5}"
+    imgRef="${4}"
 
     ${containerEngine} \
       run \
@@ -48,7 +44,7 @@ function perform_local_containerized_app_start(){
       -v scratch-vol:/css/tmp:U \
       -e JDK_JAVA_OPTIONS="${jvmArgs[@]}" \
       "${imgRef}"
-  ' "run_app_image__sh" ${containerEngine} "${cfgDirRoot}" "${jvmArgs[*]}" "${portMapping}" "${imgRef}"
+  ' "run_app_image__sh" ${containerEngine} "${cfgDirRoot}" "${jvmArgs[*]}" "${imgRef}"
 
 # NOTE: Mounting a writable /css/tmp directory with proper ownership and read and write permissions
 #       IMP: All the CSS java spring boot apps are configured to use './tmp' as the '-Djava.io.tmpdir'. Check the vmArgs files.
@@ -140,10 +136,6 @@ while [[ $# -gt 0 ]]; do
         exit 1
       fi
 
-      shift 2
-      ;;
-    -p|--portMapping)
-      portMapping="${2}"
       shift 2
       ;;
     -i|--identifier)
