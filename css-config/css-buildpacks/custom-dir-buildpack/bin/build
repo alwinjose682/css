@@ -1,0 +1,43 @@
+#!/bin/bash
+set -euo pipefail
+
+LAYERS_DIR="$1"
+LAYER_NAME="css-app-dirs"
+TARGET_LAYER="${LAYERS_DIR}/${LAYER_NAME}"
+
+# 1. Create the layer directory
+mkdir -p "${TARGET_LAYER}"
+
+# 2. Metadata to mark this layer for inclusion in the final run image
+# INFO:
+#       'launch': Tells the exporter to copy this layer into the final runtime OCI image
+#       'cache' : Tells the exporter whether to save this layer in the build-cache volume for subsequent builds
+#       'build' : Makes the layer available to downstream buildpacks during the build phase
+# NOTE:
+#       - Currently this layer is configured to be cached. When the app is run on K8, I plan to just print the logs to stdout
+#       - A symlink is created in the root directory(/css) to point to each of the directory in the layered image
+cat <<EOF > "${LAYERS_DIR}/${LAYER_NAME}.toml"
+[types]
+launch = true
+cache = true
+build = false
+EOF
+
+# 3. Create the directories for css apps inside the layer
+mkdir -p "${TARGET_LAYER}/logs"
+mkdir -p "${TARGET_LAYER}/recordings"
+
+# 4. Link them into /workspace (current working directory during bin/build)
+wd="$(pwd)"
+echo "---> Creating layer backed CSS app directories. Current working directory: ${wd}. TARGET_LAYER: ${TARGET_LAYER}"
+ln -s "${TARGET_LAYER}/logs" ${wd}/logs
+ln -s "${TARGET_LAYER}/recordings" ${wd}/recordings
+
+# 5. Provide permission
+chmod 777 "${TARGET_LAYER}/logs"
+chmod 777 "${TARGET_LAYER}/recordings"
+
+exit 0
+
+
+# Note this will result in creating a layer with following path: alwio-buildpacks_dir/css-app-dirs. ['alwio-buildpacks_dir' is the id in buildpack.toml. 'css-app-dirs' is the layer directory name specified in this script]

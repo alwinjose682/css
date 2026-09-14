@@ -1,0 +1,8 @@
+api = "0.8"
+[buildpack]
+id = "alwio-buildpacks/dir"
+version = "1.0.0"
+name = "Create common empty directories required for css apps"
+
+[[stacks]]
+id = "*"

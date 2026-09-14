@@ -1,0 +1,5 @@
+#!/bin/bash
+set -euo pipefail
+
+# To indicate that this buildpack has successfully passed the detection phase and has to participate in the build
+exit 0

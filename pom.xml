@@ -4,8 +4,6 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!--    TODO: There are some changes required in css-parent pom, although it works     -->
-
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -124,7 +122,7 @@
     </dependencyManagement>
 
     <build>
-        <defaultGoal>clean install</defaultGoal>
+        <defaultGoal>clean package</defaultGoal>
         <finalName>${project.artifactId}:${project.version}</finalName>
 
         <plugins>
@@ -162,6 +160,8 @@
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <configuration>
                         <!--        Useful Resources:
+                                IMP: Pack CLI: Use pack cli to inspect the builder image, ex: pack builder inspect docker.io/paketobuildpacks/builder-noble-java-tiny:latest
+
                                                         https://paketo.io/docs/reference/java-reference/#memory-calculator
                                                         https://docs.spring.io/spring-boot/maven-plugin/build-image.html
                                                         https://paketo.io/docs/howto/java/
@@ -193,7 +193,7 @@
                                                 To change JVM to another supported one, see: https://paketo.io/docs/howto/java/#use-an-alternative-jvm         -->
                             <name>alw.io/css/${build.finalName}</name>
                             <applicationDirectory>/css</applicationDirectory>
-                            <builder>docker.io/paketobuildpacks/builder-noble-java-tiny:latest</builder> <!--docker.io/paketobuildpacks/ubuntu-noble-builder-->
+                            <builder>paketobuildpacks/builder-jammy-base</builder>
                             <!-- <imagePlatform>linux/amd64</imagePlatform>-->
                             <!-- <command>/workspace/entrypoint.sh</command>   NOTE: not needed, may use distroless image with no shell in the future -->
 
@@ -201,7 +201,10 @@
                                 <!--        SPRING         -->
                                 <BP_SPRING_CLOUD_BINDINGS_DISABLED>true</BP_SPRING_CLOUD_BINDINGS_DISABLED>
                                 <!--        MAVEN         -->
-                                <BP_MAVEN_BUILD_ARGUMENTS>-Dmaven.test.skip=true</BP_MAVEN_BUILD_ARGUMENTS>
+                                <BP_MAVEN_ADDITIONAL_BUILD_ARGUMENTS>
+                                    <!--        -Dmaven.test.skip=true        -->
+                                    -DskipTool=maven-surefire-plugin
+                                </BP_MAVEN_ADDITIONAL_BUILD_ARGUMENTS>
                                 <!--        BOM         -->
                                 <BP_OCI_SOURCE>https://github.com</BP_OCI_SOURCE>
 
@@ -210,18 +213,17 @@
                                                     To use an updated jdk(ex: 26.0.2 instead of 26.0.1) an updated buildpack version need to be used         -->
                                 <BP_JVM_VERSION>${java.version}</BP_JVM_VERSION>
                                 <BP_JVM_TYPE>JRE</BP_JVM_TYPE>    <!--NOTE: May not be needed as jlink is used-->
-                                <BP_JLINK_ENABLED>true</BP_JLINK_ENABLED>
+                                <BP_JVM_JLINK_ENABLED>false</BP_JVM_JLINK_ENABLED> <!--NOTE: Jlinked JVM creation was disabled based on some debugging did when java 'add-opens' seemed to not work -->
                                 <!--        NOTE:   Specifying headroom explicitly although the buildpack's default headroom size is zero.
                                                     "Headroom is a percentage of the container’s total memory that can be excluded from the memory calculator’s algorithm and left for non-JVM operations."
                                                     See the java buildpack's note on memory calculator to understand better-->
                                 <BPL_JVM_HEAD_ROOM>0</BPL_JVM_HEAD_ROOM>
-                                <BP_JLINK_ARGS>
+                                <BP_JVM_JLINK_ARGS>
                                     --no-man-pages
                                     --no-header-files
                                     --strip-debug
                                     --compress=2
-                                </BP_JLINK_ARGS>
-
+                                </BP_JVM_JLINK_ARGS>
                                 <!--        ABOUT MEMORY LIMITS
                                             ===================
 
@@ -251,13 +253,11 @@
 
                             <!--            NOTE:   - Specifying buildpacks explicitly -
                                                       Specifying buildpacks explicitly require to explicitly specify the entire pipeline -->
-                            <!--                            <buildpacks>-->
-                            <!--                                <buildpack>urn:cnb:builder:paketo-buildpacks/ca-certificates</buildpack>-->
-                            <!--                                <buildpack>urn:cnb:builder:paketo-buildpacks/bellsoft-liberica</buildpack>-->
-                            <!--                                <buildpack>urn:cnb:builder:paketo-buildpacks/syft</buildpack>-->
-                            <!--                                <buildpack>urn:cnb:builder:paketo-buildpacks/executable-jar</buildpack>-->
-                            <!--                                <buildpack>urn:cnb:builder:paketo-buildpacks/spring-boot</buildpack>-->
-                            <!--                            </buildpacks>-->
+                            <buildpacks>
+                                <!-- Reference the composite Java Buildpack from inside the builder -->
+                                <buildpack>urn:cnb:builder:paketo-buildpacks/java</buildpack>
+                                <buildpack>file://${root-pom.dir}/css-config/css-buildpacks/custom-dir-buildpack</buildpack>
+                            </buildpacks>
 
                             <publish>false</publish>
                             <!-- https://docs.spring.io/spring-boot/maven-plugin/build-image.html#build-image.examples.caches-->
